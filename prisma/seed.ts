@@ -68,7 +68,14 @@ async function main() {
 
   await db.tournamentConfig.upsert({
     where: { tournamentId: tournament.id },
-    update: {},
+    // Refresca el contenido y los valores de referencia en cada seed (bootstrap de dev).
+    update: {
+      paymentSurchargeBp: 600,
+      rulesMarkdown: RULES,
+      inclusionsList: INCLUSIONS,
+      faq: FAQ,
+      socialLinks: { instagram: "https://www.instagram.com/sevenmixtohurling/" },
+    },
     create: {
       tournamentId: tournament.id,
       // Estructura
