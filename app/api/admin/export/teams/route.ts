@@ -1,14 +1,21 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth/guards";
 import { getActiveTournament } from "@/lib/tournament/queries";
 import { toCsv } from "@/lib/csv";
 import { REGISTRATION_STATUS_LABEL } from "@/lib/tournament/status";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+
+export async function GET(req: NextRequest) {
   const user = await getSessionUser();
-  if (user?.role !== "ADMIN") {
-    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+  if (!user) {
+    const url = new URL("/staff", req.url);
+    url.searchParams.set("callbackUrl", "/admin/equipos");
+    return NextResponse.redirect(url);
+  }
+  if (user.role !== "ADMIN") {
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
   const tournament = await getActiveTournament();

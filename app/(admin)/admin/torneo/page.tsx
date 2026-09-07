@@ -176,7 +176,7 @@ export default async function AdminTorneoPage() {
         {hasFixture && (
           <Link
             href="/admin/torneo/resultados"
-            className="inline-flex items-center gap-2 rounded-full border border-ink/25 px-5 py-2.5 text-sm font-semibold text-ink hover:bg-surface-2"
+            className="inline-flex items-center gap-2 rounded-full bg-paper px-5 py-2.5 text-sm font-semibold text-bg-deep hover:bg-white"
           >
             Resultados de grupos ({playedCount}/{groupMatchCount})
           </Link>
@@ -184,7 +184,7 @@ export default async function AdminTorneoPage() {
         {cupCount > 0 && (
           <Link
             href="/admin/torneo/copas"
-            className="inline-flex items-center gap-2 rounded-full bg-paper px-5 py-2.5 text-sm font-semibold text-bg-deep"
+            className="inline-flex items-center gap-2 rounded-full bg-paper px-5 py-2.5 text-sm font-semibold text-bg-deep hover:bg-white"
           >
             Resultados de copas ({cupPlayed}/{cupTotal})
           </Link>
