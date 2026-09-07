@@ -40,18 +40,24 @@ export default async function AdminTeamsPage({
         <h1 className="font-display text-3xl font-semibold text-ink">
           Equipos <span className="text-ink-faint">({teams.length})</span>
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/admin/equipos/nuevo"
+            className="rounded-full bg-paper px-4 py-2 text-sm font-semibold text-bg-deep"
+          >
+            Crear equipo
+          </Link>
           <a
             href="/api/admin/export/teams"
-            className="rounded-lg border border-line px-3 py-2 text-sm text-ink-soft hover:bg-surface-2"
+            className="rounded-full border border-line px-3 py-2 text-sm text-ink-soft hover:bg-surface-2"
           >
-            Exportar equipos CSV
+            Equipos CSV
           </a>
           <a
             href="/api/admin/export/players"
-            className="rounded-lg border border-line px-3 py-2 text-sm text-ink-soft hover:bg-surface-2"
+            className="rounded-full border border-line px-3 py-2 text-sm text-ink-soft hover:bg-surface-2"
           >
-            Exportar jugadores CSV
+            Jugadores CSV
           </a>
         </div>
       </div>

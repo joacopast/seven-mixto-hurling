@@ -5,7 +5,14 @@ import { formatArs } from "@/lib/tournament/pricing";
 import { REGISTRATION_STATUS_LABEL, REGISTRATION_STATUS_TONE } from "@/lib/tournament/status";
 import { Badge, Card } from "@/components/ui";
 import { StatusChanger } from "./status-changer";
+import {
+  TeamEditForm,
+  AddPlayerForm,
+  RemovePlayerButton,
+  DeleteTeamButton,
+} from "./team-editor";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Equipo", robots: { index: false } };
 
 export default async function AdminTeamDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -70,6 +77,25 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
       </div>
 
       <Card>
+        <h2 className="font-display text-lg font-semibold text-ink">Editar equipo</h2>
+        <div className="mt-4">
+          <TeamEditForm
+            team={{
+              id: team.id,
+              name: team.name,
+              shortName: team.shortName,
+              clubTag: team.clubTag,
+              contactName: team.contactName,
+              contactEmail: team.contactEmail,
+              contactPhone: team.contactPhone,
+              seed: team.seed,
+              adminNotes: team.adminNotes,
+            }}
+          />
+        </div>
+      </Card>
+
+      <Card>
         <h2 className="font-display text-lg font-semibold text-ink">Cambiar estado de inscripción</h2>
         <p className="mt-1 text-sm text-ink-soft">Queda registrado en el audit log.</p>
         <div className="mt-4">
@@ -90,6 +116,7 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
                 <th className="px-3 py-2">Nacimiento</th>
                 <th className="px-3 py-2">Género</th>
                 <th className="px-3 py-2">#</th>
+                <th className="px-3 py-2" />
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -106,10 +133,16 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
                   </td>
                   <td className="px-3 py-2 text-ink-soft">{p.gender}</td>
                   <td className="px-3 py-2 font-mono text-ink-soft">{p.shirtNumber ?? "—"}</td>
+                  <td className="px-3 py-2 text-right">
+                    <RemovePlayerButton playerId={p.id} teamId={team.id} />
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="mt-3">
+          <AddPlayerForm teamId={team.id} />
         </div>
       </section>
 
@@ -128,6 +161,14 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
           ))}
         </ul>
       </section>
+
+      <div className="border-t border-line pt-6">
+        <DeleteTeamButton teamId={team.id} />
+        <p className="mt-2 text-xs text-ink-faint">
+          Si el equipo ya tiene partidos asignados, cancelalo cambiando su estado en vez de
+          eliminarlo.
+        </p>
+      </div>
     </div>
   );
 }

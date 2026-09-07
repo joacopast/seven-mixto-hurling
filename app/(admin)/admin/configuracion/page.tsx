@@ -1,94 +1,79 @@
+import { db } from "@/lib/db";
 import { getActiveTournament } from "@/lib/tournament/queries";
-import { formatArs } from "@/lib/tournament/pricing";
-import { Card, Callout } from "@/components/ui";
+import { ConfigForm, type ConfigValues } from "./config-form";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Configuración", robots: { index: false } };
+
+/** Date → valor para <input type="datetime-local"> (hora local). */
+function toLocalInput(d: Date | null | undefined): string {
+  if (!d) return "";
+  const off = d.getTimezoneOffset() * 60_000;
+  return new Date(d.getTime() - off).toISOString().slice(0, 16);
+}
 
 export default async function AdminConfigPage() {
   const tournament = await getActiveTournament();
   const c = tournament.config!;
 
-  const groups: { title: string; rows: [string, string][] }[] = [
-    {
-      title: "Estructura",
-      rows: [
-        ["Equipos máximos", String(c.maxTeams)],
-        ["Grupos", `${c.groupCount} de ${c.groupSize}`],
-        ["Copas", c.cupNames.join(" · ")],
-        ["Asignación de copas", c.cupAssignmentStrategy],
-        ["Partido por 3er puesto", c.thirdPlaceMatch ? "Sí" : "No"],
-      ],
-    },
-    {
-      title: "Partidos y canchas",
-      rows: [
-        ["Duración del partido", `${c.matchDurationMin} min`],
-        ["Canchas", String(c.fieldCount)],
-        ["Recambio entre tandas", `${c.turnoverMin} min`],
-        ["Definición por empate", c.drawResolution],
-      ],
-    },
-    {
-      title: "Puntos y desempates",
-      rows: [
-        ["Victoria / empate / derrota", `${c.pointsWin} / ${c.pointsDraw} / ${c.pointsLoss}`],
-        ["Walkover", `${c.pointsWalkover} pts · ${c.walkoverScore}`],
-        ["Criterios de desempate", c.tiebreakers.join(" → ")],
-      ],
-    },
-    {
-      title: "Plantel",
-      rows: [
-        ["Jugadores", `${c.minPlayers} a ${c.maxPlayers}`],
-        ["En cancha", `${c.playersOnField} (máx. ${c.maxMenOnField} hombres)`],
-        ["Edad mínima", `${c.minPlayerAge} años`],
-      ],
-    },
-    {
-      title: "Precios",
-      rows: [
-        ["Jugadores incluidos", String(c.basePlayers)],
-        ["Tarifa temprana", formatArs(c.earlyPrice)],
-        ["Tarifa general", formatArs(c.latePrice)],
-        ["Jugador adicional", formatArs(c.extraPlayerPrice)],
-        ["Cambio de precio", c.priceChangeAt.toLocaleString("es-AR")],
-        ["Recargo medio de pago", `${(c.paymentSurchargeBp / 100).toFixed(2)}%`],
-      ],
-    },
-    {
-      title: "Fechas",
-      rows: [
-        ["Inscripción abre", c.registrationOpensAt?.toLocaleString("es-AR") ?? "—"],
-        ["Inscripción cierra", c.registrationClosesAt?.toLocaleString("es-AR") ?? "—"],
-        ["Cierre de edición de equipo", c.teamEditLockAt?.toLocaleString("es-AR") ?? "—"],
-        ["Cierre de edición de plantel", c.rosterLockAt?.toLocaleString("es-AR") ?? "—"],
-        ["Ventana de pago lista de espera", `${c.waitlistPaymentWindowHours} h`],
-      ],
-    },
-  ];
+  const [groupCount, matchCount] = await Promise.all([
+    db.group.count({ where: { tournamentId: tournament.id } }),
+    db.match.count({ where: { tournamentId: tournament.id } }),
+  ]);
+
+  const social = (c.socialLinks as { instagram?: string } | null) ?? {};
+  const faq = c.faq;
+
+  const values: ConfigValues = {
+    name: tournament.name,
+    edition: tournament.edition,
+    venueName: tournament.venueName ?? "",
+    startDate: toLocalInput(tournament.startDate),
+    endDate: toLocalInput(tournament.endDate),
+    maxTeams: c.maxTeams,
+    groupCount: c.groupCount,
+    groupSize: c.groupSize,
+    cupNames: c.cupNames.join(", "),
+    cupAssignmentStrategy: c.cupAssignmentStrategy,
+    thirdPlaceMatch: c.thirdPlaceMatch,
+    matchDurationMin: c.matchDurationMin,
+    fieldCount: c.fieldCount,
+    turnoverMin: c.turnoverMin,
+    drawResolution: c.drawResolution,
+    pointsWin: c.pointsWin,
+    pointsDraw: c.pointsDraw,
+    pointsLoss: c.pointsLoss,
+    pointsWalkover: c.pointsWalkover,
+    walkoverScore: c.walkoverScore,
+    tiebreakers: c.tiebreakers,
+    minPlayers: c.minPlayers,
+    maxPlayers: c.maxPlayers,
+    playersOnField: c.playersOnField,
+    maxMenOnField: c.maxMenOnField,
+    minPlayerAge: c.minPlayerAge,
+    basePlayers: c.basePlayers,
+    earlyPricePesos: Math.round(c.earlyPrice / 100),
+    latePricePesos: Math.round(c.latePrice / 100),
+    extraPlayerPricePesos: Math.round(c.extraPlayerPrice / 100),
+    priceChangeAt: toLocalInput(c.priceChangeAt),
+    paymentSurchargePct: c.paymentSurchargeBp / 100,
+    registrationOpensAt: toLocalInput(c.registrationOpensAt),
+    registrationClosesAt: toLocalInput(c.registrationClosesAt),
+    rosterLockAt: toLocalInput(c.rosterLockAt),
+    teamEditLockAt: toLocalInput(c.teamEditLockAt),
+    waitlistPaymentWindowHours: c.waitlistPaymentWindowHours,
+    rulesMarkdown: c.rulesMarkdown,
+    inclusionsList: c.inclusionsList.join("\n"),
+    faqJson: Array.isArray(faq) ? JSON.stringify(faq, null, 2) : "[]",
+    instagramUrl: social.instagram ?? "",
+  };
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-3xl font-semibold text-ink">Configuración del torneo</h1>
-      <Callout tone="info" title="Solo lectura por ahora">
-        La edición de la configuración desde el panel llega en la Fase 5. Estos valores se cambian
-        por ahora en <code className="font-mono">prisma/seed.ts</code> o vía base de datos.
-      </Callout>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {groups.map((g) => (
-          <Card key={g.title}>
-            <h2 className="font-display text-lg font-semibold text-ink">{g.title}</h2>
-            <dl className="mt-3 space-y-1.5 text-sm">
-              {g.rows.map(([k, v]) => (
-                <div key={k} className="flex justify-between gap-4">
-                  <dt className="text-ink-faint">{k}</dt>
-                  <dd className="text-right text-ink">{v}</dd>
-                </div>
-              ))}
-            </dl>
-          </Card>
-        ))}
-      </div>
+      <h1 className="font-display text-3xl font-semibold uppercase tracking-tight text-paper">
+        Configuración del torneo
+      </h1>
+      <ConfigForm values={values} structureLocked={groupCount > 0 || matchCount > 0} />
     </div>
   );
 }

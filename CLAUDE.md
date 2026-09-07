@@ -61,7 +61,7 @@ npm run build
 La DB de tests (`seven_mixto_test`) se migra aparte:
 `DATABASE_URL=...seven_mixto_test npx prisma migrate deploy`.
 
-## Estado — Fases 1, 2, 3 y 4 completas
+## Estado — Fases 1-5 completas
 
 Fase 1: schema completo, auth, inscripción (wizard → `Registration` en `PENDING_PAYMENT`),
 portal del equipo, panel admin (resumen, equipos, buscar, cambiar estado, export CSV),
@@ -94,10 +94,18 @@ equipos, resto TBD, agenda ronda por ronda; atómico y reversible sin resultados
 la final marca campeón/subcampeón/3os y cierra el torneo). Admin `/admin/torneo/copas`,
 público `/torneo` con `<BracketView>` (columnas por ronda, scroll horizontal en mobile).
 
-Pendiente: Fase 5 (admin completo + config editable), Fase 6 (notificaciones + e2e + deploy).
+Fase 5: `lib/services/config.ts` (config del torneo editable — precios en pesos↔centavos,
+recargo %↔bp, tiebreakers, contenido; bloquea equipos/grupos si ya hay estructura; warnings).
+`lib/services/admin-teams.ts` (alta/edición de equipo, alta/baja de jugador con anti-duplicado,
+eliminación con guarda de partidos, asignar seed). `waitlist.ts` extendido: `promoteWaitlistEntry`
++ `autoPromoteWaitlist` (expira invitaciones vencidas, llena cupos) + cron `/api/cron/waitlist`.
+UI: `/admin/configuracion` (form completo), `/admin/equipos/nuevo`, edición + jugadores en
+`/admin/equipos/[id]`, `/admin/espera`, `/admin/auditoria` (log navegable con filtros).
+
+Pendiente: Fase 6 (notificaciones por email + e2e + deploy productivo).
 
 Nota tests: los de integración comparten una DB → corren en serie (`fileParallelism: false`).
-115 tests verdes.
+125 tests verdes.
 
 ## Diseño / marca
 

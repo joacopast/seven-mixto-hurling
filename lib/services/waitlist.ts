@@ -2,7 +2,8 @@ import "server-only";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/slug";
 import { writeAudit } from "@/lib/services/audit";
-import { getActiveTournament } from "@/lib/tournament/queries";
+import { enqueueNotification } from "@/lib/services/notification";
+import { getActiveTournament, OCCUPYING_STATUSES } from "@/lib/tournament/queries";
 
 export interface JoinWaitlistInput {
   teamName: string;
@@ -75,4 +76,172 @@ export async function joinWaitlist(input: JoinWaitlistInput, ctx: { ip?: string 
 
     return { position };
   });
+}
+
+interface Ctx {
+  userId?: string | null;
+  ip?: string | null;
+}
+
+async function freeSlots(tournamentId: string): Promise<number> {
+  const t = await db.tournament.findUniqueOrThrow({
+    where: { id: tournamentId },
+    include: { config: true },
+  });
+  const occupying = await db.team.count({
+    where: { tournamentId, registrationStatus: { in: [...OCCUPYING_STATUSES] } },
+  });
+  return Math.max(0, (t.config?.maxTeams ?? 0) - occupying);
+}
+
+/** Invita a un equipo de la lista de espera: pasa a "pendiente de pago" con una ventana. */
+export async function promoteWaitlistEntry(registrationId: string, ctx: Ctx = {}): Promise<void> {
+  const registration = await db.registration.findUnique({
+    where: { id: registrationId },
+    include: { team: true, tournament: { include: { config: true } } },
+  });
+  if (!registration || registration.status !== "WAITLISTED") {
+    throw new Error("La inscripción no está en lista de espera.");
+  }
+  if ((await freeSlots(registration.tournamentId)) <= 0) {
+    throw new Error("No hay cupos libres.");
+  }
+
+  const windowH = registration.tournament?.config?.waitlistPaymentWindowHours ?? 48;
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + windowH * 3_600_000);
+
+  await db.$transaction(async (tx) => {
+    await tx.registration.update({
+      where: { id: registrationId },
+      data: {
+        status: "PENDING_PAYMENT",
+        waitlistPosition: null,
+        waitlistInvitedAt: now,
+        waitlistExpiresAt: expiresAt,
+      },
+    });
+    await tx.team.update({
+      where: { id: registration.teamId },
+      data: { registrationStatus: "PENDING_PAYMENT", paymentStatus: "PENDING" },
+    });
+    await enqueueNotification(tx, {
+      type: "WAITLIST_INVITED",
+      recipientTeamId: registration.teamId,
+      recipientUserId: registration.team.managerUserId,
+      payload: { teamId: registration.teamId, expiresAt: expiresAt.toISOString() },
+      dedupeKey: `waitlist-invited:${registrationId}:${now.getTime()}`,
+    });
+    await writeAudit(tx, {
+      tournamentId: registration.tournamentId,
+      userId: ctx.userId,
+      action: "waitlist.promote",
+      entity: "Registration",
+      entityId: registrationId,
+      newValue: { expiresAt: expiresAt.toISOString() },
+      ip: ctx.ip ?? null,
+    });
+  });
+}
+
+/**
+ * Promoción automática (cron): expira invitaciones vencidas sin pagar y llena
+ * los cupos libres con los primeros de la lista de espera.
+ */
+export async function autoPromoteWaitlist(tournamentId: string): Promise<{
+  expired: number;
+  promoted: number;
+}> {
+  const now = new Date();
+  let expired = 0;
+  let promoted = 0;
+
+  // 1) Expirar invitaciones vencidas → vuelven al final de la lista.
+  const stale = await db.registration.findMany({
+    where: {
+      tournamentId,
+      status: "PENDING_PAYMENT",
+      waitlistInvitedAt: { not: null },
+      waitlistExpiresAt: { lt: now },
+    },
+    include: { payments: { where: { status: "APPROVED" }, take: 1 } },
+  });
+  for (const reg of stale) {
+    if (reg.payments.length > 0) continue; // pagó justo a tiempo
+    const last = await db.registration.aggregate({
+      where: { tournamentId, status: "WAITLISTED" },
+      _max: { waitlistPosition: true },
+    });
+    await db.$transaction(async (tx) => {
+      await tx.registration.update({
+        where: { id: reg.id },
+        data: {
+          status: "WAITLISTED",
+          waitlistPosition: (last._max.waitlistPosition ?? 0) + 1,
+          waitlistInvitedAt: null,
+          waitlistExpiresAt: null,
+        },
+      });
+      await tx.team.update({
+        where: { id: reg.teamId },
+        data: { registrationStatus: "WAITLISTED", paymentStatus: "NONE" },
+      });
+      await writeAudit(tx, {
+        tournamentId,
+        action: "waitlist.expire",
+        entity: "Registration",
+        entityId: reg.id,
+      });
+    });
+    expired++;
+  }
+
+  // 2) Llenar cupos libres.
+  let slots = await freeSlots(tournamentId);
+  while (slots > 0) {
+    const next = await db.registration.findFirst({
+      where: { tournamentId, status: "WAITLISTED" },
+      orderBy: { waitlistPosition: "asc" },
+    });
+    if (!next) break;
+    await promoteWaitlistEntry(next.id);
+    promoted++;
+    slots--;
+  }
+
+  return { expired, promoted };
+}
+
+export interface WaitlistRow {
+  registrationId: string;
+  teamId: string;
+  teamName: string;
+  contactName: string;
+  contactEmail: string;
+  position: number | null;
+  status: string;
+  invitedAt: Date | null;
+  expiresAt: Date | null;
+}
+
+export async function getWaitlist(tournamentId: string): Promise<WaitlistRow[]> {
+  const regs = await db.registration.findMany({
+    where: {
+      tournamentId,
+      OR: [{ status: "WAITLISTED" }, { waitlistInvitedAt: { not: null } }],
+    },
+    include: { team: true },
+    orderBy: [{ waitlistPosition: "asc" }, { createdAt: "asc" }],
+  });
+  return regs.map((r) => ({
+    registrationId: r.id,
+    teamId: r.teamId,
+    teamName: r.team.name,
+    contactName: r.team.contactName,
+    contactEmail: r.team.contactEmail,
+    position: r.waitlistPosition,
+    status: r.status,
+    invitedAt: r.waitlistInvitedAt,
+    expiresAt: r.waitlistExpiresAt,
+  }));
 }

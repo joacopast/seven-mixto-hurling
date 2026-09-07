@@ -1,0 +1,271 @@
+import "server-only";
+import { db } from "@/lib/db";
+import { slugify } from "@/lib/slug";
+import { writeAudit } from "@/lib/services/audit";
+import { normalizeDoc } from "@/lib/validation/registration";
+import type { Prisma, RegistrationStatus } from "@prisma/client";
+
+export class AdminTeamError extends Error {
+  constructor(
+    message: string,
+    public code: "NOT_FOUND" | "HAS_MATCHES" | "DUP_DOC" | "BAD_INPUT",
+  ) {
+    super(message);
+    this.name = "AdminTeamError";
+  }
+}
+
+interface Ctx {
+  userId?: string | null;
+  ip?: string | null;
+}
+
+async function uniqueSlug(tx: Prisma.TransactionClient, tournamentId: string, name: string) {
+  const base = slugify(name);
+  let slug = base;
+  for (let i = 2; ; i++) {
+    const clash = await tx.team.findUnique({
+      where: { tournamentId_slug: { tournamentId, slug } },
+    });
+    if (!clash) return slug;
+    slug = `${base}-${i}`;
+  }
+}
+
+export interface AdminCreateTeamInput {
+  tournamentId: string;
+  name: string;
+  shortName?: string;
+  clubTag?: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  registrationStatus: RegistrationStatus;
+  adminNotes?: string;
+}
+
+export async function adminCreateTeam(input: AdminCreateTeamInput, ctx: Ctx = {}) {
+  return db.$transaction(async (tx) => {
+    const email = input.contactEmail.trim().toLowerCase();
+    let user = await tx.user.findUnique({ where: { email } });
+    if (!user) {
+      user = await tx.user.create({
+        data: { email, name: input.contactName, role: "TEAM_MANAGER" },
+      });
+    }
+
+    const slug = await uniqueSlug(tx, input.tournamentId, input.name);
+    const isConfirmed = ["CONFIRMED", "PAYMENT_APPROVED"].includes(input.registrationStatus);
+
+    const team = await tx.team.create({
+      data: {
+        tournamentId: input.tournamentId,
+        name: input.name,
+        slug,
+        shortName: input.shortName || null,
+        clubTag: input.clubTag || null,
+        managerUserId: user.id,
+        contactName: input.contactName,
+        contactEmail: email,
+        contactPhone: input.contactPhone,
+        registrationStatus: input.registrationStatus,
+        paymentStatus: isConfirmed ? "APPROVED" : "NONE",
+        registeredAt: isConfirmed ? new Date() : null,
+        adminNotes: input.adminNotes || null,
+        registration: {
+          create: {
+            tournamentId: input.tournamentId,
+            status: input.registrationStatus,
+            confirmedAt: isConfirmed ? new Date() : null,
+          },
+        },
+      },
+    });
+
+    await writeAudit(tx, {
+      tournamentId: input.tournamentId,
+      userId: ctx.userId,
+      action: "team.admin.create",
+      entity: "Team",
+      entityId: team.id,
+      newValue: { name: team.name, status: input.registrationStatus },
+      ip: ctx.ip ?? null,
+    });
+
+    return team;
+  });
+}
+
+export interface AdminUpdateTeamInput {
+  name?: string;
+  shortName?: string | null;
+  clubTag?: string | null;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  seed?: number | null;
+  adminNotes?: string | null;
+}
+
+export async function adminUpdateTeam(teamId: string, input: AdminUpdateTeamInput, ctx: Ctx = {}) {
+  const team = await db.team.findUnique({ where: { id: teamId } });
+  if (!team) throw new AdminTeamError("Equipo no encontrado.", "NOT_FOUND");
+
+  const data: Prisma.TeamUpdateInput = {};
+  const before: Record<string, string | number | null> = {};
+  const after: Record<string, string | number | null> = {};
+
+  const track = <K extends keyof AdminUpdateTeamInput>(key: K, current: unknown) => {
+    if (input[key] === undefined) return;
+    before[key as string] = (current ?? null) as string | number | null;
+    after[key as string] = (input[key] ?? null) as string | number | null;
+  };
+
+  if (input.name !== undefined) {
+    data.name = input.name;
+    track("name", team.name);
+  }
+  if (input.shortName !== undefined) {
+    data.shortName = input.shortName || null;
+    track("shortName", team.shortName);
+  }
+  if (input.clubTag !== undefined) {
+    data.clubTag = input.clubTag || null;
+    track("clubTag", team.clubTag);
+  }
+  if (input.contactName !== undefined) {
+    data.contactName = input.contactName;
+    track("contactName", team.contactName);
+  }
+  if (input.contactEmail !== undefined) {
+    data.contactEmail = input.contactEmail.trim().toLowerCase();
+    track("contactEmail", team.contactEmail);
+  }
+  if (input.contactPhone !== undefined) {
+    data.contactPhone = input.contactPhone;
+    track("contactPhone", team.contactPhone);
+  }
+  if (input.seed !== undefined) {
+    data.seed = input.seed;
+    track("seed", team.seed);
+  }
+  if (input.adminNotes !== undefined) {
+    data.adminNotes = input.adminNotes || null;
+    track("adminNotes", team.adminNotes);
+  }
+
+  if (Object.keys(data).length === 0) return;
+
+  await db.$transaction(async (tx) => {
+    await tx.team.update({ where: { id: teamId }, data });
+    await writeAudit(tx, {
+      tournamentId: team.tournamentId,
+      userId: ctx.userId,
+      action: "team.admin.update",
+      entity: "Team",
+      entityId: teamId,
+      previousValue: before,
+      newValue: after,
+      ip: ctx.ip ?? null,
+    });
+  });
+}
+
+export interface AdminPlayerInput {
+  firstName: string;
+  lastName: string;
+  docType: "DNI" | "PASSPORT";
+  docNumber: string;
+  birthDate: string; // yyyy-mm-dd
+  gender: "M" | "F" | "X";
+  shirtNumber?: number | null;
+  phone?: string;
+  email?: string;
+  position?: string;
+}
+
+export async function adminAddPlayer(teamId: string, input: AdminPlayerInput, ctx: Ctx = {}) {
+  const team = await db.team.findUnique({ where: { id: teamId } });
+  if (!team) throw new AdminTeamError("Equipo no encontrado.", "NOT_FOUND");
+
+  const doc = normalizeDoc(input.docNumber);
+  const dup = await db.player.findFirst({ where: { teamId, docNumber: doc } });
+  if (dup) throw new AdminTeamError("Ese documento ya está en el plantel.", "DUP_DOC");
+
+  await db.$transaction(async (tx) => {
+    const player = await tx.player.create({
+      data: {
+        teamId,
+        tournamentId: team.tournamentId,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        docType: input.docType,
+        docNumber: doc,
+        birthDate: new Date(`${input.birthDate}T00:00:00Z`),
+        gender: input.gender,
+        shirtNumber: input.shirtNumber ?? null,
+        phone: input.phone || null,
+        email: input.email || null,
+        position: input.position || null,
+      },
+    });
+    await writeAudit(tx, {
+      tournamentId: team.tournamentId,
+      userId: ctx.userId,
+      action: "player.admin.add",
+      entity: "Player",
+      entityId: player.id,
+      newValue: { teamId, name: `${input.firstName} ${input.lastName}`, doc },
+      ip: ctx.ip ?? null,
+    });
+  });
+}
+
+export async function adminRemovePlayer(playerId: string, ctx: Ctx = {}) {
+  const player = await db.player.findUnique({ where: { id: playerId }, include: { team: true } });
+  if (!player) throw new AdminTeamError("Jugador no encontrado.", "NOT_FOUND");
+
+  await db.$transaction(async (tx) => {
+    await tx.player.delete({ where: { id: playerId } });
+    await writeAudit(tx, {
+      tournamentId: player.tournamentId,
+      userId: ctx.userId,
+      action: "player.admin.remove",
+      entity: "Player",
+      entityId: playerId,
+      previousValue: {
+        teamId: player.teamId,
+        name: `${player.firstName} ${player.lastName}`,
+        doc: player.docNumber,
+      },
+      ip: ctx.ip ?? null,
+    });
+  });
+}
+
+export async function adminDeleteTeam(teamId: string, ctx: Ctx = {}) {
+  const team = await db.team.findUnique({
+    where: { id: teamId },
+    include: { _count: { select: { homeMatches: true, awayMatches: true } } },
+  });
+  if (!team) throw new AdminTeamError("Equipo no encontrado.", "NOT_FOUND");
+  if (team._count.homeMatches + team._count.awayMatches > 0) {
+    throw new AdminTeamError(
+      "El equipo tiene partidos asignados. Cancelalo en vez de eliminarlo.",
+      "HAS_MATCHES",
+    );
+  }
+
+  await db.$transaction(async (tx) => {
+    await writeAudit(tx, {
+      tournamentId: team.tournamentId,
+      userId: ctx.userId,
+      action: "team.admin.delete",
+      entity: "Team",
+      entityId: teamId,
+      previousValue: { name: team.name, status: team.registrationStatus },
+      ip: ctx.ip ?? null,
+    });
+    await tx.team.delete({ where: { id: teamId } });
+  });
+}
