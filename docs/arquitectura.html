@@ -1,0 +1,1311 @@
+<title>Seven Mixto Hurling — Arquitectura</title>
+<meta name="description" content="Documento de arquitectura y diseño funcional del sistema de gestión del torneo de hockey mixto de 64 equipos." />
+<style>
+  :root {
+    --bg: #F6F7F2;
+    --surface: #FFFFFF;
+    --surface-2: #EDF0E7;
+    --ink: #1A211C;
+    --ink-soft: #4B584F;
+    --ink-faint: #7B8779;
+    --line: #D9DECF;
+    --line-soft: #E7EBDF;
+    --accent: #1E6E43;
+    --accent-deep: #123D26;
+    --accent-wash: #E4EEE5;
+    --gold: #A9791F;
+    --oro: #B98F32;
+    --plata: #7C8794;
+    --bronce: #9E6A3C;
+    --madera: #6E5334;
+    --ok: #2F7D52;
+    --warn: #B4801B;
+    --danger: #AF3B37;
+    --info: #35617F;
+    --shadow: 0 1px 2px rgba(20,40,25,.05), 0 8px 24px -12px rgba(20,40,25,.14);
+    --maxread: 42rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #11150E;
+      --surface: #191F14;
+      --surface-2: #212819;
+      --ink: #EBEEE2;
+      --ink-soft: #A9B4A0;
+      --ink-faint: #7C8874;
+      --line: #313E2A;
+      --line-soft: #283320;
+      --accent: #55B37C;
+      --accent-deep: #2E7D4F;
+      --accent-wash: #1C2C1F;
+      --gold: #D3A94C;
+      --oro: #CFA347;
+      --plata: #9AA4B1;
+      --bronce: #C08553;
+      --madera: #9E7B4F;
+      --ok: #56B37E;
+      --warn: #D2A03D;
+      --danger: #D9645F;
+      --info: #6FA0C0;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #11150E;
+    --surface: #191F14;
+    --surface-2: #212819;
+    --ink: #EBEEE2;
+    --ink-soft: #A9B4A0;
+    --ink-faint: #7C8874;
+    --line: #313E2A;
+    --line-soft: #283320;
+    --accent: #55B37C;
+    --accent-deep: #2E7D4F;
+    --accent-wash: #1C2C1F;
+    --gold: #D3A94C;
+    --oro: #CFA347;
+    --plata: #9AA4B1;
+    --bronce: #C08553;
+    --madera: #9E7B4F;
+    --ok: #56B37E;
+    --warn: #D2A03D;
+    --danger: #D9645F;
+    --info: #6FA0C0;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.55);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Public Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 1rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+  }
+
+  h1, h2, h3, h4 {
+    font-family: "Fraunces", Georgia, "Times New Roman", serif;
+    line-height: 1.15;
+    text-wrap: balance;
+    font-weight: 600;
+    margin: 0;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  code, .mono {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .86em;
+  }
+  p code, li code, td code {
+    background: var(--surface-2);
+    border: 1px solid var(--line-soft);
+    padding: .05em .35em;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  /* ---------- Masthead ---------- */
+  .masthead {
+    border-bottom: 1px solid var(--line);
+    background:
+      radial-gradient(120% 140% at 12% -20%, var(--accent-wash), transparent 60%),
+      var(--surface);
+  }
+  .masthead__inner {
+    max-width: 68rem;
+    margin: 0 auto;
+    padding: clamp(2.4rem, 6vw, 4.2rem) clamp(1.1rem, 4vw, 2.5rem) clamp(2rem, 5vw, 3rem);
+  }
+  .crest {
+    display: inline-flex;
+    align-items: center;
+    gap: .6rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .72rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: .35rem .8rem .35rem .5rem;
+    background: var(--surface);
+  }
+  .crest svg { display: block; }
+  .masthead h1 {
+    font-size: clamp(2.1rem, 5.6vw, 3.5rem);
+    font-optical-sizing: auto;
+    margin: 1.3rem 0 .5rem;
+    letter-spacing: -.01em;
+  }
+  .masthead h1 em { font-style: italic; color: var(--accent); }
+  .masthead .dek {
+    font-size: clamp(1rem, 2.4vw, 1.2rem);
+    color: var(--ink-soft);
+    max-width: 34rem;
+  }
+  .masthead .meta {
+    margin-top: 1.6rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem 1.6rem;
+    font-size: .82rem;
+    color: var(--ink-faint);
+    font-family: "IBM Plex Mono", monospace;
+  }
+  .masthead .meta b { color: var(--ink-soft); font-weight: 500; }
+
+  /* ---------- Layout ---------- */
+  .wrap {
+    max-width: 68rem;
+    margin: 0 auto;
+    padding: 0 clamp(1.1rem, 4vw, 2.5rem);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+  @media (min-width: 62rem) {
+    .wrap { grid-template-columns: 15rem minmax(0, 1fr); gap: 3.5rem; align-items: start; }
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 1.2rem;
+    font-size: .82rem;
+    line-height: 1.4;
+  }
+  nav.toc .toc__title {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .68rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: .7rem;
+  }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; }
+  nav.toc li { counter-increment: toc; }
+  nav.toc a {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr;
+    gap: .3rem;
+    padding: .28rem 0;
+    color: var(--ink-soft);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+  nav.toc a::before {
+    content: counter(toc, decimal-leading-zero);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .68rem;
+    color: var(--ink-faint);
+    padding-top: .12rem;
+  }
+  nav.toc a:hover { color: var(--ink); }
+  nav.toc a.is-active { color: var(--accent); font-weight: 600; }
+
+  details.toc-m {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-bottom: .5rem;
+    box-shadow: var(--shadow);
+  }
+  details.toc-m summary {
+    padding: .7rem 1rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .74rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    color: var(--ink-soft);
+  }
+  details.toc-m ol { margin: 0; padding: 0 1rem 1rem 2.4rem; font-size: .9rem; }
+  details.toc-m a { color: var(--ink-soft); text-decoration: none; display: block; padding: .2rem 0; }
+  @media (min-width: 62rem) { details.toc-m { display: none; } }
+
+  main { min-width: 0; padding-bottom: 5rem; }
+
+  section { padding-top: 2.2rem; margin-top: 2.2rem; border-top: 1px solid var(--line); }
+  section:first-of-type { border-top: 0; margin-top: 0; }
+  section > h2 {
+    font-size: clamp(1.5rem, 3.4vw, 2rem);
+    letter-spacing: -.01em;
+    display: flex;
+    align-items: baseline;
+    gap: .7rem;
+  }
+  section > h2 .num {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .8rem;
+    font-weight: 400;
+    color: var(--accent);
+    letter-spacing: .1em;
+    flex: none;
+  }
+  section > h2 + .lede { color: var(--ink-soft); margin: .6rem 0 0; max-width: var(--maxread); }
+  h3 { font-size: 1.16rem; margin: 2rem 0 .6rem; }
+  h4 { font-size: .95rem; margin: 1.4rem 0 .4rem; font-family: "Public Sans", sans-serif; font-weight: 700; }
+  p, ul, ol { max-width: var(--maxread); }
+  main ul, main ol { padding-left: 1.15rem; }
+  main li { margin: .28rem 0; }
+  main li::marker { color: var(--ink-faint); }
+  strong { font-weight: 700; }
+
+  .callout {
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    border-radius: 8px;
+    padding: .9rem 1.1rem;
+    margin: 1.3rem 0;
+    font-size: .94rem;
+    max-width: var(--maxread);
+  }
+  .callout.warn { border-left-color: var(--warn); }
+  .callout.decided { border-left-color: var(--ok); }
+  .callout p { margin: .3rem 0; }
+  .callout .k {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .66rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    display: block;
+    margin-bottom: .3rem;
+  }
+
+  /* ---------- Tables ---------- */
+  .tw { overflow-x: auto; margin: 1.2rem 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+  caption { text-align: left; font-size: .78rem; color: var(--ink-faint); padding: .6rem .9rem; border-bottom: 1px solid var(--line-soft); font-family: "IBM Plex Mono", monospace; letter-spacing: .04em; }
+  th, td { text-align: left; padding: .55rem .9rem; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  th { font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-faint); font-weight: 600; background: var(--surface-2); position: sticky; top: 0; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: "IBM Plex Mono", monospace; }
+  .total-row td { font-weight: 700; background: var(--accent-wash); border-top: 1px solid var(--line); }
+
+  /* ---------- Cup chips ---------- */
+  .cups { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; padding: 0; list-style: none; max-width: var(--maxread); }
+  .cup {
+    display: inline-flex; align-items: center; gap: .45rem;
+    font-family: "IBM Plex Mono", monospace; font-size: .74rem; letter-spacing: .06em;
+    padding: .32rem .7rem; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .cup::before { content: ""; width: .62rem; height: .62rem; border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 3px color-mix(in srgb, var(--dot) 18%, transparent); }
+  .cup.oro { --dot: var(--oro); }
+  .cup.plata { --dot: var(--plata); }
+  .cup.bronce { --dot: var(--bronce); }
+  .cup.madera { --dot: var(--madera); }
+
+  .badge {
+    display: inline-block; font-family: "IBM Plex Mono", monospace; font-size: .68rem;
+    letter-spacing: .06em; text-transform: uppercase; padding: .12rem .45rem; border-radius: 4px;
+    border: 1px solid var(--line); color: var(--ink-soft); background: var(--surface-2); white-space: nowrap;
+  }
+  .badge.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
+  .badge.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); }
+  .badge.info { color: var(--info); border-color: color-mix(in srgb, var(--info) 40%, var(--line)); }
+
+  /* ---------- Diagram ---------- */
+  figure { margin: 1.6rem 0; max-width: var(--maxread); }
+  figure svg { width: 100%; height: auto; display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  figcaption { font-size: .78rem; color: var(--ink-faint); margin-top: .5rem; font-family: "IBM Plex Mono", monospace; }
+
+  /* ---------- Data model cards ---------- */
+  .entities { display: grid; gap: .9rem; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); margin: 1.3rem 0; max-width: none; }
+  .entity {
+    border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: .9rem 1rem; box-shadow: var(--shadow);
+  }
+  .entity h4 { margin: 0 0 .5rem; font-family: "IBM Plex Mono", monospace; font-size: .82rem; letter-spacing: .04em; color: var(--accent); text-transform: none; }
+  .entity ul { list-style: none; margin: 0; padding: 0; font-size: .82rem; line-height: 1.5; }
+  .entity li { margin: .1rem 0; color: var(--ink-soft); }
+  .entity li b { color: var(--ink); font-weight: 600; }
+  .entity .rel { margin-top: .5rem; padding-top: .5rem; border-top: 1px dashed var(--line); font-size: .74rem; color: var(--ink-faint); font-family: "IBM Plex Mono", monospace; }
+
+  /* ---------- State flow ---------- */
+  .states { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: 1.1rem 0; max-width: none; padding: 0; list-style: none; font-family: "IBM Plex Mono", monospace; font-size: .74rem; }
+  .states li { border: 1px solid var(--line); border-radius: 6px; padding: .28rem .55rem; background: var(--surface); }
+  .states li.branch { border-style: dashed; color: var(--ink-faint); }
+  .states .arrow { border: 0; color: var(--ink-faint); padding: 0 .1rem; }
+
+  .steps { counter-reset: step; list-style: none; padding: 0; max-width: var(--maxread); }
+  .steps > li { counter-increment: step; position: relative; padding-left: 2.4rem; margin: .9rem 0; }
+  .steps > li::before {
+    content: counter(step); position: absolute; left: 0; top: 0;
+    width: 1.7rem; height: 1.7rem; border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: "IBM Plex Mono", monospace; font-size: .8rem;
+    background: var(--accent-wash); color: var(--accent-deep); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  }
+  :root[data-theme="dark"] .steps > li::before,
+  :root:not([data-theme="light"]) .steps > li::before { color: var(--accent); }
+
+  .grid-2 { display: grid; gap: 1.2rem; grid-template-columns: 1fr; max-width: none; }
+  @media (min-width: 46rem) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+  .panel { border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.1rem; background: var(--surface); }
+  .panel h4 { margin-top: 0; }
+  .panel ul { font-size: .9rem; }
+
+  hr.soft { border: 0; border-top: 1px solid var(--line-soft); margin: 1.6rem 0; }
+
+  footer {
+    max-width: 68rem; margin: 0 auto; padding: 2.5rem clamp(1.1rem, 4vw, 2.5rem) 4rem;
+    border-top: 1px solid var(--line); color: var(--ink-faint); font-size: .82rem;
+    font-family: "IBM Plex Mono", monospace;
+  }
+
+  .themebtn {
+    position: fixed; right: 1rem; bottom: 1rem; z-index: 30;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft);
+    border-radius: 999px; padding: .5rem .8rem; font-size: .72rem; cursor: pointer;
+    font-family: "IBM Plex Mono", monospace; letter-spacing: .06em; box-shadow: var(--shadow);
+  }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" />
+
+<header class="masthead">
+  <div class="masthead__inner">
+    <span class="crest" aria-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <path d="M6 21c0-7 3-11 9-13" />
+        <path d="M15 8c1.5-1.5 4-2 5-1.5.5 1.5 0 4-1.5 5.5" />
+        <circle cx="8.5" cy="17.5" r="2.4" fill="currentColor" stroke="none" />
+      </svg>
+      Seven Mixto Hurling · Club irlandés
+    </span>
+    <h1>Sistema de gestión del <em>torneo</em>: arquitectura y diseño funcional</h1>
+    <p class="dek">Motor de torneo, inscripción online, cobro con Mercado Pago, fase de grupos, cuatro copas y panel de organización — para 64 equipos de hockey mixto en un evento social de un día.</p>
+    <div class="meta">
+      <span><b>Versión</b> 1.0 — propuesta para aprobación</span>
+      <span><b>Fecha</b> 07/09/2026</span>
+      <span><b>Prioridades</b> Corrección › Seguridad › Mantenibilidad › UX › Velocidad</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Índice">
+    <div class="toc__title">Contenido</div>
+    <ol>
+      <li><a href="#resumen">Resumen funcional</a></li>
+      <li><a href="#formato">Formato deportivo</a></li>
+      <li><a href="#algoritmos">Algoritmos del motor</a></li>
+      <li><a href="#datos">Modelo de datos</a></li>
+      <li><a href="#arquitectura">Arquitectura técnica</a></li>
+      <li><a href="#inscripcion">Flujo de inscripción</a></li>
+      <li><a href="#pago">Flujo de pago (MP)</a></li>
+      <li><a href="#roles">Roles y permisos</a></li>
+      <li><a href="#api">API y endpoints</a></li>
+      <li><a href="#config">Configuración editable</a></li>
+      <li><a href="#riesgos">Riesgos y casos borde</a></li>
+      <li><a href="#testing">Estrategia de testing</a></li>
+      <li><a href="#deploy">Deployment</a></li>
+      <li><a href="#fases">Plan por fases</a></li>
+      <li><a href="#decisiones">Decisiones y pendientes</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <details class="toc-m">
+      <summary>Índice del documento</summary>
+      <ol>
+        <li><a href="#resumen">Resumen funcional</a></li>
+        <li><a href="#formato">Formato deportivo</a></li>
+        <li><a href="#algoritmos">Algoritmos del motor</a></li>
+        <li><a href="#datos">Modelo de datos</a></li>
+        <li><a href="#arquitectura">Arquitectura técnica</a></li>
+        <li><a href="#inscripcion">Flujo de inscripción</a></li>
+        <li><a href="#pago">Flujo de pago (MP)</a></li>
+        <li><a href="#roles">Roles y permisos</a></li>
+        <li><a href="#api">API y endpoints</a></li>
+        <li><a href="#config">Configuración editable</a></li>
+        <li><a href="#riesgos">Riesgos y casos borde</a></li>
+        <li><a href="#testing">Estrategia de testing</a></li>
+        <li><a href="#deploy">Deployment</a></li>
+        <li><a href="#fases">Plan por fases</a></li>
+        <li><a href="#decisiones">Decisiones y pendientes</a></li>
+      </ol>
+    </details>
+
+    <!-- 1 -->
+    <section id="resumen">
+      <h2><span class="num">01</span> Resumen funcional</h2>
+      <p class="lede">Un único link público reemplaza todo el ida y vuelta por WhatsApp e Instagram. El equipo se inscribe solo, carga a sus jugadores, paga y queda confirmado sin intervención humana. La organización opera el torneo entero desde un panel.</p>
+
+      <h3>Qué resuelve el sistema</h3>
+      <ul>
+        <li><strong>Inscripción autogestionada</strong> — wizard de 6 pasos con cálculo de precio en vivo y pago con Mercado Pago. Confirmación automática al acreditarse el pago.</li>
+        <li><strong>Portal del equipo</strong> (<code>/mi-equipo</code>) — el responsable ve estado, jugadores, fixture, rival, cancha, horario, resultados, grupo, copa y llave; edita lo permitido hasta una fecha límite.</li>
+        <li><strong>Motor de torneo</strong> — genera grupos, fixture, horarios y canchas; calcula posiciones y desempates; asigna las 4 copas; arma las llaves; propaga resultados.</li>
+        <li><strong>Panel de organización</strong> (<code>/admin</code>) — resumen económico y deportivo, gestión de equipos y jugadores, pagos, carga de resultados, configuración del torneo, exportación CSV y audit log.</li>
+        <li><strong>Sitio público</strong> (<code>/</code> y <code>/torneo</code>) — home con reglamento, precios, FAQ e inscripción; vista pública del torneo con grupos, posiciones, resultados, horarios y llaves, optimizada para celular.</li>
+      </ul>
+
+      <h3>Alcance del evento</h3>
+      <div class="tw">
+        <table>
+          <caption>Parámetros del evento (todos configurables desde el panel)</caption>
+          <tbody>
+            <tr><th scope="row">Equipos</th><td>64 · tope duro con lista de espera</td></tr>
+            <tr><th scope="row">Formato</th><td>16 grupos de 4 → 4 copas de 16 (Oro, Plata, Bronce, Madera)</td></tr>
+            <tr><th scope="row">Duración</th><td>1 día · partidos de 15 min · 6 canchas simultáneas</td></tr>
+            <tr><th scope="row">Continuidad</th><td>el 100% de los equipos juega una copa — nadie eliminado tras grupos</td></tr>
+            <tr><th scope="row">Reglas de cancha</th><td>7 en cancha · máx. 3 hombres · sin arquero · prohibido flick y pegada</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section id="formato">
+      <h2><span class="num">02</span> Formato deportivo</h2>
+      <p class="lede">La fase de grupos funciona como <strong>clasificador de nivel</strong>, no como filtro: reparte a los 64 equipos en cuatro copas de 16 sin eliminar a nadie. Es la estructura matemáticamente cerrada más simple de explicar y de operar.</p>
+
+      <figure>
+        <svg viewBox="0 0 640 300" role="img" aria-labelledby="flow-title">
+          <title id="flow-title">64 equipos entran a 16 grupos de 4; cada posición del grupo alimenta una copa de 16 con su propia llave de eliminación directa.</title>
+          <g font-family="IBM Plex Mono, monospace" font-size="12">
+            <rect x="20" y="128" width="96" height="44" rx="8" fill="var(--accent-wash)" stroke="var(--accent)"/>
+            <text x="68" y="147" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="600">64</text>
+            <text x="68" y="163" text-anchor="middle" fill="var(--ink-soft)" font-size="10">equipos</text>
+
+            <rect x="168" y="118" width="120" height="64" rx="8" fill="var(--surface-2)" stroke="var(--line)"/>
+            <text x="228" y="140" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="600">16 grupos</text>
+            <text x="228" y="156" text-anchor="middle" fill="var(--ink-soft)" font-size="10">de 4 · round robin</text>
+            <text x="228" y="171" text-anchor="middle" fill="var(--ink-faint)" font-size="10">3 partidos c/u</text>
+
+            <line x1="116" y1="150" x2="168" y2="150" stroke="var(--ink-faint)" stroke-width="1.4" marker-end="url(#a)"/>
+
+            <g>
+              <rect x="360" y="24" width="140" height="40" rx="8" fill="var(--surface)" stroke="var(--oro)"/>
+              <circle cx="378" cy="44" r="5" fill="var(--oro)"/>
+              <text x="392" y="41" fill="var(--ink)" font-size="11" font-weight="600">ORO</text>
+              <text x="392" y="55" fill="var(--ink-soft)" font-size="9">16 · 1º de grupo</text>
+
+              <rect x="360" y="80" width="140" height="40" rx="8" fill="var(--surface)" stroke="var(--plata)"/>
+              <circle cx="378" cy="100" r="5" fill="var(--plata)"/>
+              <text x="392" y="97" fill="var(--ink)" font-size="11" font-weight="600">PLATA</text>
+              <text x="392" y="111" fill="var(--ink-soft)" font-size="9">16 · 2º de grupo</text>
+
+              <rect x="360" y="136" width="140" height="40" rx="8" fill="var(--surface)" stroke="var(--bronce)"/>
+              <circle cx="378" cy="156" r="5" fill="var(--bronce)"/>
+              <text x="392" y="153" fill="var(--ink)" font-size="11" font-weight="600">BRONCE</text>
+              <text x="392" y="167" fill="var(--ink-soft)" font-size="9">16 · 3º de grupo</text>
+
+              <rect x="360" y="192" width="140" height="40" rx="8" fill="var(--surface)" stroke="var(--madera)"/>
+              <circle cx="378" cy="212" r="5" fill="var(--madera)"/>
+              <text x="392" y="209" fill="var(--ink)" font-size="11" font-weight="600">MADERA</text>
+              <text x="392" y="223" fill="var(--ink-soft)" font-size="9">16 · 4º de grupo</text>
+            </g>
+            <path d="M288 140 C 324 140, 324 44, 360 44" fill="none" stroke="var(--ink-faint)" stroke-width="1.2"/>
+            <path d="M288 146 C 324 146, 324 100, 360 100" fill="none" stroke="var(--ink-faint)" stroke-width="1.2"/>
+            <path d="M288 154 C 324 154, 324 156, 360 156" fill="none" stroke="var(--ink-faint)" stroke-width="1.2"/>
+            <path d="M288 160 C 324 160, 324 212, 360 212" fill="none" stroke="var(--ink-faint)" stroke-width="1.2"/>
+
+            <rect x="520" y="100" width="100" height="100" rx="8" fill="var(--surface-2)" stroke="var(--line)"/>
+            <text x="570" y="128" text-anchor="middle" fill="var(--ink)" font-size="11" font-weight="600">Llave</text>
+            <text x="570" y="144" text-anchor="middle" fill="var(--ink-soft)" font-size="9">Octavos</text>
+            <text x="570" y="157" text-anchor="middle" fill="var(--ink-soft)" font-size="9">Cuartos</text>
+            <text x="570" y="170" text-anchor="middle" fill="var(--ink-soft)" font-size="9">Semis</text>
+            <text x="570" y="183" text-anchor="middle" fill="var(--ink-soft)" font-size="9">Final</text>
+            <line x1="500" y1="150" x2="520" y2="150" stroke="var(--ink-faint)" stroke-width="1.4" marker-end="url(#a)"/>
+          </g>
+          <defs>
+            <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-faint)"/>
+            </marker>
+          </defs>
+        </svg>
+        <figcaption>Fase de grupos → asignación por posición → llave de eliminación directa por copa.</figcaption>
+      </figure>
+
+      <h3>A. Fase de grupos</h3>
+      <ul>
+        <li><strong>16 grupos de 4</strong>, todos contra todos: 6 partidos por grupo, <strong>3 partidos por equipo</strong>.</li>
+        <li>Cada grupo se juega en 3 fechas; en cada fecha los 4 equipos juegan (2 partidos).</li>
+        <li><strong>96 partidos</strong> de fase de grupos.</li>
+        <li><strong>Sorteo manual</strong> por el admin (drag &amp; drop, validación 16×4). El reparto al azar queda disponible como punto de partida.</li>
+      </ul>
+
+      <h3>B. Cómo se determinan los 16 de cada copa</h3>
+      <p>La <strong>posición final en el grupo</strong> define la copa. Es determinista, siempre da 16 exactos y mantiene idénticos los incentivos de todos los grupos.</p>
+      <ul class="cups">
+        <li class="cup oro">1º de grupo → ORO</li>
+        <li class="cup plata">2º de grupo → PLATA</li>
+        <li class="cup bronce">3º de grupo → BRONCE</li>
+        <li class="cup madera">4º de grupo → MADERA</li>
+      </ul>
+      <div class="callout">
+        <span class="k">Alternativa evaluada y descartada</span>
+        <p>Un <em>ranking global</em> de los 64 (ordenar a todos y cortar 1–16 / 17–32 / …) parece más justo pero compara equipos que jugaron rivales de distinta dificultad, complica los desempates y permite que un grupo mande 0 o 3 equipos a Oro. Para un evento social, la posición en grupo es superior. Queda como opción de configuración (<code>cupAssignmentStrategy</code>).</p>
+      </div>
+
+      <h3>C. Formato de cada copa</h3>
+      <p><strong>Eliminación directa simple</strong>: Octavos → Cuartos → Semifinal → Final. <strong>Sin partido por el 3er puesto</strong> (los perdedores de semis comparten el 3º). 15 partidos por copa → <strong>60 partidos de copa</strong>.</p>
+      <ul>
+        <li>Siembra 1–16 dentro de la copa según rendimiento en grupos (puntos → dif. gol → goles a favor). Octavos = 1v16, 2v15, … con corrección para evitar repetir un cruce del mismo grupo.</li>
+        <li>Empate en un partido de copa → <strong>definición por shootout inmediato</strong> (las tandas tienen horario fijo). Configurable.</li>
+      </ul>
+
+      <h3>D. Partidos por equipo</h3>
+      <div class="tw">
+        <table>
+          <caption>Carga de partidos</caption>
+          <thead><tr><th>Recorrido</th><th class="num">Grupos</th><th class="num">Copa</th><th class="num">Total</th></tr></thead>
+          <tbody>
+            <tr><td>Mínimo (cae en octavos)</td><td class="num">3</td><td class="num">1</td><td class="num">4</td></tr>
+            <tr><td>Semifinalista</td><td class="num">3</td><td class="num">3</td><td class="num">6</td></tr>
+            <tr><td>Finalista</td><td class="num">3</td><td class="num">4</td><td class="num">7</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>E. Partidos totales</h3>
+      <div class="tw">
+        <table>
+          <caption>Volumen del torneo</caption>
+          <thead><tr><th>Fase</th><th class="num">Partidos</th><th class="num">Tandas (6 canchas)</th></tr></thead>
+          <tbody>
+            <tr><td>Grupos</td><td class="num">96</td><td class="num">16</td></tr>
+            <tr><td>Octavos (4 copas × 8)</td><td class="num">32</td><td class="num">6</td></tr>
+            <tr><td>Cuartos (4 × 4)</td><td class="num">16</td><td class="num">3</td></tr>
+            <tr><td>Semifinales (4 × 2)</td><td class="num">8</td><td class="num">2</td></tr>
+            <tr><td>Finales (4 × 1)</td><td class="num">4</td><td class="num">1</td></tr>
+            <tr class="total-row"><td>Total</td><td class="num">156</td><td class="num">28</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>F. Uso de las 6 canchas — abstracción <code>MatchSlot</code></h3>
+      <p>Una <strong>tanda</strong> es una franja horaria: todos los partidos empiezan y terminan juntos. Regla dura del scheduler: <strong>un equipo nunca tiene dos slots en la misma tanda</strong>.</p>
+      <figure>
+        <svg viewBox="0 0 640 120" role="img" aria-label="Modelo Round contiene MatchSlots; cada MatchSlot referencia una cancha y un partido.">
+          <g font-family="IBM Plex Mono, monospace" font-size="11">
+            <rect x="16" y="20" width="150" height="80" rx="8" fill="var(--accent-wash)" stroke="var(--accent)"/>
+            <text x="91" y="42" text-anchor="middle" fill="var(--ink)" font-weight="600">Round (tanda)</text>
+            <text x="91" y="60" text-anchor="middle" fill="var(--ink-soft)" font-size="10">startsAt</text>
+            <text x="91" y="75" text-anchor="middle" fill="var(--ink-soft)" font-size="10">durationMin: 15</text>
+            <text x="91" y="90" text-anchor="middle" fill="var(--ink-soft)" font-size="10">phase: GROUP | CUP</text>
+
+            <line x1="166" y1="60" x2="210" y2="60" stroke="var(--ink-faint)" stroke-width="1.4" marker-end="url(#b)"/>
+            <text x="188" y="52" text-anchor="middle" fill="var(--ink-faint)" font-size="9">1..N</text>
+
+            <rect x="212" y="12" width="150" height="44" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+            <text x="287" y="30" text-anchor="middle" fill="var(--ink)" font-weight="600">MatchSlot</text>
+            <text x="287" y="45" text-anchor="middle" fill="var(--ink-soft)" font-size="10">fieldId · matchId?</text>
+            <rect x="212" y="64" width="150" height="44" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+            <text x="287" y="82" text-anchor="middle" fill="var(--ink)" font-weight="600">MatchSlot</text>
+            <text x="287" y="97" text-anchor="middle" fill="var(--ink-soft)" font-size="10">× 6 canchas</text>
+
+            <line x1="362" y1="34" x2="406" y2="34" stroke="var(--ink-faint)" stroke-width="1.4" marker-end="url(#b)"/>
+            <rect x="408" y="12" width="100" height="44" rx="8" fill="var(--surface-2)" stroke="var(--line)"/>
+            <text x="458" y="35" text-anchor="middle" fill="var(--ink)">Field</text>
+            <line x1="362" y1="86" x2="406" y2="86" stroke="var(--ink-faint)" stroke-width="1.4" marker-end="url(#b)"/>
+            <rect x="408" y="64" width="100" height="44" rx="8" fill="var(--surface-2)" stroke="var(--line)"/>
+            <text x="458" y="87" text-anchor="middle" fill="var(--ink)">Match</text>
+
+            <rect x="524" y="38" width="100" height="44" rx="8" fill="var(--surface-2)" stroke="var(--line)"/>
+            <text x="574" y="61" text-anchor="middle" fill="var(--ink)">Team A/B</text>
+            <line x1="508" y1="86" x2="524" y2="66" stroke="var(--ink-faint)" stroke-width="1.4" marker-end="url(#b)"/>
+          </g>
+          <defs>
+            <marker id="b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-faint)"/>
+            </marker>
+          </defs>
+        </svg>
+        <figcaption>El scheduler asigna partidos a slots libres respetando canchas y descanso por equipo.</figcaption>
+      </figure>
+
+      <h3>Cronograma tipo (día único)</h3>
+      <div class="tw">
+        <table>
+          <caption>Tanda = 15 min de juego + 5 min de recambio = 20 min</caption>
+          <thead><tr><th>Bloque</th><th class="num">Tandas</th><th>Horario</th></tr></thead>
+          <tbody>
+            <tr><td>Acreditación y apertura</td><td class="num">—</td><td>07:30 – 08:00</td></tr>
+            <tr><td>Fase de grupos (96 partidos)</td><td class="num">16</td><td>08:00 – 13:20</td></tr>
+            <tr><td>Almuerzo · sorteos · fruta</td><td class="num">—</td><td>13:20 – 14:00</td></tr>
+            <tr><td>Octavos (4 copas)</td><td class="num">6</td><td>14:00 – 16:00</td></tr>
+            <tr><td>Cuartos</td><td class="num">3</td><td>16:00 – 17:00</td></tr>
+            <tr><td>Semifinales</td><td class="num">2</td><td>17:00 – 17:40</td></tr>
+            <tr><td>Finales de las 4 copas</td><td class="num">1</td><td>17:40 – 18:00</td></tr>
+            <tr><td>Premiación</td><td class="num">—</td><td>18:15</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout warn">
+        <span class="k">Riesgo operativo</span>
+        <p>El día entra pero <strong>sin margen</strong>. Palancas configurables si se complica: sumar canchas (<code>fieldCount</code> → 8 comprime grupos a 12 tandas), bajar el recambio a 3 min (<code>turnoverMin</code>), o adelantar la apertura. El motor no asume 6 ni 15 min: lee <code>fieldCount</code>, <code>matchDurationMin</code> y <code>turnoverMin</code>.</p>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section id="algoritmos">
+      <h2><span class="num">03</span> Algoritmos del motor</h2>
+      <p class="lede">Todo el motor vive en <code>/lib/tournament/</code> como funciones puras — sin base de datos, sin framework. Reciben datos en memoria y devuelven resultados. Es lo primero que se construye y se cubre al 100% con tests antes de tocar UI.</p>
+
+      <h3>Cálculo de precio — <code>calculatePrice()</code></h3>
+      <p>Entradas: config de precios + cantidad de jugadores + fecha actual. El backend lo recalcula en cada cotización y lo <strong>vuelve a verificar en el webhook</strong>. Nunca se confía en el monto del frontend.</p>
+      <div class="tw">
+        <table>
+          <caption>Ejemplo — equipo con 12 jugadores, antes del cambio de precio, recargo de medio de pago 6%</caption>
+          <thead><tr><th>Concepto</th><th class="num">Cálculo</th><th class="num">Importe</th></tr></thead>
+          <tbody>
+            <tr><td>Equipo base (tarifa temprana, incluye 10)</td><td class="num">earlyPrice</td><td class="num">$275.000</td></tr>
+            <tr><td>Jugadores adicionales</td><td class="num">2 × $27.500</td><td class="num">$55.000</td></tr>
+            <tr><td>Subtotal</td><td class="num"></td><td class="num">$330.000</td></tr>
+            <tr><td>Recargo Mercado Pago</td><td class="num">6%</td><td class="num">$19.800</td></tr>
+            <tr class="total-row"><td>Total a pagar</td><td class="num"></td><td class="num">$349.800</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="mono" style="font-size:.8rem;color:var(--ink-soft)">tier = now &lt; priceChangeAt ? EARLY : LATE &nbsp;·&nbsp; base = tier==EARLY ? earlyPrice : latePrice &nbsp;·&nbsp; extras = max(0, players − basePlayers) × extraPlayerPrice &nbsp;·&nbsp; total = round((base + extras) × (1 + surchargePct))</p>
+      <p>Montos en <strong>enteros (centavos ARS)</strong>. El importe cotizado se congela en <code>Registration.totalAmount</code> al crear la preferencia; si el equipo agrega jugadores después, se invalida esa preferencia y se cotiza de nuevo.</p>
+
+      <h3>Tabla de posiciones — <code>computeStandings()</code></h3>
+      <p>Recorre los partidos <span class="badge ok">FINISHED</span> y <span class="badge warn">WALKOVER</span> de un grupo y acumula PJ, PG, PE, PP, GF, GC, DG, puntos y <em>fair play</em>. Puntos por victoria / empate / derrota / walkover son configurables.</p>
+
+      <h3>Desempates — <code>resolveTiebreakers()</code></h3>
+      <p>Cascada configurable (array ordenado en la config). Default:</p>
+      <ol class="steps">
+        <li><strong>Puntos</strong></li>
+        <li><strong>Enfrentamiento directo</strong> — mini-tabla entre los equipos empatados (si todos jugaron entre sí)</li>
+        <li><strong>Diferencia de gol</strong> general</li>
+        <li><strong>Goles a favor</strong></li>
+        <li><strong>Fair play</strong> — menos tarjetas / walkovers en contra</li>
+        <li><strong>Sorteo</strong> — registrado en <code>AuditLog</code>, con nota visible en la tabla</li>
+      </ol>
+      <p>Para empates de 3 equipos se calcula la mini-tabla entre ellos antes de pasar a la diferencia de gol general. Ningún escenario queda irresuelto.</p>
+
+      <h3>Asignación de copas — <code>assignCups()</code></h3>
+      <p>Al cerrar la fase de grupos: calcula el ranking 1–4 de cada grupo → <code>posición 1 → Oro</code>, <code>2 → Plata</code>, <code>3 → Bronce</code>, <code>4 → Madera</code> → siembra 1–16 dentro de cada copa comparando el rendimiento de esos 16 equipos entre sí. Operación <strong>atómica y reversible</strong> mientras no haya resultados de copa cargados.</p>
+
+      <h3>Generación de llave — <code>generateBracket()</code> / <code>advanceBracket()</code></h3>
+      <p>Crea 8 <code>BracketMatch</code> de octavos con orígenes por <em>seed</em>, y los nodos de cuartos / semis / final con orígenes <code>WINNER_OF</code>. Al cargar un resultado, <code>advanceBracket()</code> resuelve el <code>winnerTeamId</code> y lo propaga al nodo siguiente (<code>feedsWinnerTo</code>). Si el partido siguiente ya tenía resultado, no propaga solo: alerta y pide confirmación.</p>
+
+      <h3>Fixture de grupos — <code>generateGroupFixture()</code></h3>
+      <p>Método del círculo (round-robin) para cada grupo → 3 fechas de 2 partidos. Luego el <strong>scheduler</strong> empaqueta fechas en tandas: cada tanda = 3 grupos jugando una fecha completa = 6 partidos en 6 canchas (100% de ocupación). 48 grupo-fechas ÷ 3 = 16 tandas exactas.</p>
+
+      <h3>Scheduler de slots — <code>scheduleSlots()</code></h3>
+      <p>Asignación de partidos a <code>MatchSlot</code> como coloreo con backtracking + heurística greedy. Restricción dura: sin choque de equipo por tanda. Objetivos blandos configurables: minimizar tandas consecutivas por equipo, minimizar huecos largos, balancear uso de canchas, reservar cancha principal para finales. Para 64 equipos resuelve en &lt; 1 s.</p>
+    </section>
+
+    <!-- 4 -->
+    <section id="datos">
+      <h2><span class="num">04</span> Modelo de datos</h2>
+      <p class="lede">PostgreSQL + Prisma. Tres responsabilidades separadas y nunca mezcladas: <code>Team</code> (la ficha), <code>Registration</code> (el proceso y la cotización), <code>Payment</code> (cada intento de cobro). Los estados denormalizados en <code>Team</code> son solo caché derivada.</p>
+
+      <div class="entities">
+        <div class="entity">
+          <h4>Tournament</h4>
+          <ul>
+            <li><b>id</b> · <b>slug</b> ✦</li>
+            <li>name · edition · venueName</li>
+            <li>startDate · endDate</li>
+            <li><b>status</b>: SETUP → REGISTRATION_OPEN → REGISTRATION_CLOSED → GROUPS_PUBLISHED → GROUPS_IN_PROGRESS → CUPS_PUBLISHED → CUPS_IN_PROGRESS → FINISHED</li>
+          </ul>
+          <div class="rel">1–1 TournamentConfig</div>
+        </div>
+
+        <div class="entity">
+          <h4>TournamentConfig</h4>
+          <ul>
+            <li>maxTeams · groupCount · groupSize</li>
+            <li>cupNames[] · cupAssignmentStrategy</li>
+            <li>matchDurationMin · fieldCount · turnoverMin · drawResolution</li>
+            <li>pointsWin/Draw/Loss/Walkover · tiebreakers[]</li>
+            <li>minPlayers · maxPlayers · maxMenOnField · playersOnField · minPlayerAge</li>
+            <li>basePlayers · earlyPrice · latePrice · priceChangeAt · extraPlayerPrice · paymentSurchargePct · currency</li>
+            <li>rosterLockAt · teamEditLockAt · registrationOpensAt/ClosesAt</li>
+            <li>rulesMarkdown · inclusionsList[] · faq[] · socialLinks</li>
+          </ul>
+        </div>
+
+        <div class="entity">
+          <h4>User</h4>
+          <ul>
+            <li><b>id</b> · <b>email</b> ✦</li>
+            <li>name · emailVerifiedAt</li>
+            <li><b>role</b>: ADMIN | TEAM_MANAGER</li>
+            <li>campos Auth.js (sessions, accounts)</li>
+          </ul>
+          <div class="rel">1–N Team (manager)</div>
+        </div>
+
+        <div class="entity">
+          <h4>Team</h4>
+          <ul>
+            <li><b>id</b> · tournamentId ⚑ · <b>slug</b> ✦(torneo)</li>
+            <li>name · shortName · crestUrl? · clubTag?</li>
+            <li>managerUserId · contactName · contactPhone · contactEmail</li>
+            <li>registrationStatus · paymentStatus <span class="badge">caché</span></li>
+            <li>seed? · groupId? · cupId? · finalPosition?</li>
+            <li>adminNotes? · registeredAt?</li>
+          </ul>
+          <div class="rel">1–N Player · 1–1 Registration</div>
+        </div>
+
+        <div class="entity">
+          <h4>Player</h4>
+          <ul>
+            <li><b>id</b> · teamId ⚑</li>
+            <li>firstName · lastName</li>
+            <li>docType · <b>docNumber</b> · birthDate</li>
+            <li>gender: M | F | X</li>
+            <li>phone? · email? · shirtNumber? · position?</li>
+            <li>eligibilityStatus: PENDING | ELIGIBLE | BLOCKED</li>
+          </ul>
+          <div class="rel">✦ (teamId, docNumber) · ⚑ (tournament, docNumber) para detectar duplicado entre equipos</div>
+        </div>
+
+        <div class="entity">
+          <h4>Registration</h4>
+          <ul>
+            <li><b>id</b> · <b>teamId</b> ✦ · tournamentId</li>
+            <li><b>status</b> (máquina de estados, §6)</li>
+            <li>playerCountQuoted · priceTier</li>
+            <li>baseAmount · extraPlayersAmount · surchargeAmount · totalAmount</li>
+            <li>quotedAt · confirmedAt? · waitlistPosition? · waitlistInvitedAt? · waitlistExpiresAt?</li>
+          </ul>
+          <div class="rel">1–N Payment</div>
+        </div>
+
+        <div class="entity">
+          <h4>Payment</h4>
+          <ul>
+            <li><b>id</b> · registrationId ⚑ · provider</li>
+            <li><b>mpPreferenceId</b> ✦ · <b>mpPaymentId</b> ✦?</li>
+            <li>status: PENDING | IN_PROCESS | APPROVED | REJECTED | REFUNDED | CANCELLED</li>
+            <li>amount · currency · payerEmail?</li>
+            <li>rawPayload (jsonb) · approvedAt?</li>
+          </ul>
+          <div class="rel">nunca guarda datos de tarjeta</div>
+        </div>
+
+        <div class="entity">
+          <h4>WebhookEvent</h4>
+          <ul>
+            <li><b>id</b> · provider · topic · resourceId</li>
+            <li>receivedAt · processedAt? · status</li>
+            <li>payload (jsonb)</li>
+          </ul>
+          <div class="rel">✦ (provider, topic, resourceId) → idempotencia</div>
+        </div>
+
+        <div class="entity">
+          <h4>Group · GroupTeam</h4>
+          <ul>
+            <li>Group: id · tournamentId ⚑ · name · order</li>
+            <li>GroupTeam: groupId · teamId · played/won/drawn/lost</li>
+            <li>goalsFor · goalsAgainst · goalDiff · points · fairPlayPoints</li>
+            <li>rank? (1–4) · tiebreakNote?</li>
+          </ul>
+          <div class="rel">✦ (groupId, teamId)</div>
+        </div>
+
+        <div class="entity">
+          <h4>Cup · Bracket · BracketMatch</h4>
+          <ul>
+            <li>Cup: name · tier (1–4) · bracketId</li>
+            <li>Bracket: cupId ✦ · type · size</li>
+            <li>BracketMatch: round · bracketSlot · matchId?</li>
+            <li>homeSource{Type,Ref} · awaySource{Type,Ref}</li>
+            <li>feedsWinnerTo · feedsLoserTo?</li>
+          </ul>
+          <div class="rel">✦ (bracketId, round, bracketSlot)</div>
+        </div>
+
+        <div class="entity">
+          <h4>Round · Field · MatchSlot</h4>
+          <ul>
+            <li>Round: phase · label · startsAt · durationMin · order</li>
+            <li>Field: name · order</li>
+            <li>MatchSlot: roundId · fieldId · matchId?</li>
+          </ul>
+          <div class="rel">✦ (roundId, fieldId) · ⚑ (tournament, startsAt)</div>
+        </div>
+
+        <div class="entity">
+          <h4>Match</h4>
+          <ul>
+            <li><b>id</b> · tournamentId ⚑ · phase: GROUP | CUP</li>
+            <li>groupId? · cupId? · bracketMatchId?</li>
+            <li>homeTeamId? · awayTeamId? · slotId?</li>
+            <li>status: SCHEDULED | IN_PROGRESS | FINISHED | WALKOVER | CANCELLED</li>
+            <li>homeScore? · awayScore? · walkoverTeamId? · winnerTeamId?</li>
+            <li>notes? · resultEnteredBy? · resultEnteredAt?</li>
+          </ul>
+        </div>
+
+        <div class="entity">
+          <h4>Notification</h4>
+          <ul>
+            <li>type: REGISTRATION_CONFIRMED · PAYMENT_APPROVED · TEAM_APPROVED · FIXTURE_PUBLISHED · MATCH_UPCOMING · TIME_CHANGED · FIELD_CHANGED · RESULT_POSTED</li>
+            <li>channel: EMAIL | WHATSAPP | PUSH</li>
+            <li>recipientUserId? · recipientTeamId? · payload (jsonb)</li>
+            <li>status: QUEUED | SENT | FAILED | SKIPPED · sentAt? · dedupeKey ✦?</li>
+          </ul>
+          <div class="rel">interfaz NotificationChannel — EmailChannel hoy, WhatsappChannel después</div>
+        </div>
+
+        <div class="entity">
+          <h4>AuditLog</h4>
+          <ul>
+            <li><b>id</b> · tournamentId ⚑ · userId</li>
+            <li>action · entity · entityId</li>
+            <li>previousValue (jsonb) · newValue (jsonb)</li>
+            <li>ip? · createdAt ⚑</li>
+          </ul>
+          <div class="rel">se escribe en la misma transacción que la mutación crítica</div>
+        </div>
+      </div>
+
+      <h4>Integridad — reglas clave</h4>
+      <ul>
+        <li><strong>Unique</strong>: <code>(teamId, docNumber)</code>, <code>(teamId, shirtNumber)</code>, <code>Team.slug</code> por torneo, <code>mpPreferenceId</code>, <code>mpPaymentId</code>, <code>WebhookEvent(provider,topic,resourceId)</code>, <code>(groupId, teamId)</code>, <code>(roundId, fieldId)</code>, <code>(bracketId, round, bracketSlot)</code>.</li>
+        <li><strong>FK con <code>onDelete</code> explícito</strong>: borrar un Team cascadea Players y Registration; un Match nunca se borra en duro (pasa a <code>CANCELLED</code>).</li>
+        <li><strong>Waitlist</strong> no es tabla: es <code>Registration.status = WAITLISTED</code> + <code>waitlistPosition</code>.</li>
+        <li><strong>Toda mutación crítica</strong> (resultado, cambio de grupo/seed, estado de inscripción, config, fixture, roster fuera de fecha) corre dentro de una transacción que también inserta el <code>AuditLog</code>.</li>
+      </ul>
+    </section>
+
+    <!-- 5 -->
+    <section id="arquitectura">
+      <h2><span class="num">05</span> Arquitectura técnica</h2>
+      <p class="lede">Stack confirmado: Next.js 15 (App Router) + TypeScript + Tailwind + Postgres + Prisma. Sin capas de más. La lógica de negocio vive fuera de los componentes; la autorización se verifica siempre en el servidor.</p>
+
+      <div class="tw">
+        <table>
+          <caption>Stack</caption>
+          <thead><tr><th>Capa</th><th>Elección</th><th>Por qué</th></tr></thead>
+          <tbody>
+            <tr><td>Framework</td><td>Next.js 15 · App Router · TypeScript</td><td>Server Components para lectura, Server Actions para mutaciones, Route Handlers para webhooks y API pública</td></tr>
+            <tr><td>UI</td><td>Tailwind + shadcn/ui (Radix)</td><td>accesible, rápido de theming, mobile-first</td></tr>
+            <tr><td>DB / ORM</td><td>PostgreSQL (Neon o Supabase) + Prisma</td><td>migraciones versionadas, tipos generados</td></tr>
+            <tr><td>Auth</td><td>Auth.js v5 + Prisma adapter · magic link por email</td><td>cero gestión de contraseñas para responsables; ADMIN por allowlist de emails + opción TOTP. Sin dependencia externa paga.</td></tr>
+            <tr><td>Pagos</td><td>Mercado Pago Checkout Pro</td><td>preferencia + webhook + verificación server-side; flujo oficial</td></tr>
+            <tr><td>Email</td><td>Resend + React Email</td><td>templates versionados en el repo</td></tr>
+            <tr><td>Rate limiting</td><td>Upstash Redis (@upstash/ratelimit)</td><td>login, inscripción, creación de preferencia, webhook</td></tr>
+            <tr><td>Validación</td><td>Zod en todos los boundaries</td><td>un esquema por acción, compartido cliente/servidor</td></tr>
+            <tr><td>Storage</td><td>Vercel Blob</td><td>escudos — validación de tipo/tamaño, sin SVG, resize</td></tr>
+            <tr><td>Jobs</td><td>Vercel Cron</td><td>“partido próximo”, promoción de waitlist, reconciliación de pagos</td></tr>
+            <tr><td>Observabilidad</td><td>Sentry + logs estructurados (pino)</td><td>errores y trazas de webhook</td></tr>
+            <tr><td>Tests</td><td>Vitest + Playwright</td><td>unit/integration + E2E</td></tr>
+            <tr><td>Hosting</td><td>Vercel</td><td>preparado también para contenedor equivalente</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Principios de diseño</h3>
+      <div class="grid-2">
+        <div class="panel">
+          <h4>Motor aislado</h4>
+          <ul>
+            <li><code>/lib/tournament/</code> — funciones puras, sin DB ni framework</li>
+            <li>testeable al 100% con datos en memoria</li>
+            <li>se construye primero, con tests, antes de cualquier UI</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h4>Capa de servicios</h4>
+          <ul>
+            <li><code>/lib/services/</code> — orquesta motor + DB + transacciones</li>
+            <li>emite intents de <code>Notification</code> y escribe <code>AuditLog</code></li>
+            <li>los componentes nunca contienen lógica de negocio</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h4>Autorización server-side</h4>
+          <ul>
+            <li><code>requireRole(session, "ADMIN")</code> y <code>requireTeamOwnership(session, teamId)</code> al inicio de cada acción</li>
+            <li>ocultar botones en el front es solo cosmético</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h4>Dinero a prueba de manipulación</h4>
+          <ul>
+            <li>enteros en centavos ARS</li>
+            <li>precio recalculado en backend en cada cotización</li>
+            <li>re-verificado contra <code>totalAmount</code> en el webhook; si no coincide → <code>OBSERVED</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Estructura de carpetas</h3>
+      <div class="tw">
+<table><caption>Árbol del repositorio (resumen)</caption><tbody>
+<tr><td class="mono">/app/(public)</td><td>home · /torneo · /reglamento · /inscripcion (wizard) · /mi-equipo/login</td></tr>
+<tr><td class="mono">/app/(team)/mi-equipo</td><td>portal del responsable — datos, jugadores, fixture, resultados</td></tr>
+<tr><td class="mono">/app/(admin)/admin</td><td>dashboard · equipos · jugadores · pagos · torneo · copas · configuración</td></tr>
+<tr><td class="mono">/app/api/webhooks/mercadopago</td><td>Route Handler del webhook (idempotente)</td></tr>
+<tr><td class="mono">/app/api/cron/[job]</td><td>jobs de Vercel Cron</td></tr>
+<tr><td class="mono">/lib/tournament</td><td>motor puro + tests — standings, tiebreakers, cups, bracket, fixture, scheduler, price</td></tr>
+<tr><td class="mono">/lib/services</td><td>registration · payment · tournament · notification · audit</td></tr>
+<tr><td class="mono">/lib/auth</td><td>config Auth.js · guards de rol y ownership</td></tr>
+<tr><td class="mono">/lib/payments</td><td>cliente MP · mapeo de estados · verificación</td></tr>
+<tr><td class="mono">/lib/validation</td><td>esquemas Zod compartidos</td></tr>
+<tr><td class="mono">/lib/email</td><td>templates React Email</td></tr>
+<tr><td class="mono">/prisma</td><td>schema.prisma · migrations · seed.ts</td></tr>
+<tr><td class="mono">/tests</td><td>/unit · /integration · /e2e</td></tr>
+</tbody></table>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section id="inscripcion">
+      <h2><span class="num">06</span> Flujo de inscripción</h2>
+      <p class="lede">Wizard de 6 pasos, mobile-first, que guarda un borrador en cada paso. Siempre visible: progreso, cantidad de jugadores, costo adicional y total actualizado.</p>
+
+      <ol class="steps">
+        <li><strong>Datos del equipo</strong> — nombre, nombre corto, escudo (opcional), club/barrio (opcional).</li>
+        <li><strong>Responsable</strong> — nombre, teléfono, email. Crea o vincula el <code>User</code> (magic link). Un mismo email puede administrar varios equipos.</li>
+        <li><strong>Jugadores</strong> — alta uno por uno. Valida documento duplicado en el equipo y edad mínima (16). Muestra en vivo el plantel: total, hombres/mujeres, y recuerda que el límite de <strong>3 hombres es en cancha</strong>, no en el plantel.</li>
+        <li><strong>Resumen</strong> — precio desglosado y recalculado en backend (base + adicionales + recargo de medio de pago = total).</li>
+        <li><strong>Pago</strong> — el backend valida el plantel (mín/máx), congela la cotización, crea <code>Registration</code> + <code>Payment</code> + preferencia de MP y redirige al checkout.</li>
+        <li><strong>Confirmación</strong> — pantalla “estamos confirmando tu pago”. La verdad la da el webhook, no el retorno del navegador.</li>
+      </ol>
+
+      <h4>Qué incluye la inscripción (se comunica en el paso 4)</h4>
+      <p>1 súper pancho por jugador · acceso a vestuarios · fruta · hidratación · sorteos · descuento para el after · fotógrafos · fútbol · tenis · parrilla.</p>
+
+      <h4>Estados de la inscripción</h4>
+      <ul class="states" aria-label="Máquina de estados de Registration">
+        <li>DRAFT</li><span class="arrow">→</span>
+        <li>PENDING_PAYMENT</li><span class="arrow">→</span>
+        <li>PAYMENT_STARTED</li><span class="arrow">→</span>
+        <li>PAYMENT_APPROVED</li><span class="arrow">→</span>
+        <li>CONFIRMED</li>
+        <li class="branch">PAYMENT_REJECTED → reintento</li>
+        <li class="branch">OBSERVED</li>
+        <li class="branch">CANCELLED</li>
+        <li class="branch">WAITLISTED</li>
+      </ul>
+      <p>El sistema muestra este estado al responsable en todo momento en <code>/mi-equipo</code>. La transición a <code>CONFIRMED</code> es automática al validar el pago; a <code>OBSERVED</code> / <code>CANCELLED</code> solo por el admin, con registro en <code>AuditLog</code>.</p>
+
+      <h4>Edición posterior</h4>
+      <p>El responsable edita datos del equipo hasta <code>teamEditLockAt</code> y el plantel hasta <code>rosterLockAt</code>. Después de esas fechas, solo el admin — y cada cambio queda en el audit log.</p>
+    </section>
+
+    <!-- 7 -->
+    <section id="pago">
+      <h2><span class="num">07</span> Flujo de pago — Mercado Pago</h2>
+      <p class="lede">Integración basada en el flujo oficial de Checkout Pro. Nunca se guardan datos de tarjeta. El estado de la inscripción cambia únicamente tras una confirmación validada contra la API de MP. Los webhooks son idempotentes.</p>
+
+      <ol class="steps">
+        <li><strong>Crear preferencia</strong> (servidor) — monto = <code>Registration.totalAmount</code> recalculado ahora · <code>external_reference = registrationId</code> · <code>notification_url</code> · <code>back_urls</code>. Se guarda <code>mpPreferenceId</code> en un <code>Payment</code> nuevo.</li>
+        <li><strong>Checkout</strong> — el usuario paga en el entorno de MP.</li>
+        <li><strong>Retorno</strong> — <code>back_url</code> solo muestra “procesando”; hace polling a <code>/registration/:id/status</code>.</li>
+        <li><strong>Webhook</strong> <code>POST /api/webhooks/mercadopago</code>:
+          <ul>
+            <li>rate-limit + validación de firma con <code>MP_WEBHOOK_SECRET</code></li>
+            <li><code>upsert WebhookEvent</code> con unique <code>(provider, topic, resourceId)</code>; si ya está <span class="badge ok">PROCESSED</span> → responde 200 y corta</li>
+            <li><strong>re-consulta el pago a la API de MP</strong> con el access token — nunca confía en el cuerpo del webhook</li>
+            <li>en una transacción: actualiza <code>Payment.status</code>, verifica <code>amount == totalAmount</code>, avanza <code>Registration</code>, escribe <code>AuditLog</code>, encola <code>Notification</code></li>
+          </ul>
+        </li>
+        <li><strong>Reconciliación</strong> — cron diario que consulta pagos <code>PENDING</code>/<code>IN_PROCESS</code> de las últimas 72 h por si se perdió un webhook.</li>
+      </ol>
+
+      <div class="callout">
+        <span class="k">Separación de responsabilidades</span>
+        <p><code>Payment</code> registra el intento de cobro y su estado en MP. <code>Registration</code> gobierna el proceso de inscripción y la cotización. <code>Team</code> es la ficha deportiva. Un webrole nunca escribe fuera de su entidad; los estados de <code>Team</code> son caché derivada del último <code>Payment</code> aprobado.</p>
+      </div>
+
+      <h4>Variables de entorno</h4>
+      <p class="mono" style="font-size:.8rem;color:var(--ink-soft)">DATABASE_URL · AUTH_SECRET · AUTH_URL · RESEND_API_KEY · EMAIL_FROM · MP_ACCESS_TOKEN · MP_PUBLIC_KEY · MP_WEBHOOK_SECRET · APP_URL · MP_BACK_URL_SUCCESS/FAILURE/PENDING · UPSTASH_REDIS_REST_URL · UPSTASH_REDIS_REST_TOKEN · BLOB_READ_WRITE_TOKEN · ADMIN_EMAILS</p>
+    </section>
+
+    <!-- 8 -->
+    <section id="roles">
+      <h2><span class="num">08</span> Roles y permisos</h2>
+      <p class="lede">Tres roles. <code>PUBLIC</code> es la ausencia de sesión. Todo permiso se verifica en el servidor.</p>
+      <div class="tw">
+        <table>
+          <caption>Matriz de permisos</caption>
+          <thead><tr><th>Acción</th><th>PUBLIC</th><th>TEAM_MANAGER (propio)</th><th>ADMIN</th></tr></thead>
+          <tbody>
+            <tr><td>Ver home / torneo / reglamento / llaves</td><td>✅</td><td>✅</td><td>✅</td></tr>
+            <tr><td>Crear inscripción</td><td>✅</td><td>✅</td><td>✅</td></tr>
+            <tr><td>Editar datos del equipo</td><td>—</td><td>✅ hasta <code>teamEditLockAt</code></td><td>✅ siempre</td></tr>
+            <tr><td>Editar plantel</td><td>—</td><td>✅ hasta <code>rosterLockAt</code></td><td>✅ siempre</td></tr>
+            <tr><td>Ver pagos del equipo</td><td>—</td><td>✅ (los propios)</td><td>✅ (todos)</td></tr>
+            <tr><td>Cargar / corregir resultados</td><td>—</td><td>—</td><td>✅</td></tr>
+            <tr><td>Cambiar estado de inscripción</td><td>—</td><td>—</td><td>✅</td></tr>
+            <tr><td>Sorteo · fixture · copas · configuración</td><td>—</td><td>—</td><td>✅</td></tr>
+            <tr><td>Exportar CSV · ver audit log</td><td>—</td><td>—</td><td>✅</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 9 -->
+    <section id="api">
+      <h2><span class="num">09</span> API y endpoints</h2>
+      <p class="lede">Mutaciones internas como Server Actions (tipadas, validadas con Zod). Route Handlers solo para lo que necesita URL propia: webhook, crons y el JSON público cacheable.</p>
+      <div class="tw">
+        <table>
+          <caption>Superficie principal</caption>
+          <thead><tr><th>Tipo</th><th>Ruta / acción</th><th>Rol</th></tr></thead>
+          <tbody>
+            <tr><td>Action</td><td><code>registration.saveDraft</code> · <code>registration.addPlayer</code> · <code>registration.quote</code> · <code>registration.createPreference</code></td><td>PUBLIC / TEAM_MANAGER</td></tr>
+            <tr><td>Action</td><td><code>team.update</code> · <code>team.updatePlayer</code> · <code>team.removePlayer</code></td><td>TEAM_MANAGER (ownership) / ADMIN</td></tr>
+            <tr><td>Action</td><td><code>admin.team.*</code> · <code>admin.assignGroup</code> · <code>admin.assignSeed</code> · <code>admin.setStatus</code></td><td>ADMIN</td></tr>
+            <tr><td>Action</td><td><code>admin.tournament.drawGroups</code> · <code>generateFixture</code> · <code>publishGroups</code> · <code>closeGroups</code> · <code>generateCups</code></td><td>ADMIN</td></tr>
+            <tr><td>Action</td><td><code>admin.match.setResult</code> · <code>admin.match.setWalkover</code> · <code>admin.match.correctResult</code></td><td>ADMIN</td></tr>
+            <tr><td>Action</td><td><code>admin.config.update</code> · <code>admin.export.teams</code> · <code>admin.export.players</code></td><td>ADMIN</td></tr>
+            <tr><td>Route</td><td><code>POST /api/webhooks/mercadopago</code></td><td>MP (firma)</td></tr>
+            <tr><td>Route</td><td><code>GET /api/cron/upcoming-matches</code> · <code>promote-waitlist</code> · <code>reconcile-payments</code></td><td>Cron (secret)</td></tr>
+            <tr><td>Route</td><td><code>GET /api/public/tournament</code> — grupos, posiciones, fixture, llaves (cacheado)</td><td>PUBLIC</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section id="config">
+      <h2><span class="num">10</span> Configuración editable</h2>
+      <p class="lede">El principio del pliego: no hardcodear el torneo para 64 equipos. El motor lee todo de <code>TournamentConfig</code>; el default está optimizado para 64 / 16×4 / 4 copas / 6 canchas.</p>
+      <div class="grid-2">
+        <div class="panel">
+          <h4>Estructura</h4>
+          <ul><li>maxTeams · groupCount · groupSize</li><li>cupNames[] · cupAssignmentStrategy · bracketSeeding</li><li>drawResolution (shootout / alargue / ninguno)</li></ul>
+        </div>
+        <div class="panel">
+          <h4>Partidos y canchas</h4>
+          <ul><li>matchDurationMin (15) · fieldCount (6) · turnoverMin (5)</li><li>thirdPlaceMatch (off)</li></ul>
+        </div>
+        <div class="panel">
+          <h4>Puntos y desempates</h4>
+          <ul><li>pointsWin / pointsDraw / pointsLoss / pointsWalkover</li><li>walkoverScore · tiebreakers[] (orden configurable)</li></ul>
+        </div>
+        <div class="panel">
+          <h4>Plantel</h4>
+          <ul><li>minPlayers · maxPlayers · minPlayerAge (16)</li><li>playersOnField (7) · maxMenOnField (3)</li></ul>
+        </div>
+        <div class="panel">
+          <h4>Precios</h4>
+          <ul><li>basePlayers (10) · earlyPrice · latePrice · priceChangeAt</li><li>extraPlayerPrice · paymentSurchargePct · currency</li></ul>
+        </div>
+        <div class="panel">
+          <h4>Fechas y contenido</h4>
+          <ul><li>registrationOpensAt / ClosesAt · rosterLockAt · teamEditLockAt</li><li>rulesMarkdown · inclusionsList[] · faq[] · socialLinks</li></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11 -->
+    <section id="riesgos">
+      <h2><span class="num">11</span> Riesgos y casos borde</h2>
+      <div class="grid-2">
+        <div class="panel">
+          <h4>Deportivos</h4>
+          <ul>
+            <li><strong>Empate de puntos (2 y 3 equipos)</strong> — cascada configurable; mini-tabla entre empatados; sorteo final con nota visible.</li>
+            <li><strong>DG y GF idénticos</strong> — cae a fair play → sorteo. Nunca irresuelto.</li>
+            <li><strong>No presentación</strong> — <code>WALKOVER</code>, score y puntos configurables, suma fair play en contra. Doble ausencia → 0-0, sin puntos.</li>
+            <li><strong>Empate en copa</strong> — shootout inmediato, se persiste ganador por definición.</li>
+            <li><strong>Corregir resultado de grupos con copas ya armadas</strong> — si la llave está virgen, regenera; si ya hay resultados de copa, alerta + confirmación + recálculo dirigido.</li>
+            <li><strong>Corregir resultado de copa ya propagado</strong> — recalcula la cadena hacia adelante con confirmación.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h4>Pagos</h4>
+          <ul>
+            <li><strong>Webhook duplicado / fuera de orden</strong> — unique en <code>WebhookEvent</code> + estados idempotentes.</li>
+            <li><strong>Pago por monto viejo</strong> (agregó jugadores) — verificación en webhook → <code>OBSERVED</code>.</li>
+            <li><strong>Doble pago</strong> (dos pestañas) — segundo <code>Payment</code> aprobado se marca para reembolso, no rompe la inscripción.</li>
+            <li><strong>Equipos 63 / 64 / 65</strong> — re-chequeo de cupo en la confirmación; el 65 va a <code>WAITLISTED</code> + reembolso.</li>
+            <li><strong>Chargeback / reversa tardía</strong> — webhook <code>refunded</code> → <code>OBSERVED</code> + alerta.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h4>Datos</h4>
+          <ul>
+            <li><strong>Mismo DNI en dos equipos</strong> — advertencia al admin (configurable a bloqueo).</li>
+            <li><strong>Plantel por debajo del mínimo al pagar</strong> — bloqueo en el paso 5.</li>
+            <li><strong>Edición fuera de fecha</strong> — solo admin, con audit log.</li>
+            <li><strong>Escudo malicioso</strong> — whitelist png/jpg/webp, sin SVG, resize server-side.</li>
+            <li><strong>XSS en nombres / notas</strong> — escape en render; <code>rulesMarkdown</code> con parser seguro.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h4>Operativos</h4>
+          <ul>
+            <li><strong>Grupo incompleto por bajas</strong> — regenerar grupos antes de publicar o política de bye configurable.</li>
+            <li><strong>Cambio de horario / cancha</strong> — editar <code>Round</code>/<code>MatchSlot</code> dispara notificación a los equipos afectados.</li>
+            <li><strong>Cancha sin señal</strong> — vista de carga de resultados tolerante a baja conectividad (Fase 6, previsto en la arquitectura).</li>
+            <li><strong>Cantidad de equipos ≠ 64</strong> — el motor soporta grupos variables; regla genérica documentada para otros números.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12 -->
+    <section id="testing">
+      <h2><span class="num">12</span> Estrategia de testing</h2>
+      <p class="lede">El objetivo no es que “parezca funcionar”. El motor puro se cubre exhaustivamente; los flujos de dinero se testean con dobles de MP; los recorridos críticos de usuario con Playwright.</p>
+      <div class="grid-2">
+        <div class="panel">
+          <h4>Unit (Vitest) — motor puro</h4>
+          <ul>
+            <li>cálculo de precios: tarifa temprana/tardía, adicionales, recargo, límites</li>
+            <li>standings y las 6 reglas de desempate, incluidos empates de 3</li>
+            <li>asignación de copas y siembra intra-copa</li>
+            <li>generación y avance de brackets</li>
+            <li>fixture de grupos y scheduler (sin choque de equipo por tanda)</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h4>Integration</h4>
+          <ul>
+            <li>registro completo con DB de test</li>
+            <li>creación de preferencia + webhook aprobado / rechazado</li>
+            <li><strong>webhook duplicado</strong> → sin doble pago</li>
+            <li>corrección de resultado → recálculo de posiciones y copa</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h4>E2E (Playwright)</h4>
+          <ul>
+            <li>inscripción completa → login → carga de jugadores → pago (MP sandbox) → confirmación</li>
+            <li>consulta de fixture desde celular</li>
+            <li>admin carga un resultado → la llave avanza</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h4>Casos borde explícitos</h4>
+          <ul>
+            <li>empate de puntos · mismo diferencial · equipo que no se presenta</li>
+            <li>resultado modificado · pago duplicado · webhook duplicado</li>
+            <li>equipo con jugadores insuficientes</li>
+            <li>63, 64 y 65 equipos</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 13 -->
+    <section id="deploy">
+      <h2><span class="num">13</span> Deployment</h2>
+      <ul>
+        <li><strong>Hosting</strong>: Vercel. DB gestionada (Neon / Supabase) con connection pooling. Blob para escudos.</li>
+        <li><strong>Entornos</strong>: <code>production</code>, <code>preview</code> (por PR), <code>development</code> local con Postgres en Docker. Credenciales de MP de prueba en preview, producción solo en <code>production</code>.</li>
+        <li><strong>Migraciones</strong>: <code>prisma migrate deploy</code> en el build. Seed idempotente para la config inicial del torneo.</li>
+        <li><strong>CI</strong> (GitHub Actions): typecheck → lint → unit + integration → build → Playwright. Bloquea merge si falla.</li>
+        <li><strong>Secretos</strong>: solo en variables de entorno de Vercel; nunca en el repo. <code>MP_WEBHOOK_SECRET</code> y <code>CRON_SECRET</code> rotables.</li>
+        <li><strong>Observabilidad</strong>: Sentry en cliente y servidor; alertas sobre errores de webhook y de reconciliación.</li>
+        <li><strong>Backups</strong>: los de la DB gestionada + export CSV semanal de equipos y jugadores.</li>
+        <li><strong>SEO</strong>: metadata y Open Graph por ruta pública, <code>sitemap.xml</code>, URLs amigables (<code>/torneo</code>, <code>/reglamento</code>), datos estructurados del evento.</li>
+      </ul>
+    </section>
+
+    <!-- 14 -->
+    <section id="fases">
+      <h2><span class="num">14</span> Plan por fases</h2>
+      <p class="lede">Se construye por capas, cada una entregable y testeada. No se intenta todo de una vez.</p>
+      <div class="tw">
+        <table>
+          <caption>Hoja de ruta</caption>
+          <thead><tr><th>Fase</th><th>Contenido</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td><b>1</b></td><td>Setup · Prisma schema completo · Auth.js (magic link) · usuarios y roles · equipos · jugadores · inscripción hasta “pendiente de pago” · motor de precios con tests</td><td><span class="badge ok">completa</span></td></tr>
+            <tr><td><b>2</b></td><td>Mercado Pago: preferencia · checkout · webhook idempotente · reconciliación · estados de pago · panel de pagos</td><td><span class="badge ok">completa</span></td></tr>
+            <tr><td><b>3</b></td><td>Motor de torneo: standings · desempates · fixture de grupos · scheduler · sorteo manual + auto · carga de resultados con recálculo · vista pública de grupos y posiciones</td><td><span class="badge ok">completa</span></td></tr>
+            <tr><td><b>4</b></td><td>Asignación de copas · generación de llaves · carga y corrección de resultados con recálculo · visualización del bracket</td><td><span class="badge">pendiente</span></td></tr>
+            <tr><td><b>5</b></td><td>Panel admin completo · dashboard y estadísticas · exportación CSV · audit log en UI · lista de espera</td><td><span class="badge">pendiente</span></td></tr>
+            <tr><td><b>6</b></td><td>Notificaciones por email · polish de UX y branding · SEO · suite E2E · deployment productivo</td><td><span class="badge">pendiente</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 15 -->
+    <section id="decisiones">
+      <h2><span class="num">15</span> Decisiones tomadas y pendientes</h2>
+
+      <h3>Confirmado</h3>
+      <div class="tw">
+        <table>
+          <caption>Respuestas de la organización</caption>
+          <tbody>
+            <tr><th scope="row">Ventana del evento</th><td>1 día</td></tr>
+            <tr><th scope="row">Formato de copa</th><td>eliminación directa simple, sin 3er puesto</td></tr>
+            <tr><th scope="row">Asignación de copas</th><td>por posición en el grupo</td></tr>
+            <tr><th scope="row">Inscripción</th><td>abierta por orden de llegada, tope 64 + lista de espera</td></tr>
+            <tr><th scope="row">Sorteo de grupos</th><td>manual por el admin</td></tr>
+            <tr><th scope="row">Mercado Pago</th><td>cuenta creada, credenciales pendientes — se desarrolla en sandbox</td></tr>
+            <tr><th scope="row">Comisión MP</th><td>se suma al precio del equipo (<code>paymentSurchargePct</code>)</td></tr>
+            <tr><th scope="row">Reembolsos</th><td>total ante cualquier baja previa al torneo</td></tr>
+            <tr><th scope="row">Pago manual</th><td>no — todo por Mercado Pago</td></tr>
+            <tr><th scope="row">Edad mínima</th><td>16 años</td></tr>
+            <tr><th scope="row">Datos de jugador obligatorios</th><td>nombre, apellido, DNI, género (+ fecha de nacimiento para validar edad)</td></tr>
+            <tr><th scope="row">Multi-equipo por responsable</th><td>sí</td></tr>
+            <tr><th scope="row">Lista de espera</th><td>promoción automática al primero, con ventana de pago configurable</td></tr>
+            <tr><th scope="row">Branding</th><td>“Seven Mixto Hurling”, paleta verde, identidad de club irlandés; logo del año a incorporar después</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Pendiente (no bloquea la Fase 1)</h3>
+      <ul>
+        <li><strong>Credenciales de MP de producción</strong> y datos de facturación — necesarios para cerrar la Fase 2 y para producción.</li>
+        <li><strong>Valor exacto de <code>paymentSurchargePct</code></strong> y <strong><code>priceChangeAt</code></strong> (la fecha de cambio de precio; el pliego menciona 15/11 como referencia).</li>
+        <li><strong>Ventana de pago de la lista de espera</strong> (ej. 24 o 48 h) antes de pasar al siguiente.</li>
+        <li><strong>Consentimiento para menores de 16–18</strong>: si se pide una declaración del responsable al cargar un jugador menor de 18.</li>
+        <li><strong>Logo, tipografía de marca y dominio</strong> definitivos.</li>
+        <li><strong>Reglamento oficial completo</strong> (texto final para la sección Reglamento) y las imágenes mencionadas en el pedido, que no llegaron.</li>
+      </ul>
+    </section>
+  </main>
+</div>
+
+<footer>
+  Seven Mixto Hurling · documento de arquitectura v1.0 · generado para revisión de la organización.
+</footer>
+
+<button class="themebtn" id="themebtn" type="button" aria-label="Cambiar tema">tema</button>
+
+<script>
+  (function () {
+    var btn = document.getElementById('themebtn');
+    var root = document.documentElement;
+    function current() {
+      return root.getAttribute('data-theme') ||
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    }
+    btn.addEventListener('click', function () {
+      var next = current() === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('smh-theme', next); } catch (e) {}
+    });
+    try {
+      var saved = localStorage.getItem('smh-theme');
+      if (saved) root.setAttribute('data-theme', saved);
+    } catch (e) {}
+
+    var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+    var map = {};
+    links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) {
+          links.forEach(function (l) { l.classList.remove('is-active'); });
+          var act = map[en.target.id];
+          if (act) act.classList.add('is-active');
+        }
+      });
+    }, { rootMargin: '-10% 0px -80% 0px' });
+    document.querySelectorAll('main section[id]').forEach(function (s) { obs.observe(s); });
+  })();
+</script>

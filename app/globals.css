@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Seven Mixto — identidad de marca (una sola apariencia, comprometida).
+ * Verde pino profundo de fondo, tipografía serif crema de alto contraste,
+ * tarjetas de esquinas muy redondeadas, naranja del zorro como acento vivo.
+ * Referencia: Instagram @sevenmixtohurling.
+ */
+:root {
+  color-scheme: dark;
+
+  --bg: #0b2c1e;
+  --bg-deep: #072016;
+  --surface: #123f2c;
+  --surface-2: #1b5238;
+  --surface-3: #0a2418;
+  --pill: #081c13;
+
+  --ink: #f6f3ea;
+  --ink-soft: #c1cfc4;
+  --ink-faint: #8aa697;
+
+  --line: #2a5a41;
+  --line-soft: #1e4732;
+
+  --paper: #f6f3ea;
+  --accent: #46b277;
+  --accent-hover: #59c489;
+  --accent-contrast: #072016;
+  --accent-wash: #14442f;
+
+  --pop: #e8622a;
+  --pop-soft: #f0895a;
+
+  --cup-oro: #d8b24c;
+  --cup-plata: #c2ccd6;
+  --cup-bronce: #c9895a;
+  --cup-madera: #a98a5f;
+
+  --ok: #52c98b;
+  --warn: #e2a13c;
+  --danger: #e5675f;
+  --info: #6fb8d6;
+}
+
+* {
+  border-color: var(--line);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  font-weight: 600;
+  text-wrap: balance;
+  letter-spacing: -0.005em;
+}
+
+/* Etiqueta "SEVEN MIXTO 2025" al estilo de los posts */
+.eyebrow {
+  font-family: var(--font-display), serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+::selection {
+  background: var(--pop);
+  color: #fff;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

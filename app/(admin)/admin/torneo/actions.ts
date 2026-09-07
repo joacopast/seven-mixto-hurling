@@ -1,0 +1,116 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { requireRole } from "@/lib/auth/guards";
+import { getActiveTournament } from "@/lib/tournament/queries";
+import {
+  getConfirmedTeams,
+  buildAutoAssignment,
+  saveGroupAssignment,
+  generateGroupPhaseFixture,
+  setTournamentStatus,
+  GroupsError,
+} from "@/lib/services/groups";
+
+export interface ActionState {
+  ok?: boolean;
+  message?: string;
+  error?: string;
+}
+
+async function ctx() {
+  const admin = await requireRole("ADMIN");
+  const hdrs = await headers();
+  return {
+    userId: admin.id,
+    ip: hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+  };
+}
+
+function revalidate() {
+  revalidatePath("/admin/torneo");
+  revalidatePath("/admin/torneo/grupos");
+  revalidatePath("/admin/torneo/resultados");
+  revalidatePath("/admin");
+  revalidatePath("/torneo");
+}
+
+export async function closeRegistration(): Promise<ActionState> {
+  const c = await ctx();
+  const t = await getActiveTournament();
+  if (t.status !== "REGISTRATION_OPEN") {
+    return { error: "La inscripción no está abierta." };
+  }
+  await setTournamentStatus(t.id, "REGISTRATION_CLOSED", c);
+  revalidate();
+  return { ok: true, message: "Inscripción cerrada." };
+}
+
+export async function reopenRegistration(): Promise<ActionState> {
+  const c = await ctx();
+  const t = await getActiveTournament();
+  if (t.status !== "REGISTRATION_CLOSED") {
+    return { error: "Solo se puede reabrir si está cerrada." };
+  }
+  await setTournamentStatus(t.id, "REGISTRATION_OPEN", c);
+  revalidate();
+  return { ok: true, message: "Inscripción reabierta." };
+}
+
+export async function autoDrawGroups(): Promise<ActionState> {
+  const c = await ctx();
+  const t = await getActiveTournament();
+  const confirmed = await getConfirmedTeams(t.id);
+  if (confirmed.length < t.config!.groupCount * 2) {
+    return { error: `Hacen falta al menos ${t.config!.groupCount * 2} equipos confirmados.` };
+  }
+  try {
+    const assignment = buildAutoAssignment(
+      confirmed.map((x) => ({ id: x.id, seed: x.seed })),
+      t.config!.groupCount,
+      `${t.id}:draw:${Date.now()}`,
+    );
+    await saveGroupAssignment(t.id, assignment, c);
+    revalidate();
+    return { ok: true, message: `Grupos sorteados (${confirmed.length} equipos).` };
+  } catch (err) {
+    if (err instanceof GroupsError) return { error: err.message };
+    throw err;
+  }
+}
+
+export async function generateFixture(): Promise<ActionState> {
+  const c = await ctx();
+  const t = await getActiveTournament();
+  try {
+    const res = await generateGroupPhaseFixture(t.id, c);
+    revalidate();
+    return { ok: true, message: `Fixture generado: ${res.matches} partidos en ${res.tandas} tandas.` };
+  } catch (err) {
+    if (err instanceof GroupsError) return { error: err.message };
+    throw err;
+  }
+}
+
+export async function publishGroups(): Promise<ActionState> {
+  const c = await ctx();
+  const t = await getActiveTournament();
+  if (t.status !== "REGISTRATION_CLOSED") {
+    return { error: "Cerrá la inscripción y generá el fixture antes de publicar." };
+  }
+  await setTournamentStatus(t.id, "GROUPS_PUBLISHED", c);
+  revalidate();
+  return { ok: true, message: "Grupos y fixture publicados. Ya son visibles en /torneo." };
+}
+
+export async function startGroupPhase(): Promise<ActionState> {
+  const c = await ctx();
+  const t = await getActiveTournament();
+  if (t.status !== "GROUPS_PUBLISHED") {
+    return { error: "Primero publicá los grupos." };
+  }
+  await setTournamentStatus(t.id, "GROUPS_IN_PROGRESS", c);
+  revalidate();
+  return { ok: true, message: "Fase de grupos en juego." };
+}

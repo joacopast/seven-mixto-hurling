@@ -1,0 +1,12 @@
+node_modules
+.next
+.env
+.env*.local
+.claude/settings.local.json
+_smoke*
+_shot*
+.DS_Store
+/coverage
+/playwright-report
+/test-results
+next-env.d.ts
