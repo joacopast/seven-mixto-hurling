@@ -193,7 +193,11 @@ export default async function MiEquipoPage({
       <section>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-display text-xl font-semibold text-ink">Plantel</h2>
-          <span className="font-mono text-sm text-ink-faint">{active.players.length} jugadores</span>
+          <span className="font-mono text-sm text-ink-faint">
+            {active.players.filter((p) => p.isPlayer).length} jugadores
+            {active.players.some((p) => !p.isPlayer) &&
+              ` · ${active.players.filter((p) => !p.isPlayer).length} no juegan`}
+          </span>
         </div>
         <div className="overflow-hidden rounded-xl border border-line">
           <table className="w-full text-sm">
@@ -203,6 +207,7 @@ export default async function MiEquipoPage({
                 <th className="px-3 py-2">Documento</th>
                 <th className="px-3 py-2">Género</th>
                 <th className="px-3 py-2">#</th>
+                <th className="px-3 py-2">Rol</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -216,6 +221,13 @@ export default async function MiEquipoPage({
                   </td>
                   <td className="px-3 py-2 text-ink-soft">{p.gender}</td>
                   <td className="px-3 py-2 font-mono text-ink-soft">{p.shirtNumber ?? "—"}</td>
+                  <td className="px-3 py-2">
+                    {p.isPlayer ? (
+                      <Badge tone="ok">Juega</Badge>
+                    ) : (
+                      <Badge tone="neutral">No juega</Badge>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

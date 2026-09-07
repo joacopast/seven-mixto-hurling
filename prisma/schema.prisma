@@ -293,6 +293,12 @@ model Player {
   shirtNumber Int?
   position    String?
 
+  /// Distingue jugador (juega partidos, cuenta para la composición de cancha)
+  /// de no-jugador (acompaña al equipo pero no juega — igual paga y consume
+  /// los beneficios del evento). Cuenta igual para el precio y el mín/máx de
+  /// plantel; NO cuenta para la regla de 7 en cancha / máx. 3 hombres.
+  isPlayer Boolean @default(true)
+
   eligibilityStatus EligibilityStatus @default(PENDING)
 
   createdAt DateTime @default(now())

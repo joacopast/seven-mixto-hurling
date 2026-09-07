@@ -70,7 +70,7 @@ export async function autoDrawGroups(): Promise<ActionState> {
   }
   try {
     const assignment = buildAutoAssignment(
-      confirmed.map((x) => ({ id: x.id, seed: x.seed })),
+      confirmed.map((x) => ({ id: x.id, seed: x.seed, playerCount: x.playerCount })),
       t.config!.groupCount,
       `${t.id}:draw:${Date.now()}`,
     );

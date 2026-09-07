@@ -24,6 +24,13 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: "asc" },
     include: { registration: true, _count: { select: { players: true } } },
   });
+  // Cantidad de JUGADORES reales (isPlayer=true) por equipo, aparte del plantel total.
+  const playerCounts = await db.player.groupBy({
+    by: ["teamId"],
+    where: { tournamentId: tournament.id, isPlayer: true },
+    _count: true,
+  });
+  const realPlayersByTeam = new Map(playerCounts.map((r) => [r.teamId, r._count]));
 
   const csv = toCsv(
     [
@@ -33,7 +40,8 @@ export async function GET(req: NextRequest) {
       "responsable",
       "email",
       "telefono",
-      "jugadores",
+      "plantel_total",
+      "jugadores_reales",
       "estado",
       "tarifa",
       "total_ars",
@@ -47,6 +55,7 @@ export async function GET(req: NextRequest) {
       t.contactEmail,
       t.contactPhone,
       t._count.players,
+      realPlayersByTeam.get(t.id) ?? 0,
       REGISTRATION_STATUS_LABEL[t.registrationStatus],
       t.registration?.priceTier ?? "",
       t.registration ? Math.round(t.registration.totalAmount / 100) : "",

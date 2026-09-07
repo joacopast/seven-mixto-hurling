@@ -47,7 +47,7 @@ export default async function GruposPage() {
         </p>
       ) : (
         <GroupEditor
-          teams={confirmed.map((t) => ({ id: t.id, name: t.name, seed: t.seed }))}
+          teams={confirmed.map((t) => ({ id: t.id, name: t.name, seed: t.seed, playerCount: t.playerCount }))}
           groupCount={tournament.config!.groupCount}
           groupSize={tournament.config!.groupSize}
           initialAssignment={Object.fromEntries(currentAssignment)}

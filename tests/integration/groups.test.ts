@@ -29,7 +29,7 @@ async function setup(teamCount = 8, groupCount = 2) {
 
 describe("buildAutoAssignment", () => {
   it("reparte todos los equipos en la cantidad de grupos pedida", () => {
-    const teams = Array.from({ length: 64 }, (_, i) => ({ id: `t${i}`, seed: null }));
+    const teams = Array.from({ length: 64 }, (_, i) => ({ id: `t${i}`, seed: null, playerCount: 10 }));
     const groups = buildAutoAssignment(teams, 16, "seed");
     expect(groups).toHaveLength(16);
     expect(groups.flat()).toHaveLength(64);
@@ -37,19 +37,55 @@ describe("buildAutoAssignment", () => {
     expect(groups.every((g) => g.length === 4)).toBe(true);
   });
 
-  it("con seeds usa distribución serpiente (evita juntar los mejores)", () => {
-    const teams = Array.from({ length: 8 }, (_, i) => ({ id: `t${i}`, seed: i + 1 }));
+  it("con seeds manuales usa distribución serpiente por seed (gana sobre la cantidad de jugadores)", () => {
+    // playerCount al revés del seed a propósito: si algo se coló por jugadores, este test lo detecta.
+    const teams = Array.from({ length: 8 }, (_, i) => ({ id: `t${i}`, seed: i + 1, playerCount: 8 - i }));
     const groups = buildAutoAssignment(teams, 4, "seed");
-    // Serpiente: g0=[t0,t7], g1=[t1,t6], g2=[t2,t5], g3=[t3,t4]
+    // Serpiente por seed: g0=[t0,t7], g1=[t1,t6], g2=[t2,t5], g3=[t3,t4]
     expect(groups[0]).toEqual(["t0", "t7"]);
     expect(groups[3]).toEqual(["t3", "t4"]);
   });
 
   it("es determinista para la misma semilla", () => {
-    const teams = Array.from({ length: 20 }, (_, i) => ({ id: `t${i}`, seed: null }));
+    const teams = Array.from({ length: 20 }, (_, i) => ({ id: `t${i}`, seed: null, playerCount: 10 + (i % 5) }));
     const a = buildAutoAssignment(teams, 5, "abc").map((g) => g.join());
     const b = buildAutoAssignment(teams, 5, "abc").map((g) => g.join());
     expect(a).toEqual(b);
+  });
+
+  it("sin seed manual, siembra por cantidad de JUGADORES reales para equilibrar los grupos", () => {
+    // 8 equipos, cantidades bien distintas: 20,18,16,14,12,10,8,6.
+    const teams = [20, 18, 16, 14, 12, 10, 8, 6].map((playerCount, i) => ({
+      id: `t${i}`,
+      seed: null,
+      playerCount,
+    }));
+    const groups = buildAutoAssignment(teams, 2, "balance-seed");
+    expect(groups).toHaveLength(2);
+
+    const byId = new Map(teams.map((t) => [t.id, t.playerCount]));
+    const totals = groups.map((g) => g.reduce((sum, id) => sum + byId.get(id)!, 0));
+    // La serpiente por jugadores deja los dos grupos con la misma cantidad total.
+    expect(totals[0]).toBe(totals[1]);
+    expect(totals[0]).toBe(52);
+  });
+
+  it("no junta a todos los equipos 'grandes' en el mismo grupo", () => {
+    // 16 equipos: la mitad con plantel grande, la mitad chico, en orden aleatorio de entrada.
+    const teams = Array.from({ length: 16 }, (_, i) => ({
+      id: `t${i}`,
+      seed: null,
+      playerCount: i % 2 === 0 ? 20 : 8,
+    }));
+    const groups = buildAutoAssignment(teams, 4, "mix-seed");
+    const byId = new Map(teams.map((t) => [t.id, t.playerCount]));
+    for (const g of groups) {
+      const big = g.filter((id) => byId.get(id) === 20).length;
+      const small = g.filter((id) => byId.get(id) === 8).length;
+      // Cada grupo de 4 queda con una mezcla (no 4 grandes ni 4 chicos juntos).
+      expect(big).toBeGreaterThan(0);
+      expect(small).toBeGreaterThan(0);
+    }
   });
 });
 

@@ -30,6 +30,8 @@ interface PlayerDraft {
   docNumber: string;
   birthDate: string;
   gender: "M" | "F" | "X";
+  /** false = acompaña al equipo pero no juega (igual paga y disfruta del evento). */
+  isPlayer: boolean;
   shirtNumber: string;
   phone: string;
   email: string;
@@ -49,6 +51,7 @@ const EMPTY_PLAYER: PlayerDraft = {
   docNumber: "",
   birthDate: "",
   gender: "F",
+  isPlayer: true,
   shirtNumber: "",
   phone: "",
   email: "",
@@ -128,6 +131,7 @@ export function Wizard({ config }: { config: WizardConfig }) {
           docNumber: p.docNumber,
           birthDate: p.birthDate ? new Date(`${p.birthDate}T00:00:00Z`) : new Date("invalid"),
           gender: p.gender,
+          isPlayer: p.isPlayer,
           shirtNumber: p.shirtNumber ? Number(p.shirtNumber) : null,
         })),
         { referenceDate: new Date(config.tournamentStartISO) },
@@ -393,9 +397,11 @@ function PlayersStep({
       </div>
 
       <Callout tone="info">
-        Plantel: entre {config.minPlayers} y {config.maxPlayers} jugadores. En cancha se juega de a{" "}
-        {config.playersOnField}, con un máximo de {config.maxMenOnField} hombres. Esos límites son
-        de la <strong>cancha</strong>, no del plantel: podés anotar más hombres en el plantel.
+        Plantel: entre {config.minPlayers} y {config.maxPlayers} personas (jugadores + no
+        jugadores). En cancha se juega de a {config.playersOnField}, con un máximo de{" "}
+        {config.maxMenOnField} hombres — esa cuenta es solo entre quienes <strong>juegan</strong>.
+        Si alguien acompaña al equipo pero no va a jugar, destildá &ldquo;Juega&rdquo;: igual paga
+        y disfruta del evento, pero no cuenta para completar la cancha.
       </Callout>
 
       {draft.players.length > 0 && (
@@ -410,6 +416,11 @@ function PlayersStep({
                   {p.docType} {p.docNumber} · {p.gender}
                   {p.shirtNumber ? ` · #${p.shirtNumber}` : ""}
                 </span>
+                {!p.isPlayer && (
+                  <span className="ml-2 rounded-full border border-line px-1.5 py-0.5 font-mono text-[10px] uppercase text-ink-faint">
+                    No juega
+                  </span>
+                )}
               </div>
               <button
                 type="button"
@@ -508,6 +519,18 @@ function PlayersStep({
             />
           </Field>
         </div>
+        <label className="mt-3 flex items-center gap-2 text-sm text-ink">
+          <input
+            type="checkbox"
+            checked={form.isPlayer}
+            onChange={(e) => setForm({ ...form, isPlayer: e.target.checked })}
+            className="h-4 w-4 rounded border-line accent-accent"
+          />
+          Juega
+          <span className="text-xs text-ink-faint">
+            (destildá si acompaña al equipo pero no va a jugar)
+          </span>
+        </label>
         <Button type="submit" variant="secondary" className="mt-4" disabled={!canAdd}>
           Agregar al plantel
         </Button>
@@ -535,7 +558,11 @@ function SummaryStep({
         <Row label="Responsable" value={draft.manager.contactName} />
         <Row label="Email" value={draft.manager.contactEmail} />
         <Row label="Teléfono" value={draft.manager.contactPhone} />
-        <Row label="Jugadores" value={String(draft.players.length)} />
+        <Row label="Plantel" value={String(draft.players.length)} />
+        <Row
+          label="Jugadores / no juegan"
+          value={`${draft.players.filter((p) => p.isPlayer).length} / ${draft.players.filter((p) => !p.isPlayer).length}`}
+        />
       </dl>
 
       <div>
@@ -544,6 +571,7 @@ function SummaryStep({
           {draft.players.map((p, i) => (
             <li key={i} className="font-mono text-xs">
               {i + 1}. {p.firstName} {p.lastName} · {p.gender}
+              {!p.isPlayer && " · no juega"}
             </li>
           ))}
         </ol>

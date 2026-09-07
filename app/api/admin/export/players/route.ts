@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   });
 
   const csv = toCsv(
-    ["equipo", "nombre", "apellido", "tipo_doc", "documento", "nacimiento", "genero", "numero", "telefono", "email"],
+    ["equipo", "nombre", "apellido", "tipo_doc", "documento", "nacimiento", "genero", "jugador", "numero", "telefono", "email"],
     players.map((p) => [
       p.team.name,
       p.firstName,
@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
       p.docNumber,
       p.birthDate.toISOString().slice(0, 10),
       p.gender,
+      p.isPlayer ? "Sí" : "No",
       p.shirtNumber ?? "",
       p.phone ?? "",
       p.email ?? "",

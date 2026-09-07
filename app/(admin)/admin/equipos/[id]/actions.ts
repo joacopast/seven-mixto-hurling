@@ -178,6 +178,7 @@ const playerSchema = z.object({
   docNumber: z.string().trim().min(1).max(20),
   birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   gender: z.enum(["M", "F", "X"]),
+  isPlayer: z.boolean().default(true),
   shirtNumber: z.union([z.coerce.number().int().min(0).max(999), z.literal("")]).optional(),
 });
 
@@ -188,7 +189,10 @@ export interface PlayerActionState {
 
 export async function addPlayer(_prev: PlayerActionState, formData: FormData): Promise<PlayerActionState> {
   const ctx = await adminCtx();
-  const parsed = playerSchema.safeParse(Object.fromEntries(formData.entries()));
+  const parsed = playerSchema.safeParse({
+    ...Object.fromEntries(formData.entries()),
+    isPlayer: formData.get("isPlayer") === "on",
+  });
   if (!parsed.success) return { error: "Revisá los datos del jugador." };
   const d = parsed.data;
   try {
@@ -201,6 +205,7 @@ export async function addPlayer(_prev: PlayerActionState, formData: FormData): P
         docNumber: d.docNumber,
         birthDate: d.birthDate,
         gender: d.gender,
+        isPlayer: d.isPlayer,
         shirtNumber: d.shirtNumber === "" || d.shirtNumber === undefined ? null : d.shirtNumber,
       },
       ctx,

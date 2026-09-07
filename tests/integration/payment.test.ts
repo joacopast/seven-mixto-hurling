@@ -72,6 +72,7 @@ function buildRegInput(over: { name?: string; email?: string; players?: number }
       docNumber: `${50_000_000 + i}${over.name ?? ""}`.slice(0, 18),
       birthDate: "1996-05-20",
       gender: (i < 4 ? "M" : "F") as "M" | "F",
+      isPlayer: true,
       shirtNumber: i + 1,
       phone: "",
       email: "",

@@ -32,43 +32,73 @@ interface Ctx {
   ip?: string | null;
 }
 
-export async function getConfirmedTeams(tournamentId: string) {
-  return db.team.findMany({
+export interface ConfirmedTeamForDraw {
+  id: string;
+  name: string;
+  seed: number | null;
+  groupId: string | null;
+  /** Cantidad de JUGADORES reales (isPlayer=true) — no cuenta a los no-jugadores. */
+  playerCount: number;
+}
+
+export async function getConfirmedTeams(tournamentId: string): Promise<ConfirmedTeamForDraw[]> {
+  const teams = await db.team.findMany({
     where: { tournamentId, registrationStatus: { in: [...CONFIRMED_STATUSES] } },
     orderBy: [{ seed: { sort: "asc", nulls: "last" } }, { registeredAt: "asc" }],
-    select: { id: true, name: true, seed: true, groupId: true },
+    select: {
+      id: true,
+      name: true,
+      seed: true,
+      groupId: true,
+      _count: { select: { players: { where: { isPlayer: true } } } },
+    },
   });
+  return teams.map((t) => ({
+    id: t.id,
+    name: t.name,
+    seed: t.seed,
+    groupId: t.groupId,
+    playerCount: t._count.players,
+  }));
 }
 
 /**
- * Reparto automático de equipos confirmados en `groupCount` grupos.
- * Si todos los equipos tienen `seed`, usa distribución serpiente por bombos;
- * si no, reparto al azar determinista por `drawSeed`.
+ * Reparto automático de equipos confirmados en `groupCount` grupos, en
+ * serpiente (0,1,…,G-1,G-1,…,1,0,…) para que cada grupo quede parejo.
+ *
+ * - Si TODOS los equipos tienen `seed` manual (ranking cargado por el admin),
+ *   se siembra por ese seed — la decisión del admin siempre gana.
+ * - Si no, se siembra por cantidad de JUGADORES reales (de más a menos), no
+ *   por el tamaño total del plantel: así no quedan grupos con puros equipos
+ *   "cortos" de jugadores contra grupos con puros equipos "grandes". Los
+ *   empates en cantidad de jugadores se desempatan con un shuffle
+ *   determinista por `drawSeed`.
  */
 export function buildAutoAssignment(
-  teams: { id: string; seed: number | null }[],
+  teams: { id: string; seed: number | null; playerCount: number }[],
   groupCount: number,
   drawSeed: string,
 ): string[][] {
   const groups: string[][] = Array.from({ length: groupCount }, () => []);
   const allSeeded = teams.length > 0 && teams.every((t) => t.seed != null);
 
+  // PRNG determinista (para desempatar cantidades iguales de jugadores, o
+  // como criterio único si tampoco hay playerCount para diferenciar).
+  let s = 0;
+  for (const c of drawSeed) s = (Math.imul(s, 31) + c.charCodeAt(0)) >>> 0;
+  const rand = () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    return s / 0xffffffff;
+  };
+
   let ordered: string[];
   if (allSeeded) {
-    ordered = [...teams].sort((a, b) => (a.seed! - b.seed!)).map((t) => t.id);
+    ordered = [...teams].sort((a, b) => a.seed! - b.seed!).map((t) => t.id);
   } else {
-    // Shuffle determinista (Fisher-Yates con PRNG sembrado).
-    let s = 0;
-    for (const c of drawSeed) s = (Math.imul(s, 31) + c.charCodeAt(0)) >>> 0;
-    const rand = () => {
-      s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
-      return s / 0xffffffff;
-    };
-    ordered = [...teams].map((t) => t.id);
-    for (let i = ordered.length - 1; i > 0; i--) {
-      const j = Math.floor(rand() * (i + 1));
-      [ordered[i], ordered[j]] = [ordered[j]!, ordered[i]!];
-    }
+    const withTieBreak = teams.map((t) => ({ ...t, tie: rand() }));
+    ordered = withTieBreak
+      .sort((a, b) => b.playerCount - a.playerCount || a.tie - b.tie)
+      .map((t) => t.id);
   }
 
   // Serpiente: 0,1,..,G-1,G-1,..,1,0,0,1,...

@@ -128,3 +128,67 @@ describe("validateRoster — composición para cancha (advertencia)", () => {
     expect(r.issues.some((i) => i.code === "NOT_ENOUGH_WOMEN_FOR_FIELD")).toBe(false);
   });
 });
+
+describe("validateRoster — jugadores vs no-jugadores", () => {
+  it("los no-jugadores cuentan para el mínimo/máximo del plantel", () => {
+    const players = [
+      ...roster(3, { gender: "F" }).map((p, i) => ({ ...p, docNumber: `J${i}`, shirtNumber: i + 1 })),
+      ...roster(4, { gender: "F", isPlayer: false }).map((p, i) => ({
+        ...p,
+        docNumber: `N${i}`,
+        shirtNumber: 10 + i,
+      })),
+    ];
+    // 7 personas en total (3 jugadoras + 4 no-jugadoras) → cumple el mínimo de 7.
+    const r = validateRoster(config, players, { referenceDate: ref });
+    expect(r.issues.some((i) => i.code === "TOO_FEW_PLAYERS")).toBe(false);
+    expect(r.counts.total).toBe(7);
+    expect(r.playingCounts.total).toBe(3);
+  });
+
+  it("los no-jugadores NO cuentan para completar la cancha", () => {
+    // 8 mujeres no-jugadoras + 4 hombres jugadores: en cancha no hay mujeres
+    // que jueguen, así que no se llega a 7 respetando el máximo de 3 hombres.
+    const players = [
+      ...roster(4, { gender: "M" }).map((p, i) => ({ ...p, docNumber: `M${i}`, shirtNumber: i + 1 })),
+      ...roster(8, { gender: "F", isPlayer: false }).map((p, i) => ({
+        ...p,
+        docNumber: `N${i}`,
+        shirtNumber: 10 + i,
+      })),
+    ];
+    const r = validateRoster(config, players, { referenceDate: ref });
+    expect(r.playingCounts.women).toBe(0);
+    expect(r.issues.some((i) => i.code === "NOT_ENOUGH_WOMEN_FOR_FIELD")).toBe(true);
+  });
+
+  it("si las jugadoras (no las no-jugadoras) alcanzan, no hay advertencia de cancha", () => {
+    const players = [
+      ...roster(4, { gender: "M" }).map((p, i) => ({ ...p, docNumber: `M${i}`, shirtNumber: i + 1 })),
+      ...roster(4, { gender: "F" }).map((p, i) => ({ ...p, docNumber: `W${i}`, shirtNumber: 10 + i })),
+      ...roster(2, { gender: "F", isPlayer: false }).map((p, i) => ({
+        ...p,
+        docNumber: `N${i}`,
+        shirtNumber: 20 + i,
+      })),
+    ];
+    const r = validateRoster(config, players, { referenceDate: ref });
+    expect(r.issues.some((i) => i.code === "NOT_ENOUGH_WOMEN_FOR_FIELD")).toBe(false);
+  });
+
+  it("la edad mínima no aplica a un no-jugador", () => {
+    const players = [
+      ...roster(7, { gender: "F" }).map((p, i) => ({ ...p, docNumber: `A${i}`, shirtNumber: i + 1 })),
+      player({
+        birthDate: new Date("2015-01-01"),
+        docNumber: "acompanante",
+        gender: "M",
+        shirtNumber: 30,
+        isPlayer: false,
+      }),
+    ];
+    const r = validateRoster(config, players, { referenceDate: ref });
+    expect(r.ok).toBe(true);
+    expect(r.issues.some((i) => i.code === "UNDERAGE")).toBe(false);
+  });
+});

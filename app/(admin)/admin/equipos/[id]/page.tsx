@@ -106,9 +106,13 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
       <section>
         <h2 className="mb-2 font-display text-xl font-semibold text-ink">
           Plantel ({team.players.length})
+          {" · "}
+          {team.players.filter((p) => p.isPlayer).length} jugadores
+          {team.players.some((p) => !p.isPlayer) &&
+            ` · ${team.players.filter((p) => !p.isPlayer).length} no juegan`}
         </h2>
         <div className="overflow-x-auto rounded-xl border border-line">
-          <table className="w-full min-w-[40rem] text-sm">
+          <table className="w-full min-w-[44rem] text-sm">
             <thead className="bg-surface-2 text-left font-mono text-[11px] uppercase tracking-wide text-ink-faint">
               <tr>
                 <th className="px-3 py-2">Jugador</th>
@@ -116,6 +120,7 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
                 <th className="px-3 py-2">Nacimiento</th>
                 <th className="px-3 py-2">Género</th>
                 <th className="px-3 py-2">#</th>
+                <th className="px-3 py-2">Rol</th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
@@ -133,6 +138,13 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
                   </td>
                   <td className="px-3 py-2 text-ink-soft">{p.gender}</td>
                   <td className="px-3 py-2 font-mono text-ink-soft">{p.shirtNumber ?? "—"}</td>
+                  <td className="px-3 py-2">
+                    {p.isPlayer ? (
+                      <Badge tone="ok">Juega</Badge>
+                    ) : (
+                      <Badge tone="neutral">No juega</Badge>
+                    )}
+                  </td>
                   <td className="px-3 py-2 text-right">
                     <RemovePlayerButton playerId={p.id} teamId={team.id} />
                   </td>

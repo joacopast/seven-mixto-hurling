@@ -11,6 +11,7 @@ function buildInput(over: Partial<RegistrationSubmitInput> = {}): RegistrationSu
     docNumber: `${40_000_000 + i}`,
     birthDate: "1996-05-20",
     gender: (i < 4 ? "M" : "F") as "M" | "F",
+    isPlayer: true,
     shirtNumber: i + 1,
     phone: "",
     email: "",

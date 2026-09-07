@@ -28,6 +28,8 @@ export const playerSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha de nacimiento inválida.")
     .refine((s) => !Number.isNaN(Date.parse(s)), "Fecha de nacimiento inválida."),
   gender: z.enum(["M", "F", "X"]),
+  /** false = acompaña al equipo pero no juega. Cuenta para el precio y el plantel; no para la cancha. */
+  isPlayer: z.boolean().default(true),
   shirtNumber: z
     .union([z.coerce.number().int().min(0).max(999), z.literal("").transform(() => undefined)])
     .optional(),

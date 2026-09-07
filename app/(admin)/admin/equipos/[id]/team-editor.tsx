@@ -79,6 +79,10 @@ export function AddPlayerForm({ teamId }: { teamId: string }) {
         <option value="X">Otro</option>
       </Select>
       <Input name="shirtNumber" type="number" placeholder="# (opcional)" />
+      <label className="flex items-center gap-2 text-sm text-ink-soft">
+        <input type="checkbox" name="isPlayer" defaultChecked className="h-4 w-4 rounded border-line accent-accent" />
+        Juega
+      </label>
       <div className="sm:col-span-3 flex items-center gap-3">
         <Button type="submit" variant="secondary" disabled={pending}>
           {pending ? "…" : "Agregar jugador"}
