@@ -1047,6 +1047,16 @@
           </tbody>
         </table>
       </div>
+      <div class="callout decided">
+        <span class="k">Dos logins, un mismo modelo de sesión</span>
+        <p><code>/ingresar</code> — magic link por email (Resend), para <code>TEAM_MANAGER</code>.
+        <code>/staff</code> — usuario/contraseña fijos, pensado para el equipo organizador cuando
+        no hace falta (o no está configurado) el envío de email. Sin credenciales configuradas,
+        en desarrollo cae a <code>admin</code>/<code>admin</code>; en producción el login queda
+        <strong>cerrado</strong> hasta configurar <code>STAFF_USERNAME</code> +
+        <code>STAFF_PASSWORD_HASH</code> (bcrypt). Ambos caminos terminan en la misma
+        <code>Session</code> de Auth.js — el resto del sistema no distingue cómo se creó.</p>
+      </div>
     </section>
 
     <!-- 9 -->
@@ -1224,7 +1234,7 @@
             <tr><td><b>3</b></td><td>Motor de torneo: standings · desempates · fixture de grupos · scheduler · sorteo manual + auto · carga de resultados con recálculo · vista pública de grupos y posiciones</td><td><span class="badge ok">completa</span></td></tr>
             <tr><td><b>4</b></td><td>Asignación de copas · generación de llaves · carga y corrección de resultados de copa con propagación en cascada · visualización del bracket</td><td><span class="badge ok">completa</span></td></tr>
             <tr><td><b>5</b></td><td>Configuración del torneo editable · alta/edición de equipos y jugadores por el admin · exportación CSV · audit log navegable · gestión de lista de espera con promoción automática</td><td><span class="badge ok">completa</span></td></tr>
-            <tr><td><b>6</b></td><td>Notificaciones por email · polish de UX y branding · SEO · suite E2E · deployment productivo</td><td><span class="badge">pendiente</span></td></tr>
+            <tr><td><b>6</b></td><td>Notificaciones por email (cola + envío real) · portal del equipo con partidos en vivo · SEO (robots/sitemap/OG) · suite E2E · login de staff para /admin</td><td><span class="badge ok">completa</span></td></tr>
           </tbody>
         </table>
       </div>

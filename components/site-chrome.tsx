@@ -71,7 +71,12 @@ export function SiteFooter() {
             <Link href="/ingresar" className="hover:text-ink">Ingresar</Link>
           </div>
         </div>
-        <p className="mt-4 text-xs text-ink-faint">{SITE.tagline}</p>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-ink-faint">{SITE.tagline}</p>
+          <Link href="/staff" className="font-mono text-[11px] text-ink-faint/70 hover:text-ink-faint">
+            Staff
+          </Link>
+        </div>
       </div>
     </footer>
   );

@@ -7,6 +7,9 @@ import { NextResponse, type NextRequest } from "next/server";
  *
  * Se hace por cookie (y no con `auth()`) para no arrastrar el Prisma adapter
  * al runtime edge del middleware — la sesión es de estrategia "database".
+ *
+ * `/admin` es solo para staff → login dedicado en `/staff` (usuario/contraseña).
+ * `/mi-equipo` es para responsables de equipo → magic link en `/ingresar`.
  */
 const SESSION_COOKIES = [
   "authjs.session-token",
@@ -15,13 +18,13 @@ const SESSION_COOKIES = [
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const isProtected =
-    pathname.startsWith("/admin") || pathname.startsWith("/mi-equipo");
-  if (!isProtected) return NextResponse.next();
+  const isAdmin = pathname.startsWith("/admin");
+  const isTeam = pathname.startsWith("/mi-equipo");
+  if (!isAdmin && !isTeam) return NextResponse.next();
 
   const hasSession = SESSION_COOKIES.some((name) => req.cookies.has(name));
   if (!hasSession) {
-    const url = new URL("/ingresar", req.nextUrl.origin);
+    const url = new URL(isAdmin ? "/staff" : "/ingresar", req.nextUrl.origin);
     url.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(url);
   }
