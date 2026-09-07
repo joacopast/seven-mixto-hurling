@@ -12,6 +12,7 @@ import {
   setTournamentStatus,
   GroupsError,
 } from "@/lib/services/groups";
+import { generateCups, CupsError } from "@/lib/services/cups";
 
 export interface ActionState {
   ok?: boolean;
@@ -32,6 +33,7 @@ function revalidate() {
   revalidatePath("/admin/torneo");
   revalidatePath("/admin/torneo/grupos");
   revalidatePath("/admin/torneo/resultados");
+  revalidatePath("/admin/torneo/copas");
   revalidatePath("/admin");
   revalidatePath("/torneo");
 }
@@ -113,4 +115,20 @@ export async function startGroupPhase(): Promise<ActionState> {
   await setTournamentStatus(t.id, "GROUPS_IN_PROGRESS", c);
   revalidate();
   return { ok: true, message: "Fase de grupos en juego." };
+}
+
+export async function generateCupsAction(): Promise<ActionState> {
+  const c = await ctx();
+  const t = await getActiveTournament();
+  try {
+    const res = await generateCups(t.id, c);
+    revalidate();
+    return {
+      ok: true,
+      message: `Copas generadas: ${res.cups.map((x) => x.name).join(", ")} · ${res.matches} partidos.`,
+    };
+  } catch (err) {
+    if (err instanceof CupsError) return { error: err.message };
+    throw err;
+  }
 }

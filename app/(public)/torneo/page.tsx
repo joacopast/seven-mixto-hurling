@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { getActiveTournament, getCapacity } from "@/lib/tournament/queries";
 import { getGroupsWithStandings, getGroupFixture } from "@/lib/tournament/groups-view";
+import { getCupsWithBrackets } from "@/lib/tournament/bracket-view";
 import { Card, Badge } from "@/components/ui";
 import { StandingsTable } from "@/components/standings-table";
+import { BracketView } from "@/components/bracket-view";
 
 export const dynamic = "force-dynamic";
 
@@ -23,18 +25,19 @@ const PHASE_LABEL: Record<string, string> = {
 };
 
 const GROUPS_VISIBLE = ["GROUPS_PUBLISHED", "GROUPS_IN_PROGRESS", "CUPS_PUBLISHED", "CUPS_IN_PROGRESS", "FINISHED"];
+const CUPS_VISIBLE = ["CUPS_PUBLISHED", "CUPS_IN_PROGRESS", "FINISHED"];
 
 export default async function TorneoPage() {
   const tournament = await getActiveTournament();
   const capacity = await getCapacity();
   const showGroups = GROUPS_VISIBLE.includes(tournament.status);
+  const showCups = CUPS_VISIBLE.includes(tournament.status);
 
-  const [groups, fixture] = showGroups
-    ? await Promise.all([
-        getGroupsWithStandings(tournament.id),
-        getGroupFixture(tournament.id),
-      ])
-    : [[], []];
+  const [groups, fixture, cups] = await Promise.all([
+    showGroups ? getGroupsWithStandings(tournament.id) : Promise.resolve([]),
+    showGroups ? getGroupFixture(tournament.id) : Promise.resolve([]),
+    showCups ? getCupsWithBrackets(tournament.id) : Promise.resolve([]),
+  ]);
 
   const byTanda = new Map<number, typeof fixture>();
   for (const m of fixture) {
@@ -92,6 +95,19 @@ export default async function TorneoPage() {
         </div>
       ) : (
         <>
+          {showCups && cups.length > 0 && (
+            <section className="mt-12">
+              <h2 className="mb-4 font-display text-2xl font-semibold uppercase tracking-tight text-paper">
+                Las cuatro copas
+              </h2>
+              <div className="grid gap-4 xl:grid-cols-2">
+                {cups.map((cup) => (
+                  <BracketView key={cup.id} cup={cup} />
+                ))}
+              </div>
+            </section>
+          )}
+
           <section className="mt-12">
             <h2 className="mb-4 font-display text-2xl font-semibold uppercase tracking-tight text-paper">
               Grupos y posiciones

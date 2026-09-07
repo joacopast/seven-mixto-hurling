@@ -13,6 +13,7 @@ import {
   generateFixture,
   publishGroups,
   startGroupPhase,
+  generateCupsAction,
 } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -31,17 +32,24 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default async function AdminTorneoPage() {
   const tournament = await getActiveTournament();
-  const [confirmed, groups, groupMatchCount, playedCount] = await Promise.all([
-    getConfirmedTeams(tournament.id),
-    getGroupsWithStandings(tournament.id),
-    db.match.count({ where: { tournamentId: tournament.id, phase: "GROUP" } }),
-    db.match.count({
-      where: { tournamentId: tournament.id, phase: "GROUP", status: { in: ["FINISHED", "WALKOVER"] } },
-    }),
-  ]);
+  const [confirmed, groups, groupMatchCount, playedCount, cupCount, cupPlayed, cupTotal] =
+    await Promise.all([
+      getConfirmedTeams(tournament.id),
+      getGroupsWithStandings(tournament.id),
+      db.match.count({ where: { tournamentId: tournament.id, phase: "GROUP" } }),
+      db.match.count({
+        where: { tournamentId: tournament.id, phase: "GROUP", status: { in: ["FINISHED", "WALKOVER"] } },
+      }),
+      db.cup.count({ where: { tournamentId: tournament.id } }),
+      db.match.count({
+        where: { tournamentId: tournament.id, phase: "CUP", status: { in: ["FINISHED", "WALKOVER"] } },
+      }),
+      db.match.count({ where: { tournamentId: tournament.id, phase: "CUP" } }),
+    ]);
 
   const s = tournament.status;
   const hasFixture = groupMatchCount > 0;
+  const allGroupPlayed = groupMatchCount > 0 && playedCount === groupMatchCount;
 
   return (
     <div className="flex flex-col gap-8">
@@ -122,9 +130,9 @@ export default async function AdminTorneoPage() {
 
           <Step
             n={4}
-            title="Publicar"
+            title="Publicar y jugar la fase de grupos"
             done={["GROUPS_PUBLISHED", "GROUPS_IN_PROGRESS", "CUPS_PUBLISHED", "CUPS_IN_PROGRESS", "FINISHED"].includes(s)}
-            detail="visible en /torneo"
+            detail={hasFixture ? `${playedCount}/${groupMatchCount} resultados` : "visible en /torneo"}
           >
             {s === "REGISTRATION_CLOSED" && hasFixture && (
               <ActionButton action={publishGroups} variant="primary">
@@ -137,17 +145,51 @@ export default async function AdminTorneoPage() {
               </ActionButton>
             )}
           </Step>
+
+          <Step
+            n={5}
+            title="Generar copas y llaves"
+            done={cupCount > 0}
+            detail={
+              cupCount > 0
+                ? `${cupCount} copas · ${cupPlayed}/${cupTotal} resultados`
+                : "1º→Oro · 2º→Plata · 3º→Bronce · 4º→Madera"
+            }
+          >
+            {allGroupPlayed && cupPlayed === 0 && (
+              <ActionButton
+                action={generateCupsAction}
+                variant="primary"
+                confirm={cupCount > 0 ? "Regenera las 4 llaves. ¿Seguir?" : undefined}
+              >
+                {cupCount > 0 ? "Regenerar copas" : "Generar copas"}
+              </ActionButton>
+            )}
+            {!allGroupPlayed && hasFixture && (
+              <p className="text-xs text-ink-faint">Cargá todos los resultados de grupos primero.</p>
+            )}
+          </Step>
         </ol>
       </Card>
 
-      {hasFixture && (
-        <Link
-          href="/admin/torneo/resultados"
-          className="inline-flex w-fit items-center gap-2 rounded-full bg-paper px-5 py-2.5 text-sm font-semibold text-bg-deep"
-        >
-          Cargar resultados ({playedCount}/{groupMatchCount})
-        </Link>
-      )}
+      <div className="flex flex-wrap gap-3">
+        {hasFixture && (
+          <Link
+            href="/admin/torneo/resultados"
+            className="inline-flex items-center gap-2 rounded-full border border-ink/25 px-5 py-2.5 text-sm font-semibold text-ink hover:bg-surface-2"
+          >
+            Resultados de grupos ({playedCount}/{groupMatchCount})
+          </Link>
+        )}
+        {cupCount > 0 && (
+          <Link
+            href="/admin/torneo/copas"
+            className="inline-flex items-center gap-2 rounded-full bg-paper px-5 py-2.5 text-sm font-semibold text-bg-deep"
+          >
+            Resultados de copas ({cupPlayed}/{cupTotal})
+          </Link>
+        )}
+      </div>
 
       {groups.length > 0 && (
         <section>

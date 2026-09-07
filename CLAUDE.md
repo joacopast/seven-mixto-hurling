@@ -61,7 +61,7 @@ npm run build
 La DB de tests (`seven_mixto_test`) se migra aparte:
 `DATABASE_URL=...seven_mixto_test npx prisma migrate deploy`.
 
-## Estado — Fases 1, 2 y 3 completas
+## Estado — Fases 1, 2, 3 y 4 completas
 
 Fase 1: schema completo, auth, inscripción (wizard → `Registration` en `PENDING_PAYMENT`),
 portal del equipo, panel admin (resumen, equipos, buscar, cambiar estado, export CSV),
@@ -85,11 +85,19 @@ reordena el grupo). Admin `/admin/torneo` (pipeline de 4 pasos), `/admin/torneo/
 (editor), `/admin/torneo/resultados` (carga inline). Público `/torneo` muestra grupos con
 posiciones (dots Oro/Plata/Bronce/Madera) + horarios/resultados por tanda.
 
-Pendiente: Fase 4 (copas/brackets/resultados), Fase 5 (admin completo + config editable),
-Fase 6 (notificaciones + e2e + deploy).
+Fase 4: `lib/tournament/cups.ts` (`assignCups`: 1º→Oro … 4º→Madera, siembra por rendimiento)
+y `bracket.ts` (`buildSingleElimBracket(size)` genérico, siembra canónica, `resolveBracket`).
+`lib/services/cups.ts` — `generateCups` (crea Cup + Bracket + BracketMatch + Match, octavos con
+equipos, resto TBD, agenda ronda por ronda; atómico y reversible sin resultados) y
+`setCupMatchResult` (goles / penales si empata / walkover → `winnerTeamId` → propaga al
+`feedsWinnerTo`; si el downstream ya tenía resultado exige `confirmCascade` y limpia la rama;
+la final marca campeón/subcampeón/3os y cierra el torneo). Admin `/admin/torneo/copas`,
+público `/torneo` con `<BracketView>` (columnas por ronda, scroll horizontal en mobile).
+
+Pendiente: Fase 5 (admin completo + config editable), Fase 6 (notificaciones + e2e + deploy).
 
 Nota tests: los de integración comparten una DB → corren en serie (`fileParallelism: false`).
-90 tests verdes.
+115 tests verdes.
 
 ## Diseño / marca
 
