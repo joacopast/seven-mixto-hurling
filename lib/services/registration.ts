@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/slug";
 import { writeAudit } from "@/lib/services/audit";
+import { enqueueNotification } from "@/lib/services/notification";
 import { calculatePrice, type PriceQuote } from "@/lib/tournament/pricing";
 import { validateRoster, type RosterPlayerInput } from "@/lib/tournament/roster";
 import { getActiveTournament } from "@/lib/tournament/queries";
@@ -187,6 +188,14 @@ export async function createRegistration(
         tier: quote.tier,
       },
       ip: ctx.ip ?? null,
+    });
+
+    await enqueueNotification(tx, {
+      type: "REGISTRATION_CONFIRMED",
+      recipientTeamId: team.id,
+      recipientUserId: user.id,
+      payload: { teamId: team.id, teamName: team.name },
+      dedupeKey: `registration-received:${registration.id}`,
     });
 
     return { team, registration, email };

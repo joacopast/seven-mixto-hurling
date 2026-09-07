@@ -164,7 +164,11 @@ describe("webhook — pago aprobado", () => {
     const notifs = await testDb.notification.findMany({
       where: { recipientTeamId: reg.teamId },
     });
-    expect(notifs.map((n) => n.type).sort()).toEqual(["PAYMENT_APPROVED", "TEAM_APPROVED"]);
+    expect(notifs.map((n) => n.type).sort()).toEqual([
+      "PAYMENT_APPROVED",
+      "REGISTRATION_CONFIRMED",
+      "TEAM_APPROVED",
+    ]);
 
     const event = await testDb.webhookEvent.findFirst({ where: { resourceId: "100" } });
     expect(event!.status).toBe("PROCESSED");
@@ -188,7 +192,7 @@ describe("webhook — idempotencia", () => {
     expect(payments).toHaveLength(1);
 
     const notifs = await testDb.notification.count({ where: { recipientTeamId: reg.teamId } });
-    expect(notifs).toBe(2);
+    expect(notifs).toBe(3); // registration.create + payment aprobado + equipo confirmado
 
     const confirmedTeams = await testDb.team.count({ where: { registrationStatus: "CONFIRMED" } });
     expect(confirmedTeams).toBe(1);

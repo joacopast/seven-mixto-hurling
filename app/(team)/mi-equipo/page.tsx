@@ -8,7 +8,10 @@ import {
   REGISTRATION_STATUS_TONE,
 } from "@/lib/tournament/status";
 import { Card, Badge, ButtonLink } from "@/components/ui";
+import { StandingsTable } from "@/components/standings-table";
+import { getTeamTournamentView } from "@/lib/tournament/team-view";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Mi equipo", robots: { index: false } };
 
 export default async function MiEquipoPage({
@@ -45,6 +48,7 @@ export default async function MiEquipoPage({
   }
 
   const active = teams.find((t) => t.id === teamParam) ?? teams[0]!;
+  const tv = await getTeamTournamentView(active.id);
 
   return (
     <div className="flex flex-col gap-6">
@@ -91,7 +95,10 @@ export default async function MiEquipoPage({
         </Card>
         <Card>
           <div className="font-mono text-xs uppercase tracking-wide text-ink-faint">Grupo / Copa</div>
-          <div className="mt-1 font-display text-2xl font-semibold text-ink">Por definir</div>
+          <div className="mt-1 font-display text-2xl font-semibold text-ink">
+            {tv.groupName ? `Grupo ${tv.groupName}` : "Por definir"}
+            {tv.cupName && <span className="ml-2 text-base text-ink-soft">· {tv.cupName}</span>}
+          </div>
         </Card>
       </div>
 
@@ -118,6 +125,69 @@ export default async function MiEquipoPage({
             La organización está revisando tu pago. Te vamos a contactar por email.
           </p>
         </Card>
+      )}
+
+      {tv.matches.length > 0 && (
+        <section>
+          <h2 className="mb-2 font-display text-xl font-semibold text-ink">Mis partidos</h2>
+          <div className="flex flex-col gap-2">
+            {tv.matches.map((m) => {
+              const done = m.status === "FINISHED" || m.status === "WALKOVER";
+              return (
+                <div
+                  key={m.id}
+                  className={`flex flex-wrap items-center justify-between gap-2 rounded-2xl border px-4 py-2.5 ${
+                    done ? "border-line-soft bg-surface" : "border-dashed border-line"
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div className="font-mono text-[11px] text-ink-faint">
+                      {m.label}
+                      {m.startsAt
+                        ? ` · ${m.startsAt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`
+                        : ""}
+                      {m.fieldName ? ` · ${m.fieldName}` : ""}
+                    </div>
+                    <div className="text-sm text-ink">
+                      vs <span className="font-medium">{m.opponentName ?? "por definir"}</span>
+                      {m.isHome ? "" : " (visitante)"}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {done ? (
+                      <>
+                        <span className="font-mono text-lg font-semibold text-paper">
+                          {m.status === "WALKOVER"
+                            ? m.result === "WIN"
+                              ? "W-0"
+                              : "0-W"
+                            : `${m.ownScore}-${m.opponentScore}`}
+                          {m.ownShootout != null ? ` (${m.ownShootout}-${m.opponentShootout})` : ""}
+                        </span>
+                        <Badge
+                          tone={m.result === "WIN" ? "ok" : m.result === "LOSS" ? "danger" : "neutral"}
+                        >
+                          {m.result === "WIN" ? "Ganó" : m.result === "LOSS" ? "Perdió" : "Empató"}
+                        </Badge>
+                      </>
+                    ) : (
+                      <Badge tone="neutral">Programado</Badge>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {tv.group && (
+        <section>
+          <h2 className="mb-2 font-display text-xl font-semibold text-ink">
+            Posiciones — Grupo {tv.group.name}
+          </h2>
+          <StandingsTable group={tv.group} />
+        </section>
       )}
 
       <section>

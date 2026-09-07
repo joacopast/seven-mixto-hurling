@@ -71,8 +71,24 @@ export default async function HomePage() {
     month: "long",
   });
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SportsEvent",
+    name: tournament.name,
+    sport: "Field hockey",
+    description: SITE.description,
+    ...(tournament.startDate ? { startDate: tournament.startDate.toISOString() } : {}),
+    ...(tournament.endDate ? { endDate: tournament.endDate.toISOString() } : {}),
+    ...(tournament.venueName ? { location: { "@type": "Place", name: tournament.venueName } } : {}),
+    organizer: { "@type": "Organization", name: "Seven Mixto Hurling" },
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div

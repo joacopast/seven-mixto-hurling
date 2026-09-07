@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { writeAudit } from "@/lib/services/audit";
+import { enqueueNotification } from "@/lib/services/notification";
 import { CONFIRMED_STATUSES } from "@/lib/tournament/queries";
 import { generateGroupFixture } from "@/lib/tournament/group-fixture";
 import { scheduleMatches, type SchedulableMatch } from "@/lib/tournament/scheduler";
@@ -280,6 +281,26 @@ export async function generateGroupPhaseFixture(tournamentId: string, ctx: Ctx =
   });
 
   return { matches: fixture.length, tandas: schedule.tandaCount };
+}
+
+/** Encola el aviso de "fixture publicado" para todos los equipos confirmados. */
+export async function notifyFixturePublished(tournamentId: string): Promise<number> {
+  const teams = await db.team.findMany({
+    where: { tournamentId, registrationStatus: { in: [...CONFIRMED_STATUSES] } },
+    select: { id: true, name: true, managerUserId: true },
+  });
+  await db.$transaction(async (tx) => {
+    for (const team of teams) {
+      await enqueueNotification(tx, {
+        type: "FIXTURE_PUBLISHED",
+        recipientTeamId: team.id,
+        recipientUserId: team.managerUserId,
+        payload: { teamId: team.id, teamName: team.name },
+        dedupeKey: `fixture-published:${tournamentId}:${team.id}`,
+      });
+    }
+  });
+  return teams.length;
 }
 
 export async function setTournamentStatus(

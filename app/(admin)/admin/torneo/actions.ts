@@ -10,6 +10,7 @@ import {
   saveGroupAssignment,
   generateGroupPhaseFixture,
   setTournamentStatus,
+  notifyFixturePublished,
   GroupsError,
 } from "@/lib/services/groups";
 import { generateCups, CupsError } from "@/lib/services/cups";
@@ -102,8 +103,12 @@ export async function publishGroups(): Promise<ActionState> {
     return { error: "Cerrá la inscripción y generá el fixture antes de publicar." };
   }
   await setTournamentStatus(t.id, "GROUPS_PUBLISHED", c);
+  const notified = await notifyFixturePublished(t.id);
   revalidate();
-  return { ok: true, message: "Grupos y fixture publicados. Ya son visibles en /torneo." };
+  return {
+    ok: true,
+    message: `Grupos y fixture publicados. Aviso encolado para ${notified} equipos.`,
+  };
 }
 
 export async function startGroupPhase(): Promise<ActionState> {
