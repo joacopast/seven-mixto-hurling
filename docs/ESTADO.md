@@ -155,6 +155,23 @@ revalidado server-side (`resetTournamentAction`). Servicio: `lib/services/reset.
 completo (16 equipos, 4 grupos, 4 copas jugadas hasta la final) confirmando que se puede
 armar un torneo nuevo desde cero después.
 
+Edición de plantel desde el portal del equipo (2026-10-14): en `/mi-equipo` el
+responsable ahora puede corregir los datos de un jugador ya cargado (nombre, documento,
+fecha de nacimiento, género, camiseta, "juega/no juega") — **no agrega ni saca
+jugadores**, así que no toca el precio de la inscripción (eso queda para otra etapa,
+discutido pero no implementado: requeriría modelar un saldo pendiente distinto del
+monto ya confirmado). `lib/services/admin-teams.ts` → `updatePlayer` (función genérica,
+valida documento duplicado dentro del equipo); `lib/services/roster-self.ts` →
+`updateMyPlayer` envuelve esa función para el caso del responsable: chequea que el
+jugador sea de su equipo, que `TournamentConfig.rosterLockAt` no haya pasado, y la edad
+mínima contra `tournament.startDate`. UI: `app/(team)/mi-equipo/player-row.tsx`
+(fila con edición inline). Probado en `tests/integration/roster-self.test.ts` (6 tests:
+edición ok, equipo ajeno, documento duplicado, plantel bloqueado, plantel sin bloquear,
+edad mínima).
+
 Pendiente / próximo: cargar alias/CBU/WhatsApp reales en `/admin/configuracion`,
 pulido visual final, más cobertura e2e (pago, admin), pasar a Vercel Pro antes del
-evento.
+evento. Discutido pero no implementado: agregar/sacar jugadores desde el portal con
+recálculo de pago cuando el plantel supera los 10 incluidos (el precio por jugador
+extra ya existe en `calculatePrice`; falta decidir la política de baja/reembolso
+parcial antes de tocar código).

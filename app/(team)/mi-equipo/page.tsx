@@ -10,6 +10,7 @@ import {
 import { Card, Badge, ButtonLink } from "@/components/ui";
 import { StandingsTable } from "@/components/standings-table";
 import { getTeamTournamentView } from "@/lib/tournament/team-view";
+import { PlayerRow } from "./player-row";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Mi equipo", robots: { index: false } };
@@ -49,6 +50,8 @@ export default async function MiEquipoPage({
 
   const active = teams.find((t) => t.id === teamParam) ?? teams[0]!;
   const tv = await getTeamTournamentView(active.id);
+  const rosterLockAt = tournament.config?.rosterLockAt;
+  const rosterLocked = !!rosterLockAt && new Date() > rosterLockAt;
 
   return (
     <div className="flex flex-col gap-6">
@@ -208,34 +211,34 @@ export default async function MiEquipoPage({
                 <th className="px-3 py-2">Género</th>
                 <th className="px-3 py-2">#</th>
                 <th className="px-3 py-2">Rol</th>
+                <th className="px-3 py-2" />
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {active.players.map((p) => (
-                <tr key={p.id}>
-                  <td className="px-3 py-2 text-ink">
-                    {p.firstName} {p.lastName}
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs text-ink-soft">
-                    {p.docType} {p.docNumber}
-                  </td>
-                  <td className="px-3 py-2 text-ink-soft">{p.gender}</td>
-                  <td className="px-3 py-2 font-mono text-ink-soft">{p.shirtNumber ?? "—"}</td>
-                  <td className="px-3 py-2">
-                    {p.isPlayer ? (
-                      <Badge tone="ok">Juega</Badge>
-                    ) : (
-                      <Badge tone="neutral">No juega</Badge>
-                    )}
-                  </td>
-                </tr>
+                <PlayerRow
+                  key={p.id}
+                  locked={rosterLocked}
+                  player={{
+                    id: p.id,
+                    firstName: p.firstName,
+                    lastName: p.lastName,
+                    docType: p.docType,
+                    docNumber: p.docNumber,
+                    birthDate: p.birthDate.toISOString().slice(0, 10),
+                    gender: p.gender,
+                    isPlayer: p.isPlayer,
+                    shirtNumber: p.shirtNumber,
+                  }}
+                />
               ))}
             </tbody>
           </table>
         </div>
         <p className="mt-2 text-xs text-ink-faint">
-          La edición del plantel desde el portal se habilita en la próxima etapa. Por ahora, para
-          cambios escribinos.
+          {rosterLocked
+            ? "El plantel ya está cerrado para ediciones. Para un cambio, escribinos."
+            : "Tocá \"Editar\" para corregir un dato. Para agregar o sacar jugadores, escribinos."}
         </p>
       </section>
     </div>

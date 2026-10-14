@@ -224,6 +224,73 @@ export async function adminAddPlayer(teamId: string, input: AdminPlayerInput, ct
   });
 }
 
+/**
+ * Edita los datos de un jugador ya cargado (nombre, documento, fecha de
+ * nacimiento, etc.) — no agrega ni saca jugadores del plantel, así que no
+ * toca el precio de la inscripción. La usan tanto el admin como el portal
+ * del equipo (`lib/services/roster-self.ts` agrega ahí el chequeo de
+ * propiedad + `rosterLockAt` para el caso del responsable del equipo).
+ */
+export async function updatePlayer(playerId: string, input: AdminPlayerInput, ctx: Ctx = {}) {
+  const player = await db.player.findUnique({ where: { id: playerId } });
+  if (!player) throw new AdminTeamError("Jugador no encontrado.", "NOT_FOUND");
+
+  const doc = normalizeDoc(input.docNumber);
+  if (doc !== player.docNumber) {
+    const dup = await db.player.findFirst({
+      where: { teamId: player.teamId, docNumber: doc, NOT: { id: playerId } },
+    });
+    if (dup) throw new AdminTeamError("Ese documento ya está en el plantel.", "DUP_DOC");
+  }
+
+  const birthDate = new Date(`${input.birthDate}T00:00:00Z`);
+
+  const data: Prisma.PlayerUpdateInput = {
+    firstName: input.firstName,
+    lastName: input.lastName,
+    docType: input.docType,
+    docNumber: doc,
+    birthDate,
+    gender: input.gender,
+    isPlayer: input.isPlayer ?? true,
+    shirtNumber: input.shirtNumber ?? null,
+    phone: input.phone || null,
+    email: input.email || null,
+    position: input.position || null,
+  };
+
+  const before = {
+    firstName: player.firstName,
+    lastName: player.lastName,
+    docType: player.docType,
+    docNumber: player.docNumber,
+    birthDate: player.birthDate.toISOString().slice(0, 10),
+    gender: player.gender,
+  };
+  const after = {
+    firstName: input.firstName,
+    lastName: input.lastName,
+    docType: input.docType,
+    docNumber: doc,
+    birthDate: input.birthDate,
+    gender: input.gender,
+  };
+
+  await db.$transaction(async (tx) => {
+    await tx.player.update({ where: { id: playerId }, data });
+    await writeAudit(tx, {
+      tournamentId: player.tournamentId,
+      userId: ctx.userId,
+      action: "player.update",
+      entity: "Player",
+      entityId: playerId,
+      previousValue: before,
+      newValue: after,
+      ip: ctx.ip ?? null,
+    });
+  });
+}
+
 export async function adminRemovePlayer(playerId: string, ctx: Ctx = {}) {
   const player = await db.player.findUnique({ where: { id: playerId }, include: { team: true } });
   if (!player) throw new AdminTeamError("Jugador no encontrado.", "NOT_FOUND");
