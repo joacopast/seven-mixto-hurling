@@ -19,8 +19,9 @@ y panel de organización.
   `TournamentConfig`, comprobante por WhatsApp, confirmación a mano por el admin —
   `confirmManualPayment`). Mercado Pago Checkout Pro queda implementado y funcional pero
   **apagado por defecto** (`TournamentConfig.paymentMethod`): cobra comisión, no se usa.
-- Email transaccional por SMTP (`lib/email/send.ts`, nodemailer) — por defecto Gmail con
-  contraseña de aplicación, sin necesidad de dominio propio verificado.
+- Email transaccional por SMTP genérico (`lib/email/send.ts`, nodemailer) — en producción,
+  Brevo free (sin necesidad de dominio propio verificado). Ver nota de `SMTP_USER` en
+  `docs/ESTADO.md`: no es el email de la cuenta, es el id que muestra Brevo en SMTP & API.
 - Vitest (unit + integration) · Playwright (e2e)
 
 ## Principios

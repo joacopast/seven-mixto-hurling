@@ -102,15 +102,29 @@ Artifact (https://claude.ai/artifact/3ffBmjArdGrBckc4Jq8DQx) — login de staff,
 panel, checklist antes de abrir inscripción, confirmar pagos por transferencia, lista de
 espera, armar grupos/fixture/copas, auditoría, día del evento y FAQ.
 
-Email (2026-10-14): se reemplazó Resend por SMTP (`lib/email/send.ts` con nodemailer,
-`lib/auth/index.ts` usa el provider `Nodemailer` de next-auth) — evita tener que comprar
-y verificar un dominio propio solo para mandar emails. Pensado para Gmail con contraseña
-de aplicación (`SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`, `SMTP_USER`, `SMTP_PASS`,
-`EMAIL_FROM`); sin `SMTP_USER`/`SMTP_PASS` el magic link se imprime en consola, igual que
-antes. Si en algún momento se compra un dominio, Resend se puede reactivar reemplazando
-el transporte de `sendEmail` sin tocar el resto de la app.
+Email (2026-10-14): se reemplazó Resend por SMTP genérico (`lib/email/send.ts` con
+nodemailer, `lib/auth/index.ts` usa el provider `Nodemailer` de next-auth, id
+`"nodemailer"` — ambos `signIn()` del magic link se actualizaron) — evita comprar y
+verificar un dominio propio solo para mandar emails. Se probó Gmail primero pero esa
+cuenta de Gmail no dejó activar verificación en 2 pasos (cuenta restringida/Workspace) —
+se terminó usando **Brevo** (ex-Sendinblue, free, 300 emails/día), que solo pide
+verificar el email remitente con un click, sin DNS. Config en producción:
+`SMTP_HOST=smtp-relay.brevo.com`, `SMTP_PORT=587`. Sin `SMTP_USER`/`SMTP_PASS` el magic
+link se imprime en consola, igual que antes.
 
-Pendiente / próximo: cuenta de Gmail + contraseña de aplicación para `SMTP_USER`/
-`SMTP_PASS` en Vercel, cron-job.org pegándole a `/api/cron/*` con el `CRON_SECRET`,
+**Gotcha de Brevo que costó varias vueltas:** el `SMTP_USER` NO es el email de la cuenta
+de Brevo — es un id generado que se ve en SMTP & API → pestaña SMTP, campo "Iniciar
+sesión" (formato `xxxxxxx@smtp-brevo.com`). Usar el email de cuenta ahí da siempre
+`535 Authentication failed`, con cualquier clave. También existe un aviso de "IPs no
+autorizadas" en Brevo (relevante solo si se deja esa restricción activa; Vercel no tiene
+IP de salida fija en el plan free, así que esa restricción se desactivó).
+
+Deploy verificado end-to-end (2026-10-14): inscripción real contra producción con
+Playwright, equipo ficticio, responsable con email real → confirmado en los logs de
+Vercel (`vercel logs`) que el envío SMTP salió sin error tras corregir el `SMTP_USER`.
+Si en algún momento se compra un dominio, Resend (u otro proveedor) se puede reactivar
+reemplazando el transporte de `sendEmail` sin tocar el resto de la app.
+
+Pendiente / próximo: cron-job.org pegándole a `/api/cron/*` con el `CRON_SECRET`,
 cargar alias/CBU/WhatsApp reales en `/admin/configuracion`, pulido visual final, más
 cobertura e2e (pago, admin), pasar a Vercel Pro antes del evento.
