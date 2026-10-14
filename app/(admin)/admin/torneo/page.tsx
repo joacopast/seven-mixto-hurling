@@ -9,6 +9,7 @@ import { ActionButton } from "@/components/action-button";
 import { StandingsTable } from "@/components/standings-table";
 import { TournamentPodium } from "@/components/bracket-view";
 import {
+  openRegistration,
   closeRegistration,
   reopenRegistration,
   autoDrawGroups,
@@ -75,6 +76,11 @@ export default async function AdminTorneoPage() {
             done={s !== "REGISTRATION_OPEN" && s !== "SETUP"}
             detail={`${confirmed.length} equipos confirmados`}
           >
+            {s === "SETUP" && (
+              <ActionButton action={openRegistration} variant="primary">
+                Abrir inscripción
+              </ActionButton>
+            )}
             {s === "REGISTRATION_OPEN" && (
               <ActionButton action={closeRegistration} confirm="¿Cerrar la inscripción?">
                 Cerrar inscripción

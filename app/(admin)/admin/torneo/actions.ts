@@ -39,6 +39,17 @@ function revalidate() {
   revalidatePath("/torneo");
 }
 
+export async function openRegistration(): Promise<ActionState> {
+  const c = await ctx();
+  const t = await getActiveTournament();
+  if (t.status !== "SETUP") {
+    return { error: "La inscripción ya se abrió (o el torneo ya avanzó más allá de eso)." };
+  }
+  await setTournamentStatus(t.id, "REGISTRATION_OPEN", c);
+  revalidate();
+  return { ok: true, message: "Inscripción abierta." };
+}
+
 export async function closeRegistration(): Promise<ActionState> {
   const c = await ctx();
   const t = await getActiveTournament();
