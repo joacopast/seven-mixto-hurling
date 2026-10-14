@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Manual de Organización — Seven Mixto Hurling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pine: #0b2c1e;
+    --pine-soft: #123f2c;
+    --pop: #d9550f;
+    --ink: #1c2420;
+    --ink-soft: #4a564e;
+    --ink-faint: #7c8a80;
+    --paper: #fdfcf8;
+    --line: #d9d4c4;
+    --pill: #0b2c1e;
+    --font-display: "Playfair Display", Georgia, serif;
+    --font-body: "Source Sans 3", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 11.5pt;
+    line-height: 1.55;
+  }
+  .page { max-width: 820px; margin: 0 auto; padding: 0 28px 60px; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 700; color: var(--pine); }
+  p { margin: 0 0 0.8em; }
+  a { color: var(--pine); }
+  strong { color: var(--ink); }
+  code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+
+  /* ---------- Portada ---------- */
+  .cover {
+    padding: 70px 0 36px;
+    border-bottom: 3px solid var(--pine);
+    margin-bottom: 34px;
+  }
+  .cover .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10.5pt;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--pop);
+    margin-bottom: 10px;
+  }
+  .cover h1 {
+    font-size: 30pt;
+    margin: 0 0 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+  }
+  .cover .dek { font-size: 12.5pt; color: var(--ink-soft); max-width: 560px; }
+  .cover .meta {
+    margin-top: 22px;
+    display: flex;
+    gap: 22px;
+    font-family: var(--font-mono);
+    font-size: 9.5pt;
+    color: var(--ink-faint);
+  }
+
+  /* ---------- Índice ---------- */
+  .toc {
+    break-inside: avoid;
+    margin-bottom: 40px;
+    padding: 18px 22px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #f7f4ea;
+  }
+  .toc h2 { font-size: 13pt; margin: 0 0 10px; }
+  .toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 28px; }
+  .toc li { font-size: 10.5pt; margin-bottom: 5px; break-inside: avoid; }
+  .toc a { text-decoration: none; color: var(--ink); }
+  .toc .n { font-family: var(--font-mono); color: var(--pop); margin-right: 4px; }
+
+  /* ---------- Secciones ---------- */
+  section.block { break-inside: avoid-page; margin-bottom: 30px; }
+  section.block .num {
+    font-family: var(--font-mono);
+    font-size: 9.5pt;
+    color: var(--pop);
+    letter-spacing: 0.1em;
+  }
+  section.block h2 {
+    font-size: 16.5pt;
+    margin: 2px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--pine);
+  }
+  section.block h3 { font-size: 12.5pt; margin: 18px 0 6px; color: var(--ink); }
+  .lead { color: var(--ink-soft); max-width: 62ch; }
+
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 12px 0;
+    background: #fff;
+    break-inside: avoid;
+  }
+  .card.action { border-left: 4px solid var(--pop); }
+  .card.warn { border-left: 4px solid #a9731f; background: #fbf6ea; }
+  .card.danger { border-left: 4px solid #a3372a; background: #fbefed; }
+
+  ol.steps { list-style: none; margin: 0; padding: 0; }
+  ol.steps li {
+    display: flex;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px dashed var(--line);
+    break-inside: avoid;
+  }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps .n {
+    flex: none;
+    width: 22px; height: 22px;
+    border-radius: 999px;
+    background: var(--pine);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 10.5pt;
+    font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  ol.steps .body b { color: var(--pine); }
+
+  .path {
+    font-family: var(--font-mono);
+    font-size: 10pt;
+    background: #eee9d9;
+    color: #6b4a16;
+    padding: 1px 6px;
+    border-radius: 5px;
+    white-space: nowrap;
+  }
+  .btn-tag {
+    font-weight: 700;
+    font-size: 10pt;
+    background: var(--pine);
+    color: #fff;
+    padding: 2px 9px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+
+  table.ref { width: 100%; border-collapse: collapse; font-size: 10.3pt; }
+  table.ref th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+    padding: 6px 8px;
+    border-bottom: 2px solid var(--pine);
+  }
+  table.ref td {
+    padding: 7px 8px;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-soft);
+    vertical-align: top;
+  }
+  table.ref td:first-child { color: var(--pine); font-weight: 700; white-space: nowrap; }
+
+  .checklist { list-style: none; margin: 0; padding: 0; }
+  .checklist li { display: flex; gap: 8px; margin-bottom: 6px; font-size: 10.8pt; color: var(--ink-soft); }
+  .checklist li::before {
+    content: "☐";
+    flex: none;
+    color: var(--pine);
+    font-size: 12pt;
+    line-height: 1.3;
+  }
+
+  .faq-item { margin-bottom: 12px; break-inside: avoid; }
+  .faq-item .q { font-weight: 700; color: var(--pine); margin-bottom: 2px; }
+  .faq-item .a { color: var(--ink-soft); font-size: 10.8pt; max-width: 64ch; }
+
+  .footer-note {
+    margin-top: 40px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    font-size: 9pt;
+    color: var(--ink-faint);
+  }
+
+  @media print {
+    body { font-size: 10.5pt; }
+    .page { padding: 0 6px; }
+    .cover { padding-top: 10px; }
+    a { color: var(--ink); text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="cover">
+    <div class="eyebrow">Seven Mixto Hurling · Panel de organización</div>
+    <h1>Manual de organización</h1>
+    <p class="dek">Guía para manejar el torneo desde el panel sin depender del desarrollador: equipos, pagos por transferencia, inscripción, grupos, copas y el día del evento.</p>
+    <div class="meta">
+      <span>Versión: octubre 2026</span>
+      <span>Panel: /admin</span>
+    </div>
+  </div>
+
+  <div class="toc">
+    <h2>Índice</h2>
+    <ol>
+      <li><span class="n">01</span><a href="#acceso">Entrar al panel</a></li>
+      <li><span class="n">02</span><a href="#mapa">Mapa del panel</a></li>
+      <li><span class="n">03</span><a href="#antes-de-abrir">Antes de abrir inscripción</a></li>
+      <li><span class="n">04</span><a href="#inscripcion">Abrir / cerrar inscripción</a></li>
+      <li><span class="n">05</span><a href="#equipos">Equipos y jugadores</a></li>
+      <li><span class="n">06</span><a href="#pagos">Confirmar pagos</a></li>
+      <li><span class="n">07</span><a href="#espera">Lista de espera</a></li>
+      <li><span class="n">08</span><a href="#grupos">Grupos y fixture</a></li>
+      <li><span class="n">09</span><a href="#resultados-grupos">Resultados de grupo</a></li>
+      <li><span class="n">10</span><a href="#copas">Copas y podio final</a></li>
+      <li><span class="n">11</span><a href="#configuracion">Configuración</a></li>
+      <li><span class="n">12</span><a href="#vaciar">Vaciar torneo (edición nueva)</a></li>
+      <li><span class="n">13</span><a href="#auditoria">Auditoría</a></li>
+      <li><span class="n">14</span><a href="#dia-evento">Día del evento</a></li>
+      <li><span class="n">15</span><a href="#faq">Preguntas frecuentes</a></li>
+    </ol>
+  </div>
+
+  <section class="block" id="acceso">
+    <div class="num">01</div>
+    <h2>Entrar al panel</h2>
+    <p class="lead">El panel de organización es <span class="path">/admin</span> y usa un login de staff separado del de los equipos (que entran con magic link por email). El de staff es usuario y contraseña fijos.</p>
+    <ol class="steps">
+      <li><span class="n">1</span><div class="body">Entrar a <span class="path">/staff</span> (si vas directo a <span class="path">/admin</span> sin sesión, te redirige ahí solo).</div></li>
+      <li><span class="n">2</span><div class="body">Cargar usuario y contraseña. Pedile al desarrollador el usuario/contraseña vigente si todavía no los tenés.</div></li>
+      <li><span class="n">3</span><div class="body">Entrás directo al <b>Resumen</b> del panel.</div></li>
+    </ol>
+    <div class="card warn">
+      <p><b>Si "olvidaste" la contraseña:</b> no hay recuperación desde el panel, a propósito. Pedile al desarrollador que genere una nueva.</p>
+    </div>
+  </section>
+
+  <section class="block" id="mapa">
+    <div class="num">02</div>
+    <h2>Mapa del panel</h2>
+    <table class="ref">
+      <thead><tr><th>Solapa</th><th>Para qué sirve</th></tr></thead>
+      <tbody>
+        <tr><td>Resumen</td><td>Foto del momento: equipos confirmados, pendientes de pago, en espera.</td></tr>
+        <tr><td>Equipos</td><td>Alta, edición y baja de equipos y jugadores.</td></tr>
+        <tr><td>Lista de espera</td><td>Equipos inscriptos sin cupo. Promoción manual o automática.</td></tr>
+        <tr><td>Torneo</td><td>Abrir/cerrar inscripción, sorteo de grupos, fixture, resultados, copas.</td></tr>
+        <tr><td>Pagos</td><td>Transferencias pendientes de confirmar e historial de pagos.</td></tr>
+        <tr><td>Auditoría</td><td>Quién hizo qué y cuándo — útil ante cualquier reclamo.</td></tr>
+        <tr><td>Configuración</td><td>Precios, cupos, datos bancarios, WhatsApp, textos, y "Vaciar torneo".</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="block" id="antes-de-abrir">
+    <div class="num">03</div>
+    <h2>Antes de abrir la inscripción</h2>
+    <div class="card action">
+      <ul class="checklist">
+        <li>Alias y CBU reales cargados en Configuración → Medio de pago.</li>
+        <li>Titular de la cuenta y banco correctos.</li>
+        <li>Número de WhatsApp real de la organización, con código de país.</li>
+        <li>Precio por equipo y fecha límite de inscripción revisados.</li>
+        <li>Cupo total y cantidad de grupos acordes a esta edición.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="block" id="inscripcion">
+    <div class="num">04</div>
+    <h2>Abrir / cerrar inscripción</h2>
+    <p class="lead">En <span class="path">/admin/torneo</span>, paso 1 del pipeline. El botón que aparece depende del estado actual:</p>
+    <table class="ref">
+      <thead><tr><th>Estado</th><th>Botón disponible</th></tr></thead>
+      <tbody>
+        <tr><td>En preparación</td><td><span class="btn-tag">Abrir inscripción</span> — primera vez, o después de vaciar el torneo para una edición nueva.</td></tr>
+        <tr><td>Inscripción abierta</td><td><span class="btn-tag">Cerrar inscripción</span> — antes de armar los grupos.</td></tr>
+        <tr><td>Inscripción cerrada</td><td><span class="btn-tag">Reabrir inscripción</span> — por si hace falta sumar algún equipo más.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="block" id="equipos">
+    <div class="num">05</div>
+    <h2>Equipos y jugadores</h2>
+    <p class="lead">Desde <span class="path">/admin/equipos</span> se busca cualquier equipo por nombre, responsable o email, y se entra a su ficha para editar.</p>
+    <h3>Dar de alta un equipo a mano</h3>
+    <p class="lead"><span class="path">/admin/equipos/nuevo</span> — para un equipo que no pasó por la inscripción online. Esta alta <b>no respeta el cupo</b>: si se carga de más, recién se marca lista de espera al confirmar el pago.</p>
+    <h3>Editar plantel</h3>
+    <p class="lead">Agregar/sacar jugadores, corregir un DNI, asignar camiseta. Sacar un jugador que ya jugó un partido está bloqueado.</p>
+  </section>
+
+  <section class="block" id="pagos">
+    <div class="num">06</div>
+    <h2>Confirmar pagos por transferencia</h2>
+    <p class="lead">El medio de pago es transferencia + comprobante por WhatsApp. <b>Nadie queda confirmado automáticamente</b> — alguien de la organización revisa el comprobante y confirma a mano.</p>
+    <h3>Cómo confirmar</h3>
+    <table class="ref">
+      <thead><tr><th>Dónde</th><th>Cómo</th></tr></thead>
+      <tbody>
+        <tr><td>Desde Pagos</td><td><span class="path">/admin/pagos</span> → "Pendientes de confirmar" → link directo a WhatsApp del equipo + botón <span class="btn-tag">Confirmar pago recibido</span>.</td></tr>
+        <tr><td>Desde la ficha del equipo</td><td><span class="path">/admin/equipos/[equipo]</span> → mismo botón, con el historial de pagos del equipo debajo.</td></tr>
+      </tbody>
+    </table>
+    <div class="card warn">
+      <p><b>El monto nunca se tipea a mano.</b> El botón confirma el total que ya calculó el sistema. Si el comprobante no coincide, no confirmes — contactá al equipo primero.</p>
+    </div>
+    <div class="card danger">
+      <p><b>Si ya no hay cupo</b> al confirmar, el equipo pasa a lista de espera pero queda registrado que el pago está aprobado — la organización le debe un reintegro o un lugar.</p>
+    </div>
+  </section>
+
+  <section class="block" id="espera">
+    <div class="num">07</div>
+    <h2>Lista de espera</h2>
+    <p class="lead"><span class="path">/admin/espera</span> — orden de llegada, promoción manual si se libera un lugar. La promoción automática corre sola por cron cuando alguien confirmado se cae.</p>
+  </section>
+
+  <section class="block" id="grupos">
+    <div class="num">08</div>
+    <h2>Sorteo de grupos y fixture</h2>
+    <p class="lead">Todo en <span class="path">/admin/torneo</span>, un camino de pasos de arriba hacia abajo. No se puede saltear un paso.</p>
+    <ol class="steps">
+      <li><span class="n">1</span><div class="body"><b>Sorteo de grupos.</b> Automático (por orden de inscripción) o manual, arrastrando equipos.</div></li>
+      <li><span class="n">2</span><div class="body"><b>Publicar grupos.</b> Los equipos ya ven su grupo en <span class="path">/mi-equipo</span> y les llega el email de fixture.</div></li>
+      <li><span class="n">3</span><div class="body"><b>Generar fixture.</b> Reparte los partidos en tandas sin que un equipo juegue dos a la vez.</div></li>
+    </ol>
+    <div class="card warn">
+      <p>Con partidos generados, Configuración bloquea cantidad de grupos/cupo para no romper lo armado. Pedile al desarrollador que lo revierta si hace falta corregir.</p>
+    </div>
+  </section>
+
+  <section class="block" id="resultados-grupos">
+    <div class="num">09</div>
+    <h2>Resultados de grupo</h2>
+    <p class="lead"><span class="path">/admin/torneo/resultados</span> — carga inline, partido por partido. La tabla se recalcula sola al guardar, incluido el desempate. Corregir un resultado reordena el grupo al toque.</p>
+  </section>
+
+  <section class="block" id="copas">
+    <div class="num">10</div>
+    <h2>Copas y podio final</h2>
+    <p class="lead">Terminada la fase de grupos, <span class="path">/admin/torneo/copas</span> genera las copas de eliminación directa: 1° de cada grupo a Oro, 2° a Plata, 3° a Bronce, 4° a Madera.</p>
+    <ol class="steps">
+      <li><span class="n">1</span><div class="body"><b>Generar copas.</b> Crea las llaves con los equipos ya puestos. Reversable mientras no haya resultados cargados.</div></li>
+      <li><span class="n">2</span><div class="body"><b>Cargar resultados.</b> Goles, penales si empata, o walkover. El ganador pasa solo a la siguiente ronda.</div></li>
+      <li><span class="n">3</span><div class="body"><b>El torneo se finaliza solo.</b> Al cargar la última final de las 4 copas, el sistema marca campeón/subcampeón/3er puesto de cada una y cierra el torneo automáticamente — no hay que tocar ningún botón para esto.</div></li>
+      <li><span class="n">4</span><div class="body"><b>Podio.</b> Se ve en <span class="path">/admin/torneo</span> y en la página pública <span class="path">/torneo</span> ("🏆 Resultados finales"): 🥇🥈🥉 de cada una de las 4 copas.</div></li>
+    </ol>
+    <div class="card">
+      <p><b>¿Hay que corregir un resultado después de finalizado?</b> En <span class="path">/admin/torneo</span>, paso 6, botón <span class="btn-tag">Reabrir (corregir resultado)</span> — vuelve el torneo a "en juego" para poder cambiar el resultado y se vuelve a cerrar solo al recargar la final.</p>
+    </div>
+  </section>
+
+  <section class="block" id="configuracion">
+    <div class="num">11</div>
+    <h2>Configuración</h2>
+    <p class="lead">Un formulario en <span class="path">/admin/configuracion</span>, por secciones. Avisa con un cartel cuando algo queda a medio completar.</p>
+    <table class="ref">
+      <thead><tr><th>Sección</th><th>Qué se edita</th></tr></thead>
+      <tbody>
+        <tr><td>Medio de pago</td><td>Transferencia o Mercado Pago. Datos bancarios, WhatsApp y mensaje precargado.</td></tr>
+        <tr><td>Precios</td><td>Precio por equipo y recargo opcional, en pesos.</td></tr>
+        <tr><td>Cupos y formato</td><td>Cupo total, grupos, canchas. Se bloquea con estructura ya generada.</td></tr>
+        <tr><td>Copas</td><td>Nombres de copas — sacar/agregar un nombre también cambia la cantidad de copas, incluso después de la fase de grupos.</td></tr>
+        <tr><td>Contenido</td><td>Textos de reglamento y preguntas frecuentes públicas.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="block" id="vaciar">
+    <div class="num">12</div>
+    <h2>Vaciar torneo para una edición nueva</h2>
+    <p class="lead">Al final de Configuración, sección <b>"Zona de peligro"</b>. Para cuando termina una edición y hay que arrancar la siguiente (año que viene) reusando el mismo sitio.</p>
+    <ol class="steps">
+      <li><span class="n">1</span><div class="body">Borra equipos, jugadores, inscripciones, pagos, grupos, copas y partidos.</div></li>
+      <li><span class="n">2</span><div class="body">El torneo queda (nombre, fechas, precios, datos bancarios) — se edita arriba en Configuración para la edición nueva.</div></li>
+      <li><span class="n">3</span><div class="body">El estado vuelve a "En preparación" — hay que tocar <span class="btn-tag">Abrir inscripción</span> en <span class="path">/admin/torneo</span> para arrancar.</div></li>
+    </ol>
+    <div class="card danger">
+      <p><b>Es irreversible.</b> Por eso pide escribir el nombre exacto del torneo para habilitar el botón, más una confirmación extra. El historial de auditoría de la edición anterior NO se borra, queda como registro.</p>
+    </div>
+  </section>
+
+  <section class="block" id="auditoria">
+    <div class="num">13</div>
+    <h2>Auditoría</h2>
+    <p class="lead"><span class="path">/admin/auditoria</span> — historial de toda acción importante: quién confirmó qué pago, quién cambió un resultado, quién vació el torneo, y cuándo. Primer lugar para mirar ante un reclamo.</p>
+  </section>
+
+  <section class="block" id="dia-evento">
+    <div class="num">14</div>
+    <h2>Día del evento</h2>
+    <ul class="checklist">
+      <li>Grupos: <span class="path">/admin/torneo/resultados</span> — cargar apenas termina cada partido.</li>
+      <li>Copas: <span class="path">/admin/torneo/copas</span> — mismo criterio; la ronda siguiente se completa sola con dos resultados.</li>
+      <li>Si un equipo no se presenta: walkover, no "0 a 0" — cambia el cálculo de desempates.</li>
+      <li>Los cambios se guardan uno por uno al tocar "Guardar" en cada partido.</li>
+    </ul>
+  </section>
+
+  <section class="block" id="faq">
+    <div class="num">15</div>
+    <h2>Preguntas frecuentes</h2>
+    <div class="faq-item">
+      <p class="q">Un equipo dice que ya transfirió pero no aparece en "Pendientes de confirmar"</p>
+      <p class="a">Buscalo en <span class="path">/admin/equipos</span> por nombre o email. Puede estar en "Pago no iniciado" si nunca llegó a la pantalla de pago.</p>
+    </div>
+    <div class="faq-item">
+      <p class="q">Me equivoqué y confirmé el pago de un equipo que no correspondía</p>
+      <p class="a">No hay botón de deshacer — pedile al desarrollador que lo revierta a mano. Queda registrado en Auditoría quién lo confirmó.</p>
+    </div>
+    <div class="faq-item">
+      <p class="q">¿Puedo usar Mercado Pago para algunos equipos y transferencia para otros?</p>
+      <p class="a">No — el medio de pago es uno solo para todo el torneo.</p>
+    </div>
+    <div class="faq-item">
+      <p class="q">¿Qué pasa si bajo el cupo con equipos ya confirmados?</p>
+      <p class="a">Los ya confirmados no se tocan. El cupo nuevo solo afecta a los próximos pagos que se confirmen.</p>
+    </div>
+    <div class="faq-item">
+      <p class="q">¿El responsable de un equipo puede editar su propio plantel?</p>
+      <p class="a">Por ahora no desde <span class="path">/mi-equipo</span> — si necesita un cambio, lo hace un admin desde <span class="path">/admin/equipos</span>.</p>
+    </div>
+  </section>
+
+  <div class="footer-note">
+    Seven Mixto Hurling — manual de organización. Si algo acá no coincide con lo que ves en el panel, probablemente cambió el sistema después de escribirlo: avisale al desarrollador para actualizarlo.
+  </div>
+
+</div>
+</body>
+</html>
