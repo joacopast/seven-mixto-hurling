@@ -2,10 +2,12 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { getActiveTournament } from "@/lib/tournament/queries";
 import { getGroupsWithStandings } from "@/lib/tournament/groups-view";
+import { getCupsWithBrackets } from "@/lib/tournament/bracket-view";
 import { getConfirmedTeams } from "@/lib/services/groups";
 import { Card, Badge } from "@/components/ui";
 import { ActionButton } from "@/components/action-button";
 import { StandingsTable } from "@/components/standings-table";
+import { TournamentPodium } from "@/components/bracket-view";
 import {
   closeRegistration,
   reopenRegistration,
@@ -14,6 +16,8 @@ import {
   publishGroups,
   startGroupPhase,
   generateCupsAction,
+  finishTournament,
+  reopenFromFinished,
 } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -50,6 +54,8 @@ export default async function AdminTorneoPage() {
   const s = tournament.status;
   const hasFixture = groupMatchCount > 0;
   const allGroupPlayed = groupMatchCount > 0 && playedCount === groupMatchCount;
+  const allCupsPlayed = cupTotal > 0 && cupPlayed === cupTotal;
+  const cups = allCupsPlayed || s === "FINISHED" ? await getCupsWithBrackets(tournament.id) : [];
 
   return (
     <div className="flex flex-col gap-8">
@@ -169,8 +175,52 @@ export default async function AdminTorneoPage() {
               <p className="text-xs text-ink-faint">Cargá todos los resultados de grupos primero.</p>
             )}
           </Step>
+
+          <Step
+            n={6}
+            title="Finalizar torneo"
+            done={s === "FINISHED"}
+            detail={
+              s === "FINISHED"
+                ? "campeón, subcampeón y 3er puesto de cada copa"
+                : cupTotal > 0
+                  ? `${cupPlayed}/${cupTotal} resultados de copas`
+                  : "generá las copas primero"
+            }
+          >
+            {allCupsPlayed && s !== "FINISHED" && (
+              <ActionButton
+                action={finishTournament}
+                variant="primary"
+                confirm="¿Finalizar el torneo? Se va a mostrar el podio de cada copa en /torneo."
+              >
+                Finalizar torneo
+              </ActionButton>
+            )}
+            {s === "FINISHED" && (
+              <ActionButton
+                action={reopenFromFinished}
+                variant="ghost"
+                confirm="¿Reabrir para corregir un resultado de copas?"
+              >
+                Reabrir (corregir resultado)
+              </ActionButton>
+            )}
+            {!allCupsPlayed && cupTotal > 0 && (
+              <p className="text-xs text-ink-faint">Cargá todos los resultados de copas primero.</p>
+            )}
+          </Step>
         </ol>
       </Card>
+
+      {cups.length > 0 && (
+        <section>
+          <h2 className="mb-3 font-display text-xl font-semibold text-paper">
+            {s === "FINISHED" ? "Resultados finales" : "Podio (provisorio)"}
+          </h2>
+          <TournamentPodium cups={cups} />
+        </section>
+      )}
 
       <div className="flex flex-wrap gap-3">
         {hasFixture && (

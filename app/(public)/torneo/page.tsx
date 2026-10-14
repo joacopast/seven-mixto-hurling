@@ -4,7 +4,7 @@ import { getGroupsWithStandings, getGroupFixture } from "@/lib/tournament/groups
 import { getCupsWithBrackets } from "@/lib/tournament/bracket-view";
 import { Card, Badge } from "@/components/ui";
 import { StandingsTable } from "@/components/standings-table";
-import { BracketView } from "@/components/bracket-view";
+import { BracketView, TournamentPodium } from "@/components/bracket-view";
 
 export const dynamic = "force-dynamic";
 
@@ -95,6 +95,16 @@ export default async function TorneoPage() {
         </div>
       ) : (
         <>
+          {tournament.status === "FINISHED" && cups.length > 0 && (
+            <section className="mt-12">
+              <h2 className="mb-1 font-display text-2xl font-semibold uppercase tracking-tight text-paper">
+                🏆 Resultados finales
+              </h2>
+              <p className="mb-4 text-sm text-ink-soft">Campeón, subcampeón y 3er puesto de cada copa.</p>
+              <TournamentPodium cups={cups} />
+            </section>
+          )}
+
           {showCups && cups.length > 0 && (
             <section className="mt-12">
               <h2 className="mb-4 font-display text-2xl font-semibold uppercase tracking-tight text-paper">

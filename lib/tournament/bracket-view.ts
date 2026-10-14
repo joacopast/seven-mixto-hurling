@@ -36,6 +36,8 @@ export interface CupView {
   championTeamId: string | null;
   championName: string | null;
   runnerUpName: string | null;
+  /** 3er puesto compartido entre los dos perdedores de semifinal. */
+  thirdPlaceNames: string[];
 }
 
 export async function getCupsWithBrackets(tournamentId: string): Promise<CupView[]> {
@@ -62,7 +64,7 @@ export async function getCupsWithBrackets(tournamentId: string): Promise<CupView
   });
 
   const champions = await db.team.findMany({
-    where: { tournamentId, finalPosition: { in: [1, 2] } },
+    where: { tournamentId, finalPosition: { in: [1, 2, 3] } },
     select: { id: true, name: true, cupId: true, finalPosition: true },
   });
 
@@ -100,6 +102,7 @@ export async function getCupsWithBrackets(tournamentId: string): Promise<CupView
 
     const champ = champions.find((c) => c.cupId === cup.id && c.finalPosition === 1);
     const runner = champions.find((c) => c.cupId === cup.id && c.finalPosition === 2);
+    const thirds = champions.filter((c) => c.cupId === cup.id && c.finalPosition === 3);
 
     return {
       id: cup.id,
@@ -109,6 +112,7 @@ export async function getCupsWithBrackets(tournamentId: string): Promise<CupView
       championTeamId: champ?.id ?? null,
       championName: champ?.name ?? null,
       runnerUpName: runner?.name ?? null,
+      thirdPlaceNames: thirds.map((t) => t.name),
     };
   });
 }

@@ -66,6 +66,56 @@ function MatchCard({ m }: { m: BracketMatchView }) {
   );
 }
 
+/** Podio de una copa: 🥇🥈🥉. Se usa tanto en el panel admin como en /torneo. */
+export function CupPodium({ cup }: { cup: CupView }) {
+  return (
+    <div className="rounded-card border border-line-soft bg-bg-deep/40 p-4">
+      <h3 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold text-paper">
+        <span
+          className="h-2.5 w-2.5 rounded-full"
+          style={{ background: CUP_COLOR[cup.name] ?? "var(--accent)" }}
+        />
+        Copa {cup.name}
+      </h3>
+      <ol className="flex flex-col gap-1.5 text-sm">
+        <li className="flex items-center gap-2">
+          <span className="w-5 flex-none text-center">🥇</span>
+          <span className="truncate text-paper">
+            {cup.championName ?? <span className="text-ink-faint">Por definir</span>}
+          </span>
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="w-5 flex-none text-center">🥈</span>
+          <span className="truncate text-ink-soft">
+            {cup.runnerUpName ?? <span className="text-ink-faint">Por definir</span>}
+          </span>
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="w-5 flex-none text-center">🥉</span>
+          <span className="truncate text-ink-soft">
+            {cup.thirdPlaceNames.length > 0 ? (
+              cup.thirdPlaceNames.join(" y ")
+            ) : (
+              <span className="text-ink-faint">Por definir</span>
+            )}
+          </span>
+        </li>
+      </ol>
+    </div>
+  );
+}
+
+/** Grilla de podios de todas las copas. */
+export function TournamentPodium({ cups }: { cups: CupView[] }) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {cups.map((cup) => (
+        <CupPodium key={cup.id} cup={cup} />
+      ))}
+    </div>
+  );
+}
+
 export function BracketView({ cup }: { cup: CupView }) {
   const activeRounds = cup.rounds.filter((r) => r.matches.length > 0);
   return (

@@ -133,6 +133,16 @@ verificó con un curl directo al endpoint antes de configurar los jobs. Al pasar
 Vercel Pro, se puede volver al `crons` nativo de `vercel.json` (ver más arriba) y
 deshabilitar/borrar estos 3 jobs en cron-job.org.
 
+Finalizar torneo + podio (2026-10-14): paso 6 en `/admin/torneo` — "Finalizar torneo"
+(activo cuando todos los resultados de copas están cargados) pone `Tournament.status =
+FINISHED` y muestra el podio (🥇🥈🥉) de las 4 copas; "Reabrir (corregir resultado)" vuelve
+a `CUPS_IN_PROGRESS` por si hace falta corregir algo después. El botón "Reabrir
+inscripción" ya existía (paso 1, visible con inscripción cerrada) — no hizo falta
+agregarlo. `getCupsWithBrackets` ahora trae también `thirdPlaceNames` (antes solo
+campeón/subcampeón); nuevo `TournamentPodium`/`CupPodium` en `components/bracket-view.tsx`,
+reusado en `/admin/torneo` y en `/torneo` (sección "🏆 Resultados finales" cuando el
+torneo está FINISHED).
+
 Pendiente / próximo: cargar alias/CBU/WhatsApp reales en `/admin/configuracion`,
 pulido visual final, más cobertura e2e (pago, admin), pasar a Vercel Pro antes del
 evento.
