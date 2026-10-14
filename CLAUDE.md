@@ -13,13 +13,14 @@ y panel de organización.
 - Next.js 15 (App Router) + TypeScript + Tailwind
 - PostgreSQL + Prisma
 - Auth.js v5 — sesiones de base de datos (Prisma adapter). Dos logins separados:
-  magic link por email (Resend) para responsables de equipo, y usuario/contraseña
+  magic link por email (SMTP) para responsables de equipo, y usuario/contraseña
   fijo para staff (ver más abajo). Rol en `User.role`.
 - Medio de pago por defecto: **transferencia bancaria manual** (alias/CBU cargados en
   `TournamentConfig`, comprobante por WhatsApp, confirmación a mano por el admin —
   `confirmManualPayment`). Mercado Pago Checkout Pro queda implementado y funcional pero
   **apagado por defecto** (`TournamentConfig.paymentMethod`): cobra comisión, no se usa.
-- Resend (email transaccional)
+- Email transaccional por SMTP (`lib/email/send.ts`, nodemailer) — por defecto Gmail con
+  contraseña de aplicación, sin necesidad de dominio propio verificado.
 - Vitest (unit + integration) · Playwright (e2e)
 
 ## Principios
@@ -49,7 +50,7 @@ y panel de organización.
   Hash para producción: `npm run hash:password -- "contraseña"` → `STAFF_PASSWORD_HASH`.
 - **`/ingresar`** — magic link por email, para responsables de equipo (`TEAM_MANAGER`).
   Si ese email está en `ADMIN_EMAILS`, al entrar se le promueve a `ADMIN` igual (login
-  alternativo cuando Resend está configurado).
+  alternativo cuando SMTP está configurado).
 - Ambos flujos terminan en una `Session` de Auth.js normal — `getSessionUser`/`requireRole`
   no distinguen cómo se creó la sesión.
 - `middleware.ts` redirige `/admin/*` sin sesión a `/staff` (no a `/ingresar`).
@@ -71,7 +72,7 @@ lib/services      registration, payment (confirmManualPayment + MP dormido), gro
                   results, cups, config, admin-teams, waitlist, notification(-dispatch), audit
 lib/auth          config (edge-safe), index (Node, magic link), staff (usuario/contraseña),
                   guards, types
-lib/email         send.ts (Resend), templates.ts (un render por NotificationType)
+lib/email         send.ts (SMTP/nodemailer), templates.ts (un render por NotificationType)
 prisma            schema.prisma, migrations, seed.ts
 tests/unit        motor puro
 tests/integration servicios contra DB de test (.env.test → seven_mixto_test)
@@ -103,9 +104,11 @@ Fases 1-6 completas + cambio de medio de pago (148 tests verdes). El detalle por
 (qué archivo hace qué) está en `docs/ESTADO.md`: leer solo la sección que toque la tarea.
 
 - Tests de integración: comparten una DB → corren en serie (`fileParallelism: false`).
-- Próximo: deploy productivo (Vercel + Neon/Supabase, variables de entorno, credenciales
-  reales de Resend, `STAFF_PASSWORD_HASH`), cargar los datos bancarios reales en
-  `/admin/configuracion` antes de abrir inscripciones, pulido visual final, más e2e.
+- Deploy: Vercel Hobby + Neon + GitHub (`joacopast/seven-mixto-hurling`), en marcha —
+  detalle en `docs/ESTADO.md`. Próximo: cuenta de Gmail + contraseña de aplicación para
+  `SMTP_USER`/`SMTP_PASS`, cron-job.org para los `/api/cron/*`, datos bancarios reales en
+  `/admin/configuracion`, pulido visual final, más e2e, y pasar a Vercel Pro antes del
+  evento (crons nativos + en regla comercialmente).
 - Al terminar un cambio relevante, agregarlo en `docs/ESTADO.md`, no acá.
 
 ## Diseño / marca

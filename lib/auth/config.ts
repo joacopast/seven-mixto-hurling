@@ -5,7 +5,7 @@ import type { NextAuthConfig } from "next-auth";
  * Este objeto se usa también desde middleware.ts (runtime edge), por eso debe
  * quedar libre de imports `server-only`, Prisma o Node APIs.
  *
- * El provider real (magic link por email vía Resend) y el Prisma adapter se
+ * El provider real (magic link por email vía SMTP) y el Prisma adapter se
  * agregan en lib/auth/index.ts, que corre en runtime Node.
  */
 

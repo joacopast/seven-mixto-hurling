@@ -1,5 +1,5 @@
 import NextAuth from "next-auth";
-import Resend from "next-auth/providers/resend";
+import Nodemailer from "next-auth/providers/nodemailer";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "@/lib/db";
 import { authConfig, isAdminEmail } from "@/lib/auth/config";
@@ -14,9 +14,14 @@ export const {
   ...authConfig,
   adapter: PrismaAdapter(db),
   providers: [
-    Resend({
-      apiKey: process.env.RESEND_API_KEY ?? "dev-noop",
-      from: process.env.EMAIL_FROM ?? "Seven Mixto Hurling <no-reply@localhost>",
+    // El transporte real (SMTP) vive en lib/email/send.ts; sendVerificationRequest
+    // lo reemplaza por completo — `server` solo satisface la validación del provider.
+    Nodemailer({
+      server: {
+        host: process.env.SMTP_HOST ?? "smtp.gmail.com",
+        port: Number(process.env.SMTP_PORT ?? 465),
+        auth: { user: process.env.SMTP_USER ?? "dev-noop", pass: process.env.SMTP_PASS ?? "dev-noop" },
+      },
       async sendVerificationRequest({ identifier, url }) {
         await sendMagicLinkEmail({ to: identifier, url });
       },

@@ -1,13 +1,11 @@
 import "server-only";
+import nodemailer from "nodemailer";
 
 /**
- * Envío de emails. Fase 1: magic link de login.
- * Sin RESEND_API_KEY (desarrollo) el magic link se imprime en consola.
- * La arquitectura de notificaciones de dominio (confirmación, pago, fixture…)
- * se implementa en la Fase 6 sobre esta misma capa.
+ * Envío de emails por SMTP (ej. Gmail con contraseña de aplicación — no
+ * requiere dominio propio, a diferencia de un proveedor como Resend).
+ * Sin SMTP_USER/SMTP_PASS (desarrollo) el magic link se imprime en consola.
  */
-
-const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
 interface SendArgs {
   to: string;
@@ -16,30 +14,34 @@ interface SendArgs {
   text: string;
 }
 
+let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+
+function getTransporter() {
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST ?? "smtp.gmail.com",
+      port: Number(process.env.SMTP_PORT ?? 465),
+      secure: (process.env.SMTP_PORT ?? "465") === "465",
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+  }
+  return transporter;
+}
+
 export async function sendEmail({ to, subject, html, text }: SendArgs): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM ?? "Seven Mixto Hurling <no-reply@localhost>";
 
-  if (!apiKey) {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
     console.info(
       `\n[email:dev] Para: ${to}\n[email:dev] Asunto: ${subject}\n[email:dev] ${text}\n`,
     );
     return;
   }
 
-  const res = await fetch(RESEND_ENDPOINT, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ from, to, subject, html, text }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Resend respondió ${res.status}: ${body}`);
-  }
+  await getTransporter().sendMail({ from, to, subject, html, text });
 }
 
 export async function sendMagicLinkEmail({ to, url }: { to: string; url: string }): Promise<void> {

@@ -42,7 +42,7 @@ export async function submitRegistration(raw: unknown): Promise<SubmitResult> {
 
     // Enviar magic link para que el responsable pueda administrar su equipo.
     try {
-      await signIn("resend", {
+      await signIn("nodemailer", {
         email: result.managerEmail,
         redirectTo: "/mi-equipo",
         redirect: false,

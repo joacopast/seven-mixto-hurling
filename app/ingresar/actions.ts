@@ -27,7 +27,7 @@ export async function requestMagicLink(
   }
 
   try {
-    await signIn("resend", {
+    await signIn("nodemailer", {
       email: parsed.data.email,
       redirectTo: parsed.data.callbackUrl ?? "/mi-equipo",
       redirect: false,

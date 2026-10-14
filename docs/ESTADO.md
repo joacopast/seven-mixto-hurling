@@ -102,6 +102,15 @@ Artifact (https://claude.ai/artifact/3ffBmjArdGrBckc4Jq8DQx) — login de staff,
 panel, checklist antes de abrir inscripción, confirmar pagos por transferencia, lista de
 espera, armar grupos/fixture/copas, auditoría, día del evento y FAQ.
 
-Pendiente / próximo: deploy productivo (Vercel + Neon/Supabase, variables de entorno,
-credenciales reales de Resend, `STAFF_PASSWORD_HASH`), cargar alias/CBU/WhatsApp reales,
-pulido visual final, más cobertura e2e (pago, admin).
+Email (2026-10-14): se reemplazó Resend por SMTP (`lib/email/send.ts` con nodemailer,
+`lib/auth/index.ts` usa el provider `Nodemailer` de next-auth) — evita tener que comprar
+y verificar un dominio propio solo para mandar emails. Pensado para Gmail con contraseña
+de aplicación (`SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`, `SMTP_USER`, `SMTP_PASS`,
+`EMAIL_FROM`); sin `SMTP_USER`/`SMTP_PASS` el magic link se imprime en consola, igual que
+antes. Si en algún momento se compra un dominio, Resend se puede reactivar reemplazando
+el transporte de `sendEmail` sin tocar el resto de la app.
+
+Pendiente / próximo: cuenta de Gmail + contraseña de aplicación para `SMTP_USER`/
+`SMTP_PASS` en Vercel, cron-job.org pegándole a `/api/cron/*` con el `CRON_SECRET`,
+cargar alias/CBU/WhatsApp reales en `/admin/configuracion`, pulido visual final, más
+cobertura e2e (pago, admin), pasar a Vercel Pro antes del evento.
