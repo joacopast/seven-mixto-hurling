@@ -116,6 +116,19 @@ export async function generateCups(tournamentId: string, ctx: Ctx = {}): Promise
 
   const cupAssignments = assignCups(records, tournament.config.cupNames);
 
+  // Cada copa necesita exactamente `cupSize` equipos (uno por grupo, en esa
+  // posición). Si algún grupo tiene menos equipos que los demás, la copa más
+  // baja (ej. Madera) queda con menos seeds — sin este chequeo, seedOrder()
+  // recibiría un tamaño que no es potencia de 2 (o 0) para esa copa.
+  const incomplete = cupAssignments.find((a) => a.seeds.length !== cupSize);
+  if (incomplete) {
+    throw new CupsError(
+      `La copa "${incomplete.cupName}" tiene ${incomplete.seeds.length} equipo(s) en vez de ${cupSize} — ` +
+        `revisá que todos los grupos tengan la misma cantidad de equipos.`,
+      "WRONG_STATUS",
+    );
+  }
+
   // Horario base del arranque de copas.
   const lastGroupRound = tournament.rounds[0];
   const slotMin = tournament.config.matchDurationMin + tournament.config.turnoverMin;

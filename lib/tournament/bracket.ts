@@ -29,6 +29,9 @@ const ROUND_BY_MATCH_COUNT: Record<number, BracketRoundName> = {
  * size 4 → [1,4,2,3] · size 8 → [1,8,4,5,2,7,3,6] · size 16 → [1,16,8,9,4,13,5,12,2,15,7,10,3,14,6,11]
  */
 export function seedOrder(size: number): number[] {
+  if (size < 1 || (size & (size - 1)) !== 0) {
+    throw new Error(`seedOrder: el tamaño de la llave debe ser una potencia de 2 (recibió ${size}).`);
+  }
   if (size === 1) return [1];
   const prev = seedOrder(size / 2);
   const out: number[] = [];

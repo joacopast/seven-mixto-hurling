@@ -115,6 +115,30 @@ describe("generateCups", () => {
 
     await expect(generateCups(t.id)).rejects.toMatchObject({ code: "GROUPS_NOT_FINISHED" });
   });
+
+  it("rechaza con error claro si los grupos tienen distinta cantidad de equipos (no crashea)", async () => {
+    // Reproduce un bug real: 2 grupos (potencia de 2 ✓) pero de tamaño distinto —
+    // la copa más baja queda con 0 seeds y seedOrder(0) recursaba infinito.
+    const t = await seedTournament();
+    await testDb.tournamentConfig.updateMany({
+      where: { tournamentId: t.id },
+      data: { groupCount: 2, groupSize: 4, fieldCount: 2 },
+    });
+    const teams = await seedConfirmedTeams(t.id, 5);
+    await setTournamentStatus(t.id, "REGISTRATION_CLOSED");
+    await saveGroupAssignment(t.id, [teams.slice(0, 3), teams.slice(3, 5)].map((g) => g.map((x) => x.id)));
+    await generateGroupPhaseFixture(t.id);
+    await setTournamentStatus(t.id, "GROUPS_PUBLISHED");
+
+    const matches = await testDb.match.findMany({ where: { tournamentId: t.id, phase: "GROUP" } });
+    for (const m of matches) {
+      const homeWins = m.homeTeamId! < m.awayTeamId!;
+      await setGroupMatchResult(m.id, { homeScore: homeWins ? 2 : 0, awayScore: homeWins ? 0 : 2 });
+    }
+
+    await expect(generateCups(t.id)).rejects.toMatchObject({ code: "WRONG_STATUS" });
+    await expect(generateCups(t.id)).rejects.toThrow(/misma cantidad de equipos/);
+  });
 });
 
 describe("setCupMatchResult — avance de la llave", () => {

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildBracket16,
   resolveBracket,
+  seedOrder,
   SEED_ORDER_16,
   ROUND_ORDER,
   type BracketNode,
@@ -9,6 +10,21 @@ import {
 
 const nodes = buildBracket16();
 const byId = new Map(nodes.map((n) => [n.id, n]));
+
+describe("seedOrder — tamaños inválidos", () => {
+  it("rechaza 0 en vez de recursar infinito", () => {
+    expect(() => seedOrder(0)).toThrow(/potencia de 2/);
+  });
+
+  it("rechaza tamaños que no son potencia de 2", () => {
+    expect(() => seedOrder(3)).toThrow(/potencia de 2/);
+    expect(() => seedOrder(12)).toThrow(/potencia de 2/);
+  });
+
+  it("rechaza negativos", () => {
+    expect(() => seedOrder(-4)).toThrow(/potencia de 2/);
+  });
+});
 
 describe("buildBracket16 — estructura", () => {
   it("tiene 15 nodos: 8 + 4 + 2 + 1", () => {
