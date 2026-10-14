@@ -650,6 +650,8 @@ enum NotificationType {
   FIELD_CHANGED
   RESULT_POSTED
   WAITLIST_INVITED
+  /// Aviso a la organización (no a un equipo) de un cambio en equipos/pagos/inscripciones.
+  ADMIN_ALERT
 }
 
 enum NotificationChannel {
@@ -674,6 +676,8 @@ model Notification {
   recipientUserId String?
   recipientUser   User?   @relation(fields: [recipientUserId], references: [id])
   recipientTeamId String?
+  /// Destino fijo (no es un User/Team) — lo usan los avisos a la organización.
+  recipientEmail  String?
 
   payload   Json
   dedupeKey String? @unique

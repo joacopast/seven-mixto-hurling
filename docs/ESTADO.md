@@ -222,6 +222,25 @@ Seña / pago parcial + datos de jugador (fiesta, dieta, edad) + CSV (2026-10-14)
   `va_a_la_fiesta`. `/api/admin/export/teams` suma `pagado_ars` / `falta_ars` (misma suma
   de pagos aprobados que usa `/admin/pagos`).
 
+Avisos a la organización por email (2026-10-14): `lib/services/admin-alerts.ts` →
+`notifyAdmin(tx, { title, lines, teamId?, teamName? })` encola un `Notification` tipo
+`ADMIN_ALERT` (nuevo) a `ADMIN_NOTIFICATION_EMAILS` (env, coma-separado; default
+`aftersevenmixto@gmail.com` si no está seteada) — reutiliza la misma cola/cron/plantilla
+que ya usan los avisos a los equipos (`Notification.recipientEmail`, campo nuevo, se
+resuelve antes que `recipientUser`/`recipientTeamId` en `dispatchQueuedNotifications`).
+Se llama desde dentro de la misma transacción en cada mutación de equipos, pagos e
+inscripciones: `registration.create`, las tres ramas de `confirmManualPayment`
+(confirmación completa, seña, sobrecupo) y las de `applyMpPayment` (aprobado, monto
+observado, sobrecupo, rechazado, devuelto), `joinWaitlist`, `promoteWaitlistEntry`,
+`autoPromoteWaitlist` (expiración), y en `admin-teams.ts`: alta/edición/baja de equipo,
+alta/edición/baja de jugador (esta última también cubre la autoedición del responsable
+desde `/mi-equipo`, vía `updatePlayer` compartido). Para eventos que se pueden repetir
+con el mismo contenido (editar equipo, editar jugador) el `dedupeKey` usa
+`crypto.randomUUID()` en vez de datos del evento, para no pisar un aviso real con el
+de `enqueueNotification`'s dedupe-by-key. Deliberadamente fuera de alcance: cambios de
+estructura del torneo (grupos, copas, resultados, config) — el pedido fue específicamente
+equipos/pagos/inscripciones.
+
 Pendiente / próximo: cargar alias/CBU/WhatsApp reales en `/admin/configuracion`,
 pulido visual final, más cobertura e2e (pago, admin), pasar a Vercel Pro antes del
 evento. Discutido pero no implementado: agregar/sacar jugadores desde el portal con

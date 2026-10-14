@@ -7,6 +7,8 @@ export interface NotificationIntent {
   type: NotificationType;
   recipientUserId?: string | null;
   recipientTeamId?: string | null;
+  /** Destino fijo (no es un User/Team) — lo usan los avisos a la organización. */
+  recipientEmail?: string | null;
   payload: Prisma.InputJsonValue;
   /** Clave única para evitar duplicados (ej. `payment-approved:<paymentId>`). */
   dedupeKey?: string;
@@ -29,6 +31,7 @@ export async function enqueueNotification(tx: Tx, intent: NotificationIntent): P
       status: "QUEUED",
       recipientUserId: intent.recipientUserId ?? null,
       recipientTeamId: intent.recipientTeamId ?? null,
+      recipientEmail: intent.recipientEmail ?? null,
       payload: intent.payload,
       dedupeKey: intent.dedupeKey ?? null,
     },

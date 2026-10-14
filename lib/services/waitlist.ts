@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { slugify } from "@/lib/slug";
 import { writeAudit } from "@/lib/services/audit";
 import { enqueueNotification } from "@/lib/services/notification";
+import { notifyAdmin } from "@/lib/services/admin-alerts";
 import { getActiveTournament, OCCUPYING_STATUSES } from "@/lib/tournament/queries";
 import { countryCode } from "@/lib/countries";
 
@@ -94,6 +95,14 @@ export async function joinWaitlist(input: JoinWaitlistInput, ctx: { ip?: string 
       ip: ctx.ip ?? null,
     });
 
+    await notifyAdmin(tx, {
+      title: `Lista de espera — ${team.name}`,
+      lines: [`Responsable: ${input.contactName} (${email})`, `Posición: ${position}`],
+      teamId: team.id,
+      teamName: team.name,
+      dedupeKey: `admin-alert:waitlist.join:${registration.id}`,
+    });
+
     return { position };
   });
 }
@@ -161,6 +170,13 @@ export async function promoteWaitlistEntry(registrationId: string, ctx: Ctx = {}
       newValue: { expiresAt: expiresAt.toISOString() },
       ip: ctx.ip ?? null,
     });
+    await notifyAdmin(tx, {
+      title: `Cupo liberado — invitamos a ${registration.team.name}`,
+      lines: [`Tiene hasta ${expiresAt.toLocaleString("es-AR")} para pagar.`],
+      teamId: registration.teamId,
+      teamName: registration.team.name,
+      dedupeKey: `admin-alert:waitlist.promote:${registrationId}:${now.getTime()}`,
+    });
   });
 }
 
@@ -184,7 +200,7 @@ export async function autoPromoteWaitlist(tournamentId: string): Promise<{
       waitlistInvitedAt: { not: null },
       waitlistExpiresAt: { lt: now },
     },
-    include: { payments: { where: { status: "APPROVED" }, take: 1 } },
+    include: { payments: { where: { status: "APPROVED" }, take: 1 }, team: { select: { name: true } } },
   });
   for (const reg of stale) {
     if (reg.payments.length > 0) continue; // pagó justo a tiempo
@@ -211,6 +227,13 @@ export async function autoPromoteWaitlist(tournamentId: string): Promise<{
         action: "waitlist.expire",
         entity: "Registration",
         entityId: reg.id,
+      });
+      await notifyAdmin(tx, {
+        title: `Invitación vencida — ${reg.team.name}`,
+        lines: ["No pagó a tiempo y volvió al final de la lista de espera."],
+        teamId: reg.teamId,
+        teamName: reg.team.name,
+        dedupeKey: `admin-alert:waitlist.expire:${reg.id}:${now.getTime()}`,
       });
     });
     expired++;

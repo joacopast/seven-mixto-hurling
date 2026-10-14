@@ -56,6 +56,11 @@ describe("admin-teams", () => {
     expect(fresh.seed).toBe(5);
     const audit = await testDb.auditLog.findFirstOrThrow({ where: { action: "team.admin.update" } });
     expect(audit.previousValue).toMatchObject({ name: "Equipo team01" });
+
+    const adminAlert = await testDb.notification.findFirst({
+      where: { type: "ADMIN_ALERT", dedupeKey: { startsWith: "admin-alert:team.admin.update:" } },
+    });
+    expect(adminAlert).not.toBeNull();
   });
 
   it("rechaza crear o editar un equipo con un país ya inscripto (torneo formato mundial)", async () => {
@@ -218,6 +223,11 @@ describe("lista de espera", () => {
     await expect(
       joinWaitlist({ teamName: "Japón", contactName: "B", contactEmail: "e2@test.local", contactPhone: "2" }),
     ).rejects.toMatchObject({ code: "DUPLICATE_TEAM" });
+
+    const adminAlert = await testDb.notification.findFirst({
+      where: { type: "ADMIN_ALERT", dedupeKey: { startsWith: "admin-alert:waitlist.join:" } },
+    });
+    expect(adminAlert).not.toBeNull();
   });
 
   it("promoteWaitlistEntry rechaza si no hay cupos", async () => {

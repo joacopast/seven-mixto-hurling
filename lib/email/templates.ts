@@ -122,6 +122,22 @@ export function renderNotification(type: NotificationType, ctx: Ctx): RenderedEm
       const body = `<p>Se actualizaron resultados de <strong>${team}</strong>. Mirá la tabla y el fixture.</p>`;
       return { subject: `Resultados actualizados — ${team}`, html: shell("Resultados", body, portal), text: stripHtml(body) };
     }
+    case "ADMIN_ALERT": {
+      const title = typeof ctx.extra?.title === "string" ? ctx.extra.title : "Cambio en el torneo";
+      const lines = Array.isArray(ctx.extra?.lines) ? (ctx.extra.lines as unknown[]).map(String) : [];
+      const teamId = typeof ctx.extra?.teamId === "string" ? ctx.extra.teamId : undefined;
+      const body = `
+        <p><strong>${title}</strong></p>
+        ${
+          lines.length
+            ? `<ul style="margin:10px 0;padding-left:18px">${lines.map((l) => `<li>${l}</li>`).join("")}</ul>`
+            : ""
+        }`;
+      const cta = teamId
+        ? { label: "Ver equipo", href: `${APP_URL}/admin/equipos/${teamId}` }
+        : { label: "Ir al panel", href: `${APP_URL}/admin` };
+      return { subject: title, html: shell(title, body, cta), text: stripHtml(body) };
+    }
     default: {
       const body = `<p>Novedades del torneo para <strong>${team}</strong>.</p>`;
       return { subject: `Novedades — ${SITE.name}`, html: shell("Novedades", body, tournament), text: stripHtml(body) };

@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { writeAudit } from "@/lib/services/audit";
 import { enqueueNotification } from "@/lib/services/notification";
+import { notifyAdmin } from "@/lib/services/admin-alerts";
 import { calculatePrice, formatArs } from "@/lib/tournament/pricing";
 import { CONFIRMED_STATUSES } from "@/lib/tournament/queries";
 import {
@@ -278,6 +279,13 @@ export async function confirmManualPayment(
         },
         dedupeKey: `payment-deposit:${payment.id}`,
       });
+      await notifyAdmin(tx, {
+        title: `Seña recibida — ${registration.team!.name}`,
+        lines: [`Pagó: ${formatArs(amount)}`, `Falta: ${formatArs(owed)}`],
+        teamId: registration.teamId,
+        teamName: registration.team!.name,
+        dedupeKey: `admin-alert:payment.manual.deposit:${payment.id}`,
+      });
       return { outcome: "DEPOSIT_RECORDED", amountPaid: alreadyPaid + amount, amountOwed: owed };
     }
 
@@ -316,6 +324,16 @@ export async function confirmManualPayment(
         payload: { kind: "overbooked_refund", teamId: registration.teamId, position },
         dedupeKey: `payment-overbook:${payment.id}`,
       });
+      await notifyAdmin(tx, {
+        title: `Sobrecupo — ${registration.team!.name} pasó a lista de espera`,
+        lines: [
+          `Transfirió ${formatArs(amount)} pero ya no había cupo.`,
+          "Hay que reintegrarle la transferencia.",
+        ],
+        teamId: registration.teamId,
+        teamName: registration.team!.name,
+        dedupeKey: `admin-alert:payment.overbooked:${payment.id}`,
+      });
       return { outcome: "WAITLISTED_OVERBOOK" };
     }
 
@@ -353,6 +371,13 @@ export async function confirmManualPayment(
       recipientUserId: registration.team!.managerUserId,
       payload: { teamId: registration.teamId, teamName: registration.team!.name },
       dedupeKey: `team-approved:${registration.teamId}`,
+    });
+    await notifyAdmin(tx, {
+      title: `Pago confirmado — ${registration.team!.name}`,
+      lines: [`Monto: ${formatArs(alreadyPaid + amount)}`, "El equipo quedó inscripto."],
+      teamId: registration.teamId,
+      teamName: registration.team!.name,
+      dedupeKey: `admin-alert:payment.manual.confirm:${payment.id}`,
     });
     return { outcome: "CONFIRMED", amountPaid: registration.totalAmount, amountOwed: 0 };
   });
@@ -471,6 +496,15 @@ export async function applyMpPayment(payment: MpPayment): Promise<ApplyResult> {
           payload: { kind: "payment_observed", teamId: registration.teamId, paid: paidCents },
           dedupeKey: `payment-observed:${mpPaymentId}`,
         });
+        await notifyAdmin(tx, {
+          title: `Pago a revisar — ${registration.team.name}`,
+          lines: [
+            `Mercado Pago acreditó ${formatArs(paidCents)} pero se esperaba ${formatArs(registration.totalAmount)}.`,
+          ],
+          teamId: registration.teamId,
+          teamName: registration.team.name,
+          dedupeKey: `admin-alert:payment.amount.mismatch:${mpPaymentId}`,
+        });
         return { registrationId, outcome: "OBSERVED_AMOUNT" as const };
       }
 
@@ -506,6 +540,13 @@ export async function applyMpPayment(payment: MpPayment): Promise<ApplyResult> {
           recipientTeamId: registration.teamId,
           payload: { kind: "overbooked_refund", teamId: registration.teamId, position },
           dedupeKey: `payment-overbook:${mpPaymentId}`,
+        });
+        await notifyAdmin(tx, {
+          title: `Sobrecupo — ${registration.team.name} pasó a lista de espera`,
+          lines: [`Pagó ${formatArs(paidCents)} por Mercado Pago pero ya no había cupo.`, "Requiere reembolso total."],
+          teamId: registration.teamId,
+          teamName: registration.team.name,
+          dedupeKey: `admin-alert:payment.overbooked.mp:${mpPaymentId}`,
         });
         return { registrationId, outcome: "WAITLISTED_OVERBOOK" as const };
       }
@@ -543,6 +584,13 @@ export async function applyMpPayment(payment: MpPayment): Promise<ApplyResult> {
         payload: { teamId: registration.teamId, teamName: registration.team.name },
         dedupeKey: `team-approved:${registration.teamId}`,
       });
+      await notifyAdmin(tx, {
+        title: `Pago confirmado — ${registration.team.name}`,
+        lines: [`Monto: ${formatArs(paidCents)} (Mercado Pago)`, "El equipo quedó inscripto."],
+        teamId: registration.teamId,
+        teamName: registration.team.name,
+        dedupeKey: `admin-alert:payment.approved:${mpPaymentId}`,
+      });
       return { registrationId, outcome: "CONFIRMED" as const };
     }
 
@@ -561,6 +609,13 @@ export async function applyMpPayment(payment: MpPayment): Promise<ApplyResult> {
           ...auditBase,
           action: "payment.rejected",
           newValue: { mpPaymentId, detail: payment.status_detail },
+        });
+        await notifyAdmin(tx, {
+          title: `Pago rechazado — ${registration.team.name}`,
+          lines: [`Mercado Pago rechazó el pago (${payment.status_detail ?? "sin detalle"}).`],
+          teamId: registration.teamId,
+          teamName: registration.team.name,
+          dedupeKey: `admin-alert:payment.rejected:${mpPaymentId}`,
         });
       }
       return { registrationId, outcome: "REJECTED" as const };
@@ -587,6 +642,13 @@ export async function applyMpPayment(payment: MpPayment): Promise<ApplyResult> {
         recipientTeamId: registration.teamId,
         payload: { kind: "payment_refunded", teamId: registration.teamId },
         dedupeKey: `payment-refunded:${mpPaymentId}`,
+      });
+      await notifyAdmin(tx, {
+        title: `Devolución / contracargo — ${registration.team.name}`,
+        lines: ["La inscripción quedó en revisión (OBSERVED)."],
+        teamId: registration.teamId,
+        teamName: registration.team.name,
+        dedupeKey: `admin-alert:payment.refunded:${mpPaymentId}`,
       });
       return { registrationId, outcome: "REFUNDED" as const };
     }

@@ -61,6 +61,12 @@ describe("createRegistration", () => {
       where: { entity: "Registration", entityId: res.registrationId },
     });
     expect(audit?.action).toBe("registration.create");
+
+    const adminAlert = await testDb.notification.findFirst({
+      where: { type: "ADMIN_ALERT", dedupeKey: { startsWith: `admin-alert:registration.create:${res.registrationId}` } },
+    });
+    expect(adminAlert).not.toBeNull();
+    expect(adminAlert!.recipientEmail).toMatch(/@/);
   });
 
   it("guarda restricción alimenticia y asistencia a la fiesta por jugador", async () => {

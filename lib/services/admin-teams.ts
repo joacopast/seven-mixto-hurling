@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/slug";
 import { writeAudit } from "@/lib/services/audit";
+import { notifyAdmin } from "@/lib/services/admin-alerts";
 import { normalizeDoc } from "@/lib/validation/registration";
 import { countryCode } from "@/lib/countries";
 import type { Prisma, RegistrationStatus } from "@prisma/client";
@@ -102,6 +103,14 @@ export async function adminCreateTeam(input: AdminCreateTeamInput, ctx: Ctx = {}
       ip: ctx.ip ?? null,
     });
 
+    await notifyAdmin(tx, {
+      title: `Equipo cargado a mano — ${team.name}`,
+      lines: [`Responsable: ${input.contactName} (${email})`, `Estado: ${input.registrationStatus}`],
+      teamId: team.id,
+      teamName: team.name,
+      dedupeKey: `admin-alert:team.admin.create:${team.id}`,
+    });
+
     return team;
   });
 }
@@ -184,6 +193,14 @@ export async function adminUpdateTeam(teamId: string, input: AdminUpdateTeamInpu
       newValue: after,
       ip: ctx.ip ?? null,
     });
+    await notifyAdmin(tx, {
+      title: `Equipo editado — ${input.name ?? team.name}`,
+      lines: Object.keys(after).map((k) => `${k}: ${before[k] ?? "—"} → ${after[k] ?? "—"}`),
+      teamId,
+      teamName: input.name ?? team.name,
+      // Un edit puede repetirse con el mismo contenido — no dedupear por contenido.
+      dedupeKey: `admin-alert:team.admin.update:${crypto.randomUUID()}`,
+    });
   });
 }
 
@@ -241,6 +258,13 @@ export async function adminAddPlayer(teamId: string, input: AdminPlayerInput, ct
       newValue: { teamId, name: `${input.firstName} ${input.lastName}`, doc },
       ip: ctx.ip ?? null,
     });
+    await notifyAdmin(tx, {
+      title: `Jugador agregado — ${team.name}`,
+      lines: [`${input.firstName} ${input.lastName} (${input.docType} ${doc})`],
+      teamId,
+      teamName: team.name,
+      dedupeKey: `admin-alert:player.admin.add:${player.id}`,
+    });
   });
 }
 
@@ -252,7 +276,7 @@ export async function adminAddPlayer(teamId: string, input: AdminPlayerInput, ct
  * propiedad + `rosterLockAt` para el caso del responsable del equipo).
  */
 export async function updatePlayer(playerId: string, input: AdminPlayerInput, ctx: Ctx = {}) {
-  const player = await db.player.findUnique({ where: { id: playerId } });
+  const player = await db.player.findUnique({ where: { id: playerId }, include: { team: { select: { name: true } } } });
   if (!player) throw new AdminTeamError("Jugador no encontrado.", "NOT_FOUND");
 
   const doc = normalizeDoc(input.docNumber);
@@ -310,6 +334,17 @@ export async function updatePlayer(playerId: string, input: AdminPlayerInput, ct
       newValue: after,
       ip: ctx.ip ?? null,
     });
+    await notifyAdmin(tx, {
+      title: `Jugador editado — ${player.team.name}`,
+      lines: [
+        `${before.firstName} ${before.lastName} (${before.docType} ${before.docNumber}) →`,
+        `${after.firstName} ${after.lastName} (${after.docType} ${after.docNumber})`,
+      ],
+      teamId: player.teamId,
+      teamName: player.team.name,
+      // Un edit puede repetirse con el mismo contenido — no dedupear por contenido.
+      dedupeKey: `admin-alert:player.update:${crypto.randomUUID()}`,
+    });
   });
 }
 
@@ -331,6 +366,13 @@ export async function adminRemovePlayer(playerId: string, ctx: Ctx = {}) {
         doc: player.docNumber,
       },
       ip: ctx.ip ?? null,
+    });
+    await notifyAdmin(tx, {
+      title: `Jugador quitado — ${player.team.name}`,
+      lines: [`${player.firstName} ${player.lastName} (${player.docType} ${player.docNumber})`],
+      teamId: player.teamId,
+      teamName: player.team.name,
+      dedupeKey: `admin-alert:player.admin.remove:${playerId}`,
     });
   });
 }
@@ -357,6 +399,12 @@ export async function adminDeleteTeam(teamId: string, ctx: Ctx = {}) {
       entityId: teamId,
       previousValue: { name: team.name, status: team.registrationStatus },
       ip: ctx.ip ?? null,
+    });
+    await notifyAdmin(tx, {
+      title: `Equipo eliminado — ${team.name}`,
+      lines: [`Estaba en estado: ${team.registrationStatus}`],
+      teamName: team.name,
+      dedupeKey: `admin-alert:team.admin.delete:${teamId}`,
     });
     await tx.team.delete({ where: { id: teamId } });
   });

@@ -28,7 +28,7 @@ export async function dispatchQueuedNotifications(limit = 50): Promise<{
   let skipped = 0;
 
   for (const n of pending) {
-    let to = n.recipientUser?.email ?? null;
+    let to = n.recipientEmail ?? n.recipientUser?.email ?? null;
     if (!to && n.recipientTeamId) {
       const team = await db.team.findUnique({
         where: { id: n.recipientTeamId },

@@ -72,6 +72,12 @@ describe("confirmManualPayment — transferencia confirmada a mano", () => {
 
     const audit = await testDb.auditLog.findFirst({ where: { action: "payment.manual.confirm" } });
     expect(audit).not.toBeNull();
+
+    const adminAlert = await testDb.notification.findFirst({
+      where: { type: "ADMIN_ALERT", dedupeKey: { startsWith: "admin-alert:payment.manual.confirm:" } },
+    });
+    expect(adminAlert).not.toBeNull();
+    expect(adminAlert!.recipientEmail).toMatch(/@/);
   });
 
   it("es idempotente: confirmar dos veces no duplica el pago", async () => {
@@ -156,6 +162,11 @@ describe("confirmManualPayment — seña (pago parcial)", () => {
 
     const audit = await testDb.auditLog.findFirst({ where: { action: "payment.manual.deposit" } });
     expect(audit).not.toBeNull();
+
+    const adminAlert = await testDb.notification.findFirst({
+      where: { type: "ADMIN_ALERT", dedupeKey: { startsWith: "admin-alert:payment.manual.deposit:" } },
+    });
+    expect(adminAlert).not.toBeNull();
   });
 
   it("completar el saldo tras una seña confirma la inscripción", async () => {

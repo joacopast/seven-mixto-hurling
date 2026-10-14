@@ -4,7 +4,8 @@ import { slugify } from "@/lib/slug";
 import { countryCode } from "@/lib/countries";
 import { writeAudit } from "@/lib/services/audit";
 import { enqueueNotification } from "@/lib/services/notification";
-import { calculatePrice, type PriceQuote } from "@/lib/tournament/pricing";
+import { notifyAdmin } from "@/lib/services/admin-alerts";
+import { calculatePrice, formatArs, type PriceQuote } from "@/lib/tournament/pricing";
 import { validateRoster, type RosterPlayerInput } from "@/lib/tournament/roster";
 import { getActiveTournament } from "@/lib/tournament/queries";
 import { OCCUPYING_STATUSES } from "@/lib/tournament/queries";
@@ -208,6 +209,18 @@ export async function createRegistration(
       recipientUserId: user.id,
       payload: { teamId: team.id, teamName: team.name },
       dedupeKey: `registration-received:${registration.id}`,
+    });
+
+    await notifyAdmin(tx, {
+      title: `Nueva inscripción — ${team.name}`,
+      lines: [
+        `Responsable: ${input.manager.contactName} (${email})`,
+        `Jugadores: ${input.players.length}`,
+        `Total: ${formatArs(quote.totalAmount)}`,
+      ],
+      teamId: team.id,
+      teamName: team.name,
+      dedupeKey: `admin-alert:registration.create:${registration.id}`,
     });
 
     return { team, registration, email };
