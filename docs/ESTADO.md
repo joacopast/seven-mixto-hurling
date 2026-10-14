@@ -125,6 +125,14 @@ Vercel (`vercel logs`) que el envío SMTP salió sin error tras corregir el `SMT
 Si en algún momento se compra un dominio, Resend (u otro proveedor) se puede reactivar
 reemplazando el transporte de `sendEmail` sin tocar el resto de la app.
 
-Pendiente / próximo: cron-job.org pegándole a `/api/cron/*` con el `CRON_SECRET`,
-cargar alias/CBU/WhatsApp reales en `/admin/configuracion`, pulido visual final, más
-cobertura e2e (pago, admin), pasar a Vercel Pro antes del evento.
+Crons (2026-10-14): los 3 pings externos quedaron armados en cron-job.org vía su API
+(console.cron-job.org) — `notifications` cada 5 min, `reconcile-payments` cada hora,
+`waitlist` cada 30 min, cada uno con header `Authorization: Bearer <CRON_SECRET>`.
+El `CRON_SECRET` se regeneró una vez (el original nunca se guardó, a propósito) y se
+verificó con un curl directo al endpoint antes de configurar los jobs. Al pasar a
+Vercel Pro, se puede volver al `crons` nativo de `vercel.json` (ver más arriba) y
+deshabilitar/borrar estos 3 jobs en cron-job.org.
+
+Pendiente / próximo: cargar alias/CBU/WhatsApp reales en `/admin/configuracion`,
+pulido visual final, más cobertura e2e (pago, admin), pasar a Vercel Pro antes del
+evento.
