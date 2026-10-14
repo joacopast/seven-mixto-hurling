@@ -71,6 +71,16 @@ export const configFormSchema = z.object({
   priceChangeAt: requiredDate,
   paymentSurchargePct: z.coerce.number().min(0).max(50), // % -> se guarda como basis points
 
+  // Medio de pago
+  paymentMethod: z.enum(["MANUAL_TRANSFER", "MERCADOPAGO"]).default("MANUAL_TRANSFER"),
+  bankHolderName: z.string().trim().max(120).optional(),
+  bankCuit: z.string().trim().max(30).optional(),
+  bankName: z.string().trim().max(80).optional(),
+  bankAlias: z.string().trim().max(60).optional(),
+  bankCbu: z.string().trim().max(30).optional(),
+  whatsappPhone: z.string().trim().max(30).optional(),
+  whatsappMessageTemplate: z.string().trim().max(500).optional(),
+
   // Fechas
   registrationOpensAt: optionalDate,
   registrationClosesAt: optionalDate,

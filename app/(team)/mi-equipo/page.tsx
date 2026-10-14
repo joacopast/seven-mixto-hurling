@@ -109,7 +109,7 @@ export default async function MiEquipoPage({
           <Card className="border-l-[3px] border-l-warn">
             <p className="font-semibold text-paper">Falta completar el pago</p>
             <p className="mt-1 text-sm text-ink-soft">
-              Tu equipo queda confirmado automáticamente cuando se acredita el pago de{" "}
+              Tu equipo queda confirmado en cuanto la organización verifica el pago de{" "}
               {formatArs(active.registration.totalAmount)}.
             </p>
             <ButtonLink href={`/inscripcion/pago/${active.registration.id}`} className="mt-4">

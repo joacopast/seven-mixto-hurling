@@ -37,6 +37,14 @@ export interface ConfigValues {
   extraPlayerPricePesos: number;
   priceChangeAt: string;
   paymentSurchargePct: number;
+  paymentMethod: string;
+  bankHolderName: string;
+  bankCuit: string;
+  bankName: string;
+  bankAlias: string;
+  bankCbu: string;
+  whatsappPhone: string;
+  whatsappMessageTemplate: string;
   registrationOpensAt: string;
   registrationClosesAt: string;
   rosterLockAt: string;
@@ -203,9 +211,53 @@ export function ConfigForm({ values, structureLocked }: { values: ConfigValues; 
         <Field label="Cambio de precio" htmlFor="priceChangeAt" error={err("priceChangeAt")}>
           <Input id="priceChangeAt" name="priceChangeAt" type="datetime-local" defaultValue={values.priceChangeAt} />
         </Field>
-        <Field label="Recargo medio de pago (%)" htmlFor="paymentSurchargePct" hint="Se suma al total.">
+        <Field
+          label="Recargo adicional (%)"
+          htmlFor="paymentSurchargePct"
+          hint="Se suma al total. Dejalo en 0 si no cobrás recargo (ej. transferencia sin comisión)."
+        >
           <Input id="paymentSurchargePct" name="paymentSurchargePct" type="number" step="0.1" defaultValue={values.paymentSurchargePct} />
         </Field>
+      </Section>
+
+      <Section title="Medio de pago">
+        <Field label="Cómo pagan los equipos" htmlFor="paymentMethod">
+          <Select id="paymentMethod" name="paymentMethod" defaultValue={values.paymentMethod}>
+            <option value="MANUAL_TRANSFER">Transferencia bancaria + comprobante por WhatsApp</option>
+            <option value="MERCADOPAGO">Mercado Pago (cobra comisión)</option>
+          </Select>
+        </Field>
+        <Field label="Titular de la cuenta" htmlFor="bankHolderName">
+          <Input id="bankHolderName" name="bankHolderName" defaultValue={values.bankHolderName} />
+        </Field>
+        <Field label="CUIT / CUIL" htmlFor="bankCuit">
+          <Input id="bankCuit" name="bankCuit" defaultValue={values.bankCuit} />
+        </Field>
+        <Field label="Banco" htmlFor="bankName">
+          <Input id="bankName" name="bankName" defaultValue={values.bankName} />
+        </Field>
+        <Field label="Alias" htmlFor="bankAlias">
+          <Input id="bankAlias" name="bankAlias" defaultValue={values.bankAlias} />
+        </Field>
+        <Field label="CBU / CVU" htmlFor="bankCbu">
+          <Input id="bankCbu" name="bankCbu" defaultValue={values.bankCbu} />
+        </Field>
+        <Field label="WhatsApp para comprobantes" htmlFor="whatsappPhone" hint="Con código de país, ej. 5491122334455.">
+          <Input id="whatsappPhone" name="whatsappPhone" defaultValue={values.whatsappPhone} />
+        </Field>
+        <div className="sm:col-span-2">
+          <Field
+            label="Mensaje precargado de WhatsApp"
+            htmlFor="whatsappMessageTemplate"
+            hint="Podés usar {team} y {amount}."
+          >
+            <Input
+              id="whatsappMessageTemplate"
+              name="whatsappMessageTemplate"
+              defaultValue={values.whatsappMessageTemplate}
+            />
+          </Field>
+        </div>
       </Section>
 
       <Section title="Fechas">

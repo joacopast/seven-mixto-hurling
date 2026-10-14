@@ -1,8 +1,9 @@
 # Seven Mixto Hurling — sistema de gestión del torneo
 
 App web para gestionar un torneo social de hockey mixto de 64 equipos: inscripción
-online, cobro con Mercado Pago, fase de grupos, 4 copas (Oro/Plata/Bronce/Madera),
-resultados, llaves y panel de organización.
+online, cobro por transferencia bancaria (comprobante por WhatsApp, confirmado a mano
+por el admin), fase de grupos, 4 copas (Oro/Plata/Bronce/Madera), resultados, llaves
+y panel de organización.
 
 **Documento de arquitectura y decisiones:** `docs/arquitectura.html`
 (publicado como Artifact — es la fuente de verdad del diseño funcional).
@@ -14,7 +15,10 @@ resultados, llaves y panel de organización.
 - Auth.js v5 — sesiones de base de datos (Prisma adapter). Dos logins separados:
   magic link por email (Resend) para responsables de equipo, y usuario/contraseña
   fijo para staff (ver más abajo). Rol en `User.role`.
-- Mercado Pago Checkout Pro
+- Medio de pago por defecto: **transferencia bancaria manual** (alias/CBU cargados en
+  `TournamentConfig`, comprobante por WhatsApp, confirmación a mano por el admin —
+  `confirmManualPayment`). Mercado Pago Checkout Pro queda implementado y funcional pero
+  **apagado por defecto** (`TournamentConfig.paymentMethod`): cobra comisión, no se usa.
 - Resend (email transaccional)
 - Vitest (unit + integration) · Playwright (e2e)
 
@@ -24,8 +28,10 @@ resultados, llaves y panel de organización.
   `pricing.ts`, `roster.ts`, `standings.ts`, `tiebreakers.ts`, `group-fixture.ts`,
   `scheduler.ts`, `cups.ts`, `bracket.ts`.
 - **Servicios** en `lib/services/` — orquestan motor + DB + transacciones + `AuditLog`.
-- **Nunca** confiar en el precio del frontend: el backend lo recalcula (`calculatePrice`) y
-  lo re-verifica en el webhook de pago.
+- **Nunca** confiar en el precio del frontend ni en un monto tipeado por el admin: el
+  backend siempre lo recalcula (`calculatePrice`) y `confirmManualPayment` toma el monto
+  de `Registration.totalAmount`, nunca de un input. Si algún día se reactiva Mercado Pago,
+  el webhook también lo re-verifica.
 - Autorización server-side siempre: `lib/auth/guards.ts` (`requireRole`, `requireTeamAccess`).
   Ocultar botones en el front no cuenta.
 - Toda mutación crítica corre en una transacción que también escribe `AuditLog` (`writeAudit(tx, …)`).
@@ -61,8 +67,8 @@ app/api           /auth, /webhooks/mercadopago, /cron/*, /admin/export/{teams,pl
                   /registrations/[id]/status
 lib/tournament    motor puro (pricing, roster, standings, tiebreakers, group-fixture,
                   scheduler, cups, bracket, + *-view.ts de lectura para UI)
-lib/services      registration, payment, groups, results, cups, config, admin-teams,
-                  waitlist, notification(-dispatch), audit
+lib/services      registration, payment (confirmManualPayment + MP dormido), groups,
+                  results, cups, config, admin-teams, waitlist, notification(-dispatch), audit
 lib/auth          config (edge-safe), index (Node, magic link), staff (usuario/contraseña),
                   guards, types
 lib/email         send.ts (Resend), templates.ts (un render por NotificationType)
@@ -91,66 +97,16 @@ npm run hash:password -- "contraseña"   # genera STAFF_PASSWORD_HASH para prod
 La DB de tests (`seven_mixto_test`) se migra aparte:
 `DATABASE_URL=...seven_mixto_test npx prisma migrate deploy`.
 
-## Estado — Fases 1-6 completas
+## Estado
 
-Fase 1: schema completo, auth, inscripción (wizard → `Registration` en `PENDING_PAYMENT`),
-portal del equipo, panel admin (resumen, equipos, buscar, cambiar estado, export CSV),
-lista de espera, motor de precios y validación de plantel con tests.
+Fases 1-6 completas + cambio de medio de pago (148 tests verdes). El detalle por fase
+(qué archivo hace qué) está en `docs/ESTADO.md`: leer solo la sección que toque la tarea.
 
-Fase 2: Mercado Pago Checkout Pro. `lib/payments/mercadopago.ts` (cliente REST + firma webhook),
-`lib/services/payment.ts` (`createCheckoutForRegistration`, `applyMpPayment` core, webhook
-idempotente vía `WebhookEvent`, `reconcilePendingPayments`). Rutas `/api/webhooks/mercadopago`,
-`/api/cron/reconcile-payments` (`CRON_SECRET`, Vercel Cron en `vercel.json`),
-`/api/registrations/[id]/status`. Página `/inscripcion/pago/[id]` (checkout + poller) y
-`/admin/pagos`. Sin `MP_ACCESS_TOKEN` degrada a "pago no habilitado" sin romperse.
-El webhook re-consulta SIEMPRE el pago a la API de MP; nunca confía en el body.
-
-Fase 3: motor puro de torneo en `lib/tournament/` — `standings.ts` (tabla), `tiebreakers.ts`
-(cascada configurable con mini-tabla H2H y sorteo determinista por hash), `group-fixture.ts`
-(round-robin círculo + balance de localía), `scheduler.ts` (empaqueta grupo-fechas en tandas
-sin choque de equipo). Servicios `lib/services/groups.ts` (sorteo auto serpiente/manual,
-`saveGroupAssignment`, `generateGroupPhaseFixture`) y `lib/services/results.ts`
-(`setGroupMatchResult` → recalcula GroupTeam en la misma transacción; corregir un resultado
-reordena el grupo). Admin `/admin/torneo` (pipeline de pasos), `/admin/torneo/grupos`
-(editor), `/admin/torneo/resultados` (carga inline). Público `/torneo` muestra grupos con
-posiciones (dots Oro/Plata/Bronce/Madera) + horarios/resultados por tanda.
-
-Fase 4: `lib/tournament/cups.ts` (`assignCups`: 1º→Oro … 4º→Madera, siembra por rendimiento)
-y `bracket.ts` (`buildSingleElimBracket(size)` genérico, siembra canónica, `resolveBracket`).
-`lib/services/cups.ts` — `generateCups` (crea Cup + Bracket + BracketMatch + Match, octavos con
-equipos, resto TBD, agenda ronda por ronda; atómico y reversible sin resultados) y
-`setCupMatchResult` (goles / penales si empata / walkover → `winnerTeamId` → propaga al
-`feedsWinnerTo`; si el downstream ya tenía resultado exige `confirmCascade` y limpia la rama;
-la final marca campeón/subcampeón/3os y cierra el torneo). Admin `/admin/torneo/copas`,
-público `/torneo` con `<BracketView>` (columnas por ronda, scroll horizontal en mobile).
-
-Fase 5: `lib/services/config.ts` (config del torneo editable — precios en pesos↔centavos,
-recargo %↔bp, tiebreakers, contenido; bloquea equipos/grupos si ya hay estructura; warnings).
-`lib/services/admin-teams.ts` (alta/edición de equipo, alta/baja de jugador con anti-duplicado,
-eliminación con guarda de partidos, asignar seed). `waitlist.ts` extendido: `promoteWaitlistEntry`
-+ `autoPromoteWaitlist` (expira invitaciones vencidas, llena cupos) + cron `/api/cron/waitlist`.
-UI: `/admin/configuracion` (form completo), `/admin/equipos/nuevo`, edición + jugadores en
-`/admin/equipos/[id]`, `/admin/espera`, `/admin/auditoria` (log navegable con filtros).
-
-Fase 6: notificaciones por email reales — `lib/email/templates.ts` (un render HTML/texto por
-`NotificationType`, on-brand) + `lib/services/notification-dispatch.ts`
-(`dispatchQueuedNotifications`: toma la cola `Notification(status=QUEUED)`, resuelve
-destinatario, envía por Resend, marca SENT/FAILED/SKIPPED). Cron `/api/cron/notifications`
-(cada 5 min): encola `MATCH_UPCOMING` para partidos que arrancan en 20–45 min y despacha la
-cola. `registration.create` y `groups.publishGroups` ahora encolan `REGISTRATION_CONFIRMED` y
-`FIXTURE_PUBLISHED`. Portal `/mi-equipo` ampliado con partidos propios, horario/cancha/rival,
-resultado y grupo/copa en vivo (`lib/tournament/team-view.ts`). SEO: `robots.ts`, `sitemap.ts`,
-`opengraph-image.tsx`. E2E: `playwright.config.ts` + `tests/e2e/` contra `npm run start`.
-**Acceso staff**: login `/staff` con usuario/contraseña (`lib/auth/staff.ts`) — ver sección
-arriba; resuelve que `/admin` dependiera únicamente del magic link (que no llega si Resend no
-está configurado).
-
-Nota tests: los de integración comparten una DB → corren en serie (`fileParallelism: false`).
-133 tests verdes.
-
-Pendiente / próximo: deploy productivo (Vercel + Neon/Supabase, variables de entorno,
-credenciales reales de MP y Resend, `STAFF_PASSWORD_HASH`), pulido visual final, más
-cobertura e2e (pago, admin).
+- Tests de integración: comparten una DB → corren en serie (`fileParallelism: false`).
+- Próximo: deploy productivo (Vercel + Neon/Supabase, variables de entorno, credenciales
+  reales de Resend, `STAFF_PASSWORD_HASH`), cargar los datos bancarios reales en
+  `/admin/configuracion` antes de abrir inscripciones, pulido visual final, más e2e.
+- Al terminar un cambio relevante, agregarlo en `docs/ESTADO.md`, no acá.
 
 ## Diseño / marca
 
@@ -172,6 +128,7 @@ Nota: al tocar `tailwind.config.ts`, reiniciar `next dev` con `rm -rf .next` (ca
 
 Evento de 1 día · copas por eliminación directa simple sin 3er puesto · asignación de copa
 por posición en el grupo · inscripción abierta por orden de llegada · sorteo de grupos manual ·
-comisión MP sumada al precio (`paymentSurchargeBp`) · reembolso total ante cualquier baja ·
-solo pago por Mercado Pago (sin pago manual) · edad mínima 16 · DNI obligatorio ·
-multi-equipo por responsable · lista de espera con promoción automática.
+**pago por transferencia bancaria (alias/CBU) con comprobante por WhatsApp, confirmado a
+mano por el admin — no se usa Mercado Pago por la comisión** · reembolso total ante
+cualquier baja · edad mínima 16 · DNI obligatorio · multi-equipo por responsable · lista
+de espera con promoción automática.

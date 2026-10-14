@@ -176,8 +176,9 @@ export function Wizard({ config }: { config: WizardConfig }) {
       } catch {
         /* noop */
       }
-      // El paso de pago vive en su propia página (sobrevive a la redirección a
-      // Mercado Pago y al retorno). No limpiamos `submitting`: la navegación sigue.
+      // El paso de pago vive en su propia página (muestra los datos para
+      // transferir y el link de WhatsApp). No limpiamos `submitting`: la
+      // navegación sigue.
       window.location.href = `/inscripcion/pago/${res.data!.registrationId}`;
     } catch {
       setServerError("Ocurrió un error inesperado. Probá de nuevo.");
@@ -630,8 +631,8 @@ function PaymentStep({
     <div className="flex flex-col gap-5">
       <h2 className="font-display text-xl font-semibold text-ink">Pago</h2>
       <p className="text-sm text-ink-soft">
-        Al confirmar, registramos tu equipo y te habilitamos el pago con Mercado Pago. La
-        inscripción queda confirmada automáticamente cuando se acredita el pago.
+        Al confirmar, registramos tu equipo y te mostramos los datos para transferir. Tu
+        inscripción queda confirmada cuando la organización verifica el comprobante.
       </p>
 
       <div className="flex items-center justify-between rounded-2xl bg-pill p-4">
@@ -655,9 +656,10 @@ function PaymentStep({
       )}
 
       <Callout tone="info" title="Cómo sigue">
-        Registramos tu equipo y te llevamos a <strong>Mercado Pago</strong> para completar el pago.
-        Al acreditarse, tu inscripción queda confirmada automáticamente. También te enviamos un
-        enlace por email para administrar el equipo.
+        Registramos tu equipo y te mostramos el <strong>alias/CBU</strong> y un link directo a{" "}
+        <strong>WhatsApp</strong> para mandar el comprobante. En cuanto la organización lo
+        verifica, tu inscripción queda confirmada. También te enviamos un enlace por email para
+        administrar el equipo.
       </Callout>
 
       <Button size="lg" onClick={onSubmit} disabled={submitting} className="w-full">

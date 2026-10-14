@@ -157,6 +157,133 @@ export async function createCheckoutForRegistration(
 }
 
 /* ============================================================
+ *  Confirmar pago manual (transferencia + comprobante por WhatsApp)
+ * ============================================================ */
+
+export interface ManualConfirmResult {
+  outcome: "CONFIRMED" | "WAITLISTED_OVERBOOK" | "NOOP";
+}
+
+/**
+ * El admin confirma a mano que llegó la transferencia (verificó el comprobante
+ * por WhatsApp). El monto SIEMPRE se toma de `Registration.totalAmount` — nunca
+ * de un número que tipee el admin — y queda un `Payment` con provider
+ * MANUAL_TRANSFER para que /admin/pagos y las estadísticas sigan siendo fuente
+ * única de verdad de lo recaudado.
+ */
+export async function confirmManualPayment(
+  registrationId: string,
+  opts: { note?: string | null } = {},
+  ctx: { userId?: string | null; ip?: string | null } = {},
+): Promise<ManualConfirmResult> {
+  const registration = await db.registration.findUnique({
+    where: { id: registrationId },
+    include: { team: true, tournament: { include: { config: true } } },
+  });
+  if (!registration || !registration.team || !registration.tournament?.config) {
+    throw new PaymentError("Inscripción no encontrada.", "REGISTRATION_NOT_FOUND");
+  }
+  if (CONFIRMED_STATUSES.includes(registration.status as (typeof CONFIRMED_STATUSES)[number])) {
+    return { outcome: "NOOP" };
+  }
+  if (registration.status === "CANCELLED") {
+    throw new PaymentError("Esta inscripción está cancelada.", "NOT_PAYABLE");
+  }
+
+  return db.$transaction(async (tx) => {
+    const payment = await tx.payment.create({
+      data: {
+        registrationId,
+        provider: "MANUAL_TRANSFER",
+        status: "APPROVED",
+        amount: registration.totalAmount,
+        currency: registration.tournament!.config!.currency,
+        rawPayload: { note: opts.note ?? null },
+        approvedAt: new Date(),
+        confirmedById: ctx.userId ?? null,
+      },
+    });
+
+    const auditBase = { tournamentId: registration.tournamentId, entity: "Payment" as const, entityId: payment.id };
+
+    // Guarda de cupo: igual que en MP, no confirmar por encima del máximo.
+    const confirmedCount = await tx.team.count({
+      where: {
+        tournamentId: registration.tournamentId,
+        registrationStatus: { in: [...CONFIRMED_STATUSES] },
+        id: { not: registration.teamId },
+      },
+    });
+    if (confirmedCount >= registration.tournament!.config!.maxTeams) {
+      const lastPos = await tx.registration.aggregate({
+        where: { tournamentId: registration.tournamentId, status: "WAITLISTED" },
+        _max: { waitlistPosition: true },
+      });
+      const position = (lastPos._max.waitlistPosition ?? 0) + 1;
+      await tx.registration.update({
+        where: { id: registrationId },
+        data: { status: "WAITLISTED", waitlistPosition: position },
+      });
+      await tx.team.update({
+        where: { id: registration.teamId },
+        data: { registrationStatus: "WAITLISTED", paymentStatus: "APPROVED" },
+      });
+      await writeAudit(tx, {
+        ...auditBase,
+        userId: ctx.userId,
+        action: "payment.overbooked",
+        newValue: { waitlistPosition: position, note: "requiere reintegrar la transferencia" },
+        ip: ctx.ip ?? null,
+      });
+      await enqueueNotification(tx, {
+        type: "WAITLIST_INVITED",
+        recipientTeamId: registration.teamId,
+        payload: { kind: "overbooked_refund", teamId: registration.teamId, position },
+        dedupeKey: `payment-overbook:${payment.id}`,
+      });
+      return { outcome: "WAITLISTED_OVERBOOK" };
+    }
+
+    const now = new Date();
+    await tx.registration.update({
+      where: { id: registrationId },
+      data: { status: "CONFIRMED", confirmedAt: now },
+    });
+    await tx.team.update({
+      where: { id: registration.teamId },
+      data: {
+        registrationStatus: "CONFIRMED",
+        paymentStatus: "APPROVED",
+        registeredAt: registration.team!.registeredAt ?? now,
+      },
+    });
+    await writeAudit(tx, {
+      ...auditBase,
+      userId: ctx.userId,
+      action: "payment.manual.confirm",
+      previousValue: { status: registration.status },
+      newValue: { status: "CONFIRMED", amount: registration.totalAmount, note: opts.note ?? null },
+      ip: ctx.ip ?? null,
+    });
+    await enqueueNotification(tx, {
+      type: "PAYMENT_APPROVED",
+      recipientTeamId: registration.teamId,
+      recipientUserId: registration.team!.managerUserId,
+      payload: { teamId: registration.teamId, teamName: registration.team!.name, amount: registration.totalAmount },
+      dedupeKey: `payment-approved:${payment.id}`,
+    });
+    await enqueueNotification(tx, {
+      type: "TEAM_APPROVED",
+      recipientTeamId: registration.teamId,
+      recipientUserId: registration.team!.managerUserId,
+      payload: { teamId: registration.teamId, teamName: registration.team!.name },
+      dedupeKey: `team-approved:${registration.teamId}`,
+    });
+    return { outcome: "CONFIRMED" };
+  });
+}
+
+/* ============================================================
  *  Aplicar el estado de un pago de MP (core, sin webhook)
  * ============================================================ */
 

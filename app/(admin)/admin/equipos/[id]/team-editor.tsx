@@ -8,6 +8,7 @@ import {
   addPlayer,
   removePlayer,
   deleteTeam,
+  confirmPayment,
   type TeamEditState,
   type PlayerActionState,
 } from "./actions";
@@ -112,6 +113,56 @@ export function RemovePlayerButton({ playerId, teamId }: { playerId: string; tea
     >
       Quitar
     </button>
+  );
+}
+
+export function ConfirmPaymentButton({
+  registrationId,
+  teamId,
+  amountLabel,
+}: {
+  registrationId: string;
+  teamId: string;
+  amountLabel: string;
+}) {
+  const [note, setNote] = useState("");
+  const [pending, setPending] = useState(false);
+  const [done, setDone] = useState<string | null>(null);
+  const router = useRouter();
+
+  return (
+    <div className="flex flex-col gap-2 rounded-2xl border border-l-[3px] border-line border-l-ok bg-surface p-3">
+      <p className="text-sm font-semibold text-paper">Confirmar pago recibido</p>
+      <p className="text-xs text-ink-soft">
+        Verificá el comprobante en WhatsApp y confirmá acá. Se cobra siempre{" "}
+        <strong>{amountLabel}</strong> (el monto cargado por la inscripción, no se puede editar).
+      </p>
+      <Input
+        placeholder="Nota / referencia (opcional, ej. últimos 4 dígitos, fecha de la transferencia)"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+      />
+      <div className="flex items-center gap-3">
+        <Button
+          variant="primary"
+          disabled={pending}
+          onClick={async () => {
+            if (!confirm(`¿Confirmar que se recibió la transferencia de ${amountLabel}?`)) return;
+            setPending(true);
+            const res = await confirmPayment(registrationId, teamId, note);
+            setPending(false);
+            if (res.error) alert(res.error);
+            else {
+              setDone(res.message ?? "Confirmado.");
+              router.refresh();
+            }
+          }}
+        >
+          {pending ? "Confirmando…" : "Confirmar pago"}
+        </Button>
+        {done && <span className="text-sm text-ok">{done}</span>}
+      </div>
+    </div>
   );
 }
 

@@ -1,0 +1,552 @@
+<title>Manual de Organización</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Montserrat:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  /*
+    Capa: borde sobre borde. El manual vive adentro del mismo verde pino del
+    sitio, con el naranja zorro reservado para "esto hacé ahora" — pasos de
+    acción — y nunca para decoración. Nav fija a la izquierda en desktop,
+    colapsa a acordeón en mobile. Una sola apariencia (igual que el sitio:
+    no hay tema claro).
+  */
+  :root {
+    color-scheme: dark;
+    --bg: #0b2c1e;
+    --bg-deep: #072016;
+    --surface: #123f2c;
+    --surface-2: #1b5238;
+    --pill: #081c13;
+    --ink: #f6f3ea;
+    --ink-soft: #c1cfc4;
+    --ink-faint: #8aa697;
+    --line: #2a5a41;
+    --line-soft: #1e4732;
+    --accent: #46b277;
+    --accent-wash: #14442f;
+    --pop: #e8622a;
+    --pop-soft: #f0895a;
+    --warn: #d8b24c;
+    --danger: #d16a5a;
+    --font-display: "Playfair Display", "Iowan Old Style", Georgia, serif;
+    --font-body: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    padding-inline: 0;
+  }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 700; text-wrap: balance; }
+  h1 { text-transform: uppercase; letter-spacing: 0.02em; }
+  code, .mono { font-family: var(--font-mono); }
+  a { color: var(--accent); }
+  p { margin: 0; }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+  }
+
+  /* ---------- Header ---------- */
+  .masthead {
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--bg-deep), var(--bg));
+    padding: 28px 24px 22px;
+  }
+  .masthead .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--pop-soft);
+  }
+  .masthead h1 {
+    font-size: clamp(26px, 4vw, 34px);
+    margin: 6px 0 8px;
+    color: var(--ink);
+  }
+  .masthead .dek {
+    max-width: 640px;
+    color: var(--ink-soft);
+    font-size: 14.5px;
+  }
+
+  /* ---------- Nav lateral ---------- */
+  nav.toc {
+    border-right: 1px solid var(--line);
+    padding: 22px 16px;
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    align-self: start;
+    max-height: 100dvh;
+    overflow-y: auto;
+  }
+  @media (max-width: 860px) {
+    nav.toc { position: static; border-right: none; border-bottom: 1px solid var(--line); max-height: none; }
+  }
+  nav.toc .group-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding: 14px 10px 6px;
+  }
+  nav.toc .group-label:first-child { padding-top: 0; }
+  nav.toc a {
+    display: block;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+  }
+  nav.toc a:hover { background: var(--surface); color: var(--ink); }
+  nav.toc a.current { color: var(--ink); border-left-color: var(--pop); background: var(--surface); font-weight: 600; }
+
+  /* ---------- Contenido ---------- */
+  main { padding: 28px 28px 80px; min-width: 0; }
+  section.block { margin-bottom: 52px; scroll-margin-top: 16px; }
+  section.block > .num {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--pop-soft);
+    letter-spacing: 0.1em;
+  }
+  section.block h2 {
+    font-size: clamp(21px, 2.6vw, 25px);
+    margin: 4px 0 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  section.block h3 {
+    font-size: 16.5px;
+    margin: 26px 0 10px;
+    color: var(--ink);
+  }
+  section.block p.lead { color: var(--ink-soft); margin-bottom: 14px; max-width: 62ch; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line-soft);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin: 14px 0;
+  }
+  .card.action { border-left: 3px solid var(--pop); }
+  .card.warn { border-left: 3px solid var(--warn); }
+  .card.danger { border-left: 3px solid var(--danger); }
+
+  ol.steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  ol.steps li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--line-soft);
+  }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps .n {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: var(--accent-wash);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  ol.steps .body { min-width: 0; }
+  ol.steps .body b { color: var(--ink); }
+
+  .path {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    background: var(--pill);
+    color: var(--pop-soft);
+    padding: 2px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .btn-tag {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 12.5px;
+    background: var(--accent);
+    color: var(--bg-deep);
+    padding: 3px 10px;
+    border-radius: 8px;
+    white-space: nowrap;
+  }
+
+  table.ref {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  table.ref th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  table.ref td {
+    padding: 10px 10px;
+    border-bottom: 1px solid var(--line-soft);
+    color: var(--ink-soft);
+    vertical-align: top;
+  }
+  table.ref td:first-child { color: var(--ink); font-weight: 600; white-space: nowrap; }
+  .tablewrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--line-soft); }
+  .tablewrap table { margin: 0; }
+  .tablewrap th:first-child, .tablewrap td:first-child { padding-left: 14px; }
+
+  .pill-status {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+  }
+  .pill-status.ok { color: var(--accent); border-color: var(--accent-wash); }
+  .pill-status.warn { color: var(--warn); border-color: var(--line); }
+  .pill-status.danger { color: var(--danger); border-color: var(--line); }
+
+  .checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .checklist li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--ink-soft); }
+  .checklist li::before {
+    content: "";
+    flex: none;
+    width: 15px; height: 15px;
+    margin-top: 2px;
+    border-radius: 4px;
+    border: 1.5px solid var(--accent);
+  }
+
+  details.faq { border-bottom: 1px solid var(--line-soft); padding: 12px 0; }
+  details.faq summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--ink);
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  details.faq summary::after { content: "+"; color: var(--pop-soft); font-family: var(--font-mono); }
+  details.faq[open] summary::after { content: "–"; }
+  details.faq .a { margin-top: 8px; color: var(--ink-soft); font-size: 14px; max-width: 64ch; }
+
+  .footer-note {
+    margin-top: 60px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-size: 12.5px;
+    color: var(--ink-faint);
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 600px) { .grid2 { grid-template-columns: 1fr; } }
+
+  .kicker-link { font-size: 13px; color: var(--ink-faint); }
+</style>
+
+<div class="shell">
+  <div style="grid-column: 1 / -1;" class="masthead">
+    <div class="eyebrow">Seven Mixto Hurling · Panel /admin</div>
+    <h1>Manual de organización</h1>
+    <p class="dek">Guía para manejar el torneo desde el panel sin depender del desarrollador: equipos, pagos por transferencia, grupos, copas y el día del evento.</p>
+  </div>
+
+  <nav class="toc" aria-label="Índice">
+    <div class="group-label">Arrancar</div>
+    <a href="#acceso">1. Entrar al panel</a>
+    <a href="#mapa">2. Mapa del panel</a>
+    <a href="#antes-de-abrir">3. Antes de abrir inscripción</a>
+    <div class="group-label">Operación diaria</div>
+    <a href="#equipos">4. Equipos y jugadores</a>
+    <a href="#pagos">5. Confirmar pagos</a>
+    <a href="#espera">6. Lista de espera</a>
+    <div class="group-label">Armar el torneo</div>
+    <a href="#grupos">7. Grupos y fixture</a>
+    <a href="#resultados-grupos">8. Resultados de grupo</a>
+    <a href="#copas">9. Copas</a>
+    <div class="group-label">Referencia</div>
+    <a href="#configuracion">10. Configuración</a>
+    <a href="#auditoria">11. Auditoría</a>
+    <a href="#dia-evento">12. Día del evento</a>
+    <a href="#faq">13. Preguntas frecuentes</a>
+  </nav>
+
+  <main>
+
+    <section class="block" id="acceso">
+      <div class="num">01</div>
+      <h2>Entrar al panel</h2>
+      <p class="lead">El panel de organización es <b>/admin</b> y usa un login de staff separado del de los equipos (que entran con magic link por email). El de staff es usuario y contraseña fijos.</p>
+
+      <ol class="steps">
+        <li><span class="n">1</span><div class="body">Entrar a <span class="path">/staff</span> (si vas directo a <span class="path">/admin</span> sin sesión, te redirige ahí solo).</div></li>
+        <li><span class="n">2</span><div class="body">Cargar usuario y contraseña. Si la organización todavía no configuró credenciales propias, pedile al desarrollador el usuario/contraseña vigente — nunca hay un acceso "de prueba" abierto en producción.</div></li>
+        <li><span class="n">3</span><div class="body">Entrás directo al <b>Resumen</b> del panel.</div></li>
+      </ol>
+
+      <div class="card warn">
+        <p><b>Si "olvidaste" la contraseña:</b> no hay botón de recuperación en el panel — es una decisión de seguridad. Pedile al desarrollador que genere una nueva con <span class="path">npm run hash:password</span> y la cargue en el servidor.</p>
+      </div>
+    </section>
+
+    <section class="block" id="mapa">
+      <div class="num">02</div>
+      <h2>Mapa del panel</h2>
+      <p class="lead">Arriba de todo hay siete solapas. Las vas a usar en este orden, de izquierda a derecha, a lo largo del torneo.</p>
+
+      <div class="tablewrap">
+        <table class="ref">
+          <thead><tr><th>Solapa</th><th>Para qué sirve</th></tr></thead>
+          <tbody>
+            <tr><td>Resumen</td><td>Foto del momento: cuántos equipos confirmados, pendientes de pago, en espera. El primer lugar donde mirar al entrar.</td></tr>
+            <tr><td>Equipos</td><td>Alta, edición y baja de equipos y jugadores. Buscar un equipo por nombre o responsable.</td></tr>
+            <tr><td>Lista de espera</td><td>Equipos que se inscribieron sin cupo. Promoción manual o automática cuando se libera un lugar.</td></tr>
+            <tr><td>Torneo</td><td>Sorteo de grupos, fixture, carga de resultados de grupo, generación de copas y sus resultados.</td></tr>
+            <tr><td>Pagos</td><td>Pagos pendientes de confirmar (transferencias) e historial de todos los pagos.</td></tr>
+            <tr><td>Auditoría</td><td>Registro de qué se hizo, quién y cuándo — útil para reconstruir un reclamo ("¿quién confirmó este pago?").</td></tr>
+            <tr><td>Configuración</td><td>Precios, cupos, datos bancarios, WhatsApp, textos del reglamento/FAQ.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="block" id="antes-de-abrir">
+      <div class="num">03</div>
+      <h2>Antes de abrir la inscripción</h2>
+      <p class="lead">El sistema arranca con datos de ejemplo en <span class="path">Configuración</span>. Si se abre la inscripción sin completarlos, el equipo que se inscribe no va a saber a qué cuenta transferir.</p>
+      <div class="card action">
+        <ul class="checklist">
+          <li>Alias y CBU reales cargados en Configuración → Medio de pago (no el valor de ejemplo del seed).</li>
+          <li>Titular de la cuenta y banco correctos — es lo primero que lee el responsable del equipo antes de transferir.</li>
+          <li>Número de WhatsApp real de la organización, con código de país (ej. 5491100000000), para recibir los comprobantes.</li>
+          <li>Precio por equipo y fecha límite de inscripción revisados.</li>
+          <li>Cupo total (<span class="mono">maxTeams</span>) y cantidad de grupos coinciden con lo planeado para esta edición.</li>
+        </ul>
+      </div>
+      <p class="kicker-link">El detalle de cada campo está en la sección <a href="#configuracion">10. Configuración</a>.</p>
+    </section>
+
+    <section class="block" id="equipos">
+      <div class="num">04</div>
+      <h2>Equipos y jugadores</h2>
+      <p class="lead">Desde <span class="path">/admin/equipos</span> se busca cualquier equipo por nombre, responsable o email, y se entra a su ficha para editar.</p>
+
+      <h3>Dar de alta un equipo a mano</h3>
+      <p class="lead">Para cargar un equipo que no pasó por la inscripción online (por ejemplo, alguien que te escribió directo): <span class="path">/admin/equipos/nuevo</span>. A diferencia de la inscripción pública, esta alta <b>no respeta el cupo</b> — si lo cargás de más, el sistema lo va a marcar en lista de espera recién cuando confirmes el pago, no antes.</p>
+
+      <h3>Editar plantel</h3>
+      <p class="lead">Dentro de la ficha del equipo se agregan y sacan jugadores, se corrige un DNI mal tipeado, y se asigna el número de camiseta. Sacar un jugador que ya jugó un partido está bloqueado — el sistema protege la integridad de los resultados ya cargados.</p>
+    </section>
+
+    <section class="block" id="pagos">
+      <div class="num">05</div>
+      <h2>Confirmar pagos por transferencia</h2>
+      <p class="lead">El medio de pago del torneo es transferencia bancaria + comprobante por WhatsApp (no Mercado Pago, por la comisión). Esto significa que <b>nadie queda confirmado automáticamente</b>: alguien de la organización tiene que mirar el comprobante y apretar un botón.</p>
+
+      <div class="card">
+        <p><b>Cómo lo vive el equipo que se inscribe:</b> en la página de pago ve el alias/CBU para copiar y un botón que abre WhatsApp con un mensaje precargado (nombre del equipo y monto). Manda el comprobante por ese chat. El estado de su inscripción queda en <span class="pill-status warn">pendiente de pago</span> hasta que alguien de la organización lo confirme.</p>
+      </div>
+
+      <h3>Confirmar un pago</h3>
+      <p class="lead">Hay dos caminos, igual de válidos — usá el que te quede más a mano según cómo estés trabajando.</p>
+
+      <div class="grid2">
+        <div class="card">
+          <p><b>Desde Pagos</b></p>
+          <p style="margin-top:6px; color:var(--ink-soft); font-size:13.5px;"><span class="path">/admin/pagos</span> → sección <b>"Pendientes de confirmar"</b>. Cada fila trae el link directo al chat de WhatsApp del responsable, para revisar el comprobante sin salir del flujo, y el botón <span class="btn-tag">Confirmar pago recibido</span> al lado.</p>
+        </div>
+        <div class="card">
+          <p><b>Desde la ficha del equipo</b></p>
+          <p style="margin-top:6px; color:var(--ink-soft); font-size:13.5px;"><span class="path">/admin/equipos/[equipo]</span> → mismo botón <span class="btn-tag">Confirmar pago recibido</span>, con el historial completo de pagos de ese equipo debajo (fecha, medio, monto).</p>
+        </div>
+      </div>
+
+      <div class="card warn">
+        <p><b>El monto nunca se tipea a mano.</b> El botón confirma el pago por el total que ya calculó el sistema para esa inscripción — no hay forma de confirmar "por las dudas" un monto distinto al que corresponde. Si el comprobante no coincide con el monto esperado, no lo confirmes: contactá al equipo antes.</p>
+      </div>
+
+      <div class="card danger">
+        <p><b>Si ya no hay cupo</b> cuando confirmás el pago (por ejemplo, se cargaron equipos a mano de más), el sistema no rechaza la confirmación: manda a ese equipo a <b>lista de espera</b> pero deja registrado que el pago ya fue aprobado, para que la organización sepa que le debe un reintegro o un lugar.</p>
+      </div>
+
+      <h3>Mercado Pago (apagado)</h3>
+      <p class="lead">La integración con Mercado Pago sigue en el sistema, probada, pero apagada por la comisión. Si alguna vez se decide volver a usarla, se reactiva desde <a href="#configuracion">Configuración → Medio de pago</a> sin tocar código — ahí mismo aparece la advertencia de la comisión antes de confirmar el cambio.</p>
+    </section>
+
+    <section class="block" id="espera">
+      <div class="num">06</div>
+      <h2>Lista de espera</h2>
+      <p class="lead">Un equipo cae en lista de espera cuando se inscribe (o se le confirma el pago) sin que quede cupo. Desde <span class="path">/admin/espera</span> se ve el orden de llegada y se puede promover manualmente a un equipo si se libera un lugar antes de tiempo.</p>
+      <p class="lead">La promoción automática corre sola por cron: cuando alguien confirmado se cae, invita al primero de la lista y, si no responde a tiempo, pasa al siguiente.</p>
+    </section>
+
+    <section class="block" id="grupos">
+      <div class="num">07</div>
+      <h2>Sorteo de grupos y fixture</h2>
+      <p class="lead">Todo esto vive en <span class="path">/admin/torneo</span>, como un camino de pasos de arriba hacia abajo. No se puede saltear un paso ni volver atrás una vez que el siguiente ya generó datos.</p>
+
+      <ol class="steps">
+        <li><span class="n">1</span><div class="body"><b>Sorteo de grupos.</b> Automático (serpiente, por orden de inscripción) o manual, arrastrando equipos a cada grupo a mano.</div></li>
+        <li><span class="n">2</span><div class="body"><b>Publicar grupos.</b> A partir de este paso los equipos ya ven su grupo en <span class="path">/mi-equipo</span> y les llega el email de fixture.</div></li>
+        <li><span class="n">3</span><div class="body"><b>Generar fixture.</b> El sistema arma todos los partidos de la fase de grupos repartidos en tandas sin que un equipo juegue dos partidos a la misma hora.</div></li>
+      </ol>
+
+      <div class="card warn">
+        <p>Una vez que hay partidos generados, <b>Configuración</b> bloquea los campos que tocan la estructura del torneo (cantidad de grupos, cupo) para no romper lo ya armado. Si hace falta corregir algo ahí, hay que pedirle al desarrollador que lo revierta a mano en la base.</p>
+      </div>
+    </section>
+
+    <section class="block" id="resultados-grupos">
+      <div class="num">08</div>
+      <h2>Resultados de grupo</h2>
+      <p class="lead"><span class="path">/admin/torneo/resultados</span> — carga inline, partido por partido: goles de cada equipo. La tabla de posiciones se recalcula sola apenas se guarda un resultado, incluyendo el desempate (diferencia de gol, luego resultado entre sí, luego sorteo si sigue empatado).</p>
+      <p class="lead">Corregir un resultado ya cargado reordena el grupo al toque — no hace falta "deshacer" nada a mano.</p>
+    </section>
+
+    <section class="block" id="copas">
+      <div class="num">09</div>
+      <h2>Copas</h2>
+      <p class="lead">Terminada la fase de grupos, desde <span class="path">/admin/torneo/copas</span> se generan las cuatro copas de eliminación directa: 1° de cada grupo a Oro, 2° a Plata, 3° a Bronce, 4° a Madera.</p>
+
+      <ol class="steps">
+        <li><span class="n">1</span><div class="body"><b>Generar copas.</b> Crea las llaves de octavos con los equipos ya puestos y el resto de las rondas en blanco. Mientras no haya resultados cargados, esto se puede reversar y volver a generar.</div></li>
+        <li><span class="n">2</span><div class="body"><b>Cargar resultado de un partido.</b> Goles, o penales si empata en los 60 minutos, o walkover si un equipo no se presenta. El ganador pasa solo a la siguiente ronda.</div></li>
+        <li><span class="n">3</span><div class="body"><b>Corregir un resultado ya propagado.</b> Si el partido siguiente de esa llave ya tiene resultado cargado, el sistema pide confirmar explícitamente ("sí, sé que esto limpia la rama de arriba") antes de dejar corregir — para que no se pierda un resultado por accidente.</div></li>
+        <li><span class="n">4</span><div class="body"><b>Final.</b> Al cargarse, el sistema marca campeón, subcampeón y 3° de esa copa y cierra el torneo.</div></li>
+      </ol>
+    </section>
+
+    <section class="block" id="configuracion">
+      <div class="num">10</div>
+      <h2>Configuración</h2>
+      <p class="lead">Un solo formulario en <span class="path">/admin/configuracion</span>, dividido en secciones. Avisa con un cartel amarillo cuando algo queda a medio completar (por ejemplo, elegiste transferencia pero no cargaste el alias).</p>
+
+      <div class="tablewrap">
+        <table class="ref">
+          <thead><tr><th>Sección</th><th>Qué se edita</th></tr></thead>
+          <tbody>
+            <tr><td>Medio de pago</td><td>Transferencia o Mercado Pago. Si es transferencia: titular, CUIT, banco, alias, CBU, teléfono de WhatsApp y el mensaje precargado que se le manda (acepta <span class="mono">{team}</span> y <span class="mono">{amount}</span> como variables).</td></tr>
+            <tr><td>Precios</td><td>Precio por equipo y recargo opcional, en pesos (el sistema los guarda en centavos y hace la cuenta).</td></tr>
+            <tr><td>Cupos y formato</td><td>Cupo total, cantidad de grupos, canchas disponibles. Se bloquea apenas hay estructura de torneo generada.</td></tr>
+            <tr><td>Desempates</td><td>Orden de criterios para romper un empate en la tabla de grupo.</td></tr>
+            <tr><td>Contenido</td><td>Textos del reglamento y preguntas frecuentes que ve el público.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="block" id="auditoria">
+      <div class="num">11</div>
+      <h2>Auditoría</h2>
+      <p class="lead"><span class="path">/admin/auditoria</span> es el historial de toda acción que cambia algo importante: quién confirmó qué pago, quién cambió un resultado, quién promovió a un equipo de la lista de espera, y cuándo. Tiene filtros por tipo de acción y por fecha.</p>
+      <p class="lead">Es el primer lugar para mirar ante un reclamo tipo "yo ya había pagado" o "¿por qué me cambiaron el resultado?".</p>
+    </section>
+
+    <section class="block" id="dia-evento">
+      <div class="num">12</div>
+      <h2>Día del evento</h2>
+      <p class="lead">Lo único que se hace en vivo, cancha por cancha, es cargar resultados a medida que terminan los partidos.</p>
+      <ul class="checklist">
+        <li>Grupos: <span class="path">/admin/torneo/resultados</span> — cargar apenas termina cada partido para que la tabla se mantenga al día para todos los que miran <span class="path">/torneo</span> desde el celular.</li>
+        <li>Copas: <span class="path">/admin/torneo/copas</span> — mismo criterio; el cruce de la ronda siguiente se completa solo apenas hay dos resultados.</li>
+        <li>Si un equipo no se presenta: walkover, no "0 a 0" — cambia cómo se calculan el resto de los desempates.</li>
+        <li>Problemas de conectividad: los cambios se guardan uno por uno al tocar "Guardar" en cada partido, no hace falta cargar todo junto al final.</li>
+      </ul>
+    </section>
+
+    <section class="block" id="faq">
+      <div class="num">13</div>
+      <h2>Preguntas frecuentes</h2>
+
+      <details class="faq">
+        <summary>Un equipo dice que ya transfirió pero no aparece en "Pendientes de confirmar"</summary>
+        <p class="a">Buscalo directo en <span class="path">/admin/equipos</span> por nombre o email del responsable. Puede estar todavía en "Pago no iniciado" si nunca llegó a entrar a la pantalla de pago — en ese caso no hay comprobante que confirmar, hay que pedirle que lo mande primero.</p>
+      </details>
+
+      <details class="faq">
+        <summary>Me equivoqué y confirmé el pago de un equipo que no correspondía</summary>
+        <p class="a">No hay botón de "deshacer" en el panel — pedile al desarrollador que lo revierta a mano en la base, y quedará igual registrado en Auditoría quién lo confirmó originalmente.</p>
+      </details>
+
+      <details class="faq">
+        <summary>¿Puedo volver a usar Mercado Pago para algunos equipos sí y otros no?</summary>
+        <p class="a">No — el medio de pago es uno solo para todo el torneo, elegido en Configuración. Es todo transferencia o todo Mercado Pago, no mixto.</p>
+      </details>
+
+      <details class="faq">
+        <summary>¿Qué pasa si bajo el cupo total con equipos ya confirmados?</summary>
+        <p class="a">Los equipos ya confirmados no se tocan. El cupo nuevo solo afecta a los próximos pagos que se confirmen — por eso la guarda de sobrecupo existe: para avisar en el momento si ya no entra nadie más.</p>
+      </details>
+
+      <details class="faq">
+        <summary>¿El responsable de un equipo puede editar su propio plantel?</summary>
+        <p class="a">Por ahora no desde <span class="path">/mi-equipo</span> — si necesita un cambio, te escribe y lo hacés vos desde la ficha del equipo en <span class="path">/admin/equipos</span>.</p>
+      </details>
+    </section>
+
+    <div class="footer-note">
+      Seven Mixto Hurling — manual de organización. Si algo de esto no coincide con lo que ves en el panel, probablemente cambió algo del sistema después de escribirlo: avisale al desarrollador para actualizarlo.
+    </div>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    try {
+      var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+      var sections = links
+        .map(function (a) { return document.querySelector(a.getAttribute('href')); })
+        .filter(Boolean);
+      function onScroll() {
+        var y = window.scrollY + 120;
+        var current = sections[0];
+        for (var i = 0; i < sections.length; i++) {
+          if (sections[i].offsetTop <= y) current = sections[i];
+        }
+        links.forEach(function (a) {
+          a.classList.toggle('current', a.getAttribute('href') === '#' + current.id);
+        });
+      }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    } catch (e) {}
+  })();
+</script>

@@ -26,7 +26,7 @@ const FAQ = [
   },
   {
     q: "¿Cómo se paga?",
-    a: "Online con Mercado Pago, al final de la inscripción. La inscripción queda confirmada automáticamente cuando se acredita el pago.",
+    a: "Por transferencia bancaria. Al final de la inscripción te mostramos el alias/CBU y un link directo a WhatsApp para mandar el comprobante. La organización confirma el pago a mano en cuanto lo recibe.",
   },
   {
     q: "¿Puedo editar mi equipo después de inscribirme?",
@@ -70,7 +70,7 @@ async function main() {
     where: { tournamentId: tournament.id },
     // Refresca el contenido y los valores de referencia en cada seed (bootstrap de dev).
     update: {
-      paymentSurchargeBp: 600,
+      paymentSurchargeBp: 0,
       rulesMarkdown: RULES,
       inclusionsList: INCLUSIONS,
       faq: FAQ,
@@ -111,8 +111,13 @@ async function main() {
       latePrice: 300_000_00,
       extraPlayerPrice: 27_500_00,
       priceChangeAt: new Date("2026-11-15T00:00:00-03:00"),
-      paymentSurchargeBp: 600,
+      paymentSurchargeBp: 0,
       currency: "ARS",
+      // Medio de pago. PENDIENTE: la organización tiene que completar alias/CBU y el
+      // WhatsApp real desde /admin/configuracion antes de abrir la inscripción.
+      paymentMethod: "MANUAL_TRANSFER",
+      bankHolderName: "Completar en /admin/configuracion",
+      whatsappPhone: "",
       // Fechas
       registrationOpensAt: new Date("2026-09-01T00:00:00-03:00"),
       registrationClosesAt: new Date("2026-12-01T23:59:00-03:00"),

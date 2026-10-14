@@ -15,6 +15,7 @@ import {
   adminDeleteTeam,
   AdminTeamError,
 } from "@/lib/services/admin-teams";
+import { confirmManualPayment, PaymentError } from "@/lib/services/payment";
 
 async function adminCtx() {
   const admin = await requireRole("ADMIN");
@@ -26,7 +27,41 @@ function revalidateTeam(teamId: string) {
   revalidatePath(`/admin/equipos/${teamId}`);
   revalidatePath("/admin/equipos");
   revalidatePath("/admin");
+  revalidatePath("/admin/pagos");
   revalidatePath("/mi-equipo");
+}
+
+/* ---------------- Confirmar pago (transferencia manual) ---------------- */
+
+export interface ConfirmPaymentState {
+  ok?: boolean;
+  message?: string;
+  error?: string;
+}
+
+export async function confirmPayment(
+  registrationId: string,
+  teamId: string,
+  note: string,
+): Promise<ConfirmPaymentState> {
+  const ctx = await adminCtx();
+  try {
+    const res = await confirmManualPayment(registrationId, { note: note || null }, ctx);
+    revalidateTeam(teamId);
+    if (res.outcome === "WAITLISTED_OVERBOOK") {
+      return {
+        ok: true,
+        message: "Ya no había cupo: el equipo quedó en lista de espera. Hay que reintegrarle la transferencia.",
+      };
+    }
+    if (res.outcome === "NOOP") {
+      return { ok: true, message: "Ya estaba confirmado." };
+    }
+    return { ok: true, message: "Pago confirmado. El equipo quedó inscripto." };
+  } catch (err) {
+    if (err instanceof PaymentError) return { error: err.message };
+    throw err;
+  }
 }
 
 const schema = z.object({

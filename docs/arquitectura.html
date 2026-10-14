@@ -384,10 +384,10 @@
       Seven Mixto Hurling · Club irlandés
     </span>
     <h1>Sistema de gestión del <em>torneo</em>: arquitectura y diseño funcional</h1>
-    <p class="dek">Motor de torneo, inscripción online, cobro con Mercado Pago, fase de grupos, cuatro copas y panel de organización — para 64 equipos de hockey mixto en un evento social de un día.</p>
+    <p class="dek">Motor de torneo, inscripción online, cobro por transferencia bancaria (comprobante por WhatsApp), fase de grupos, cuatro copas y panel de organización — para 64 equipos de hockey mixto en un evento social de un día.</p>
     <div class="meta">
-      <span><b>Versión</b> 1.0 — propuesta para aprobación</span>
-      <span><b>Fecha</b> 07/09/2026</span>
+      <span><b>Versión</b> 1.1 — Fases 1-6 implementadas + medio de pago manual</span>
+      <span><b>Fecha</b> 07/09/2026 · actualizado 14/10/2026</span>
       <span><b>Prioridades</b> Corrección › Seguridad › Mantenibilidad › UX › Velocidad</span>
     </div>
   </div>
@@ -403,7 +403,7 @@
       <li><a href="#datos">Modelo de datos</a></li>
       <li><a href="#arquitectura">Arquitectura técnica</a></li>
       <li><a href="#inscripcion">Flujo de inscripción</a></li>
-      <li><a href="#pago">Flujo de pago (MP)</a></li>
+      <li><a href="#pago">Flujo de pago</a></li>
       <li><a href="#roles">Roles y permisos</a></li>
       <li><a href="#api">API y endpoints</a></li>
       <li><a href="#config">Configuración editable</a></li>
@@ -425,7 +425,7 @@
         <li><a href="#datos">Modelo de datos</a></li>
         <li><a href="#arquitectura">Arquitectura técnica</a></li>
         <li><a href="#inscripcion">Flujo de inscripción</a></li>
-        <li><a href="#pago">Flujo de pago (MP)</a></li>
+        <li><a href="#pago">Flujo de pago</a></li>
         <li><a href="#roles">Roles y permisos</a></li>
         <li><a href="#api">API y endpoints</a></li>
         <li><a href="#config">Configuración editable</a></li>
@@ -444,7 +444,7 @@
 
       <h3>Qué resuelve el sistema</h3>
       <ul>
-        <li><strong>Inscripción autogestionada</strong> — wizard de 6 pasos con cálculo de precio en vivo y pago con Mercado Pago. Confirmación automática al acreditarse el pago.</li>
+        <li><strong>Inscripción autogestionada</strong> — wizard de 6 pasos con cálculo de precio en vivo. Paga por transferencia (alias/CBU) y manda el comprobante por WhatsApp; la organización confirma el pago a mano desde el panel.</li>
         <li><strong>Portal del equipo</strong> (<code>/mi-equipo</code>) — el responsable ve estado, jugadores, fixture, rival, cancha, horario, resultados, grupo, copa y llave; edita lo permitido hasta una fecha límite.</li>
         <li><strong>Motor de torneo</strong> — genera grupos, fixture, horarios y canchas; calcula posiciones y desempates; asigna las 4 copas; arma las llaves; propaga resultados.</li>
         <li><strong>Panel de organización</strong> (<code>/admin</code>) — resumen económico y deportivo, gestión de equipos y jugadores, pagos, carga de resultados, configuración del torneo, exportación CSV y audit log.</li>
@@ -656,22 +656,20 @@
       <p class="lede">Todo el motor vive en <code>/lib/tournament/</code> como funciones puras — sin base de datos, sin framework. Reciben datos en memoria y devuelven resultados. Es lo primero que se construye y se cubre al 100% con tests antes de tocar UI.</p>
 
       <h3>Cálculo de precio — <code>calculatePrice()</code></h3>
-      <p>Entradas: config de precios + cantidad de jugadores + fecha actual. El backend lo recalcula en cada cotización y lo <strong>vuelve a verificar en el webhook</strong>. Nunca se confía en el monto del frontend.</p>
+      <p>Entradas: config de precios + cantidad de jugadores + fecha actual. El backend lo recalcula siempre — en cada cotización, y de nuevo cuando se confirma el pago (manual o por MP si se reactivara). Nunca se confía en un monto del frontend ni en uno tipeado por el admin.</p>
       <div class="tw">
         <table>
-          <caption>Ejemplo — equipo con 12 jugadores, antes del cambio de precio, recargo de medio de pago 6%</caption>
+          <caption>Ejemplo — equipo con 12 jugadores, antes del cambio de precio</caption>
           <thead><tr><th>Concepto</th><th class="num">Cálculo</th><th class="num">Importe</th></tr></thead>
           <tbody>
             <tr><td>Equipo base (tarifa temprana, incluye 10)</td><td class="num">earlyPrice</td><td class="num">$275.000</td></tr>
             <tr><td>Jugadores adicionales</td><td class="num">2 × $27.500</td><td class="num">$55.000</td></tr>
-            <tr><td>Subtotal</td><td class="num"></td><td class="num">$330.000</td></tr>
-            <tr><td>Recargo Mercado Pago</td><td class="num">6%</td><td class="num">$19.800</td></tr>
-            <tr class="total-row"><td>Total a pagar</td><td class="num"></td><td class="num">$349.800</td></tr>
+            <tr class="total-row"><td>Total a pagar</td><td class="num"></td><td class="num">$330.000</td></tr>
           </tbody>
         </table>
       </div>
       <p class="mono" style="font-size:.8rem;color:var(--ink-soft)">tier = now &lt; priceChangeAt ? EARLY : LATE &nbsp;·&nbsp; base = tier==EARLY ? earlyPrice : latePrice &nbsp;·&nbsp; extras = max(0, players − basePlayers) × extraPlayerPrice &nbsp;·&nbsp; total = round((base + extras) × (1 + surchargePct))</p>
-      <p>Montos en <strong>enteros (centavos ARS)</strong>. El importe cotizado se congela en <code>Registration.totalAmount</code> al crear la preferencia; si el equipo agrega jugadores después, se invalida esa preferencia y se cotiza de nuevo.</p>
+      <p>Montos en <strong>enteros (centavos ARS)</strong>. <code>surchargePct</code> (<code>paymentSurchargeBp</code>) es un recargo opcional por el medio de pago — <strong>0% por defecto</strong>, porque la transferencia no cobra comisión (antes era el 6% de Mercado Pago). El importe cotizado se congela en <code>Registration.totalAmount</code> al confirmar el equipo; si agrega jugadores después, se vuelve a cotizar.</p>
 
       <h3>Tabla de posiciones — <code>computeStandings()</code></h3>
       <p>Recorre los partidos <span class="badge ok">FINISHED</span> y <span class="badge warn">WALKOVER</span> de un grupo y acumula PJ, PG, PE, PP, GF, GC, DG, puntos y <em>fair play</em>. Puntos por victoria / empate / derrota / walkover son configurables.</p>
@@ -727,6 +725,9 @@
             <li>pointsWin/Draw/Loss/Walkover · tiebreakers[]</li>
             <li>minPlayers · maxPlayers · maxMenOnField · playersOnField · minPlayerAge</li>
             <li>basePlayers · earlyPrice · latePrice · priceChangeAt · extraPlayerPrice · paymentSurchargePct · currency</li>
+            <li><b>paymentMethod</b>: MANUAL_TRANSFER (default) | MERCADOPAGO</li>
+            <li>bankHolderName · bankCuit · bankName · bankAlias · bankCbu</li>
+            <li>whatsappPhone · whatsappMessageTemplate</li>
             <li>rosterLockAt · teamEditLockAt · registrationOpensAt/ClosesAt</li>
             <li>rulesMarkdown · inclusionsList[] · faq[] · socialLinks</li>
           </ul>
@@ -784,13 +785,14 @@
         <div class="entity">
           <h4>Payment</h4>
           <ul>
-            <li><b>id</b> · registrationId ⚑ · provider</li>
-            <li><b>mpPreferenceId</b> ✦ · <b>mpPaymentId</b> ✦?</li>
+            <li><b>id</b> · registrationId ⚑</li>
+            <li><b>provider</b>: MANUAL_TRANSFER | MERCADOPAGO</li>
+            <li>mpPreferenceId ✦? · mpPaymentId ✦? <span class="badge">nulos en transferencia</span></li>
             <li>status: PENDING | IN_PROCESS | APPROVED | REJECTED | REFUNDED | CANCELLED</li>
-            <li>amount · currency · payerEmail?</li>
+            <li>amount · currency · payerEmail? · confirmedById?</li>
             <li>rawPayload (jsonb) · approvedAt?</li>
           </ul>
-          <div class="rel">nunca guarda datos de tarjeta</div>
+          <div class="rel">nunca guarda datos de tarjeta · amount SIEMPRE sale de Registration.totalAmount</div>
         </div>
 
         <div class="entity">
@@ -894,7 +896,7 @@
             <tr><td>UI</td><td>Tailwind + shadcn/ui (Radix)</td><td>accesible, rápido de theming, mobile-first</td></tr>
             <tr><td>DB / ORM</td><td>PostgreSQL (Neon o Supabase) + Prisma</td><td>migraciones versionadas, tipos generados</td></tr>
             <tr><td>Auth</td><td>Auth.js v5 + Prisma adapter · magic link por email</td><td>cero gestión de contraseñas para responsables; ADMIN por allowlist de emails + opción TOTP. Sin dependencia externa paga.</td></tr>
-            <tr><td>Pagos</td><td>Mercado Pago Checkout Pro</td><td>preferencia + webhook + verificación server-side; flujo oficial</td></tr>
+            <tr><td>Pagos</td><td><b>Transferencia bancaria manual</b> (default) + Mercado Pago Checkout Pro implementado pero apagado</td><td>MP cobra comisión alta — se prioriza alias/CBU + comprobante por WhatsApp, confirmado a mano por el admin; MP queda disponible si se reactiva (<code>paymentMethod</code>)</td></tr>
             <tr><td>Email</td><td>Resend + React Email</td><td>templates versionados en el repo</td></tr>
             <tr><td>Rate limiting</td><td>Upstash Redis (@upstash/ratelimit)</td><td>login, inscripción, creación de preferencia, webhook</td></tr>
             <tr><td>Validación</td><td>Zod en todos los boundaries</td><td>un esquema por acción, compartido cliente/servidor</td></tr>
@@ -951,9 +953,10 @@
 <tr><td class="mono">/app/api/webhooks/mercadopago</td><td>Route Handler del webhook (idempotente)</td></tr>
 <tr><td class="mono">/app/api/cron/[job]</td><td>jobs de Vercel Cron</td></tr>
 <tr><td class="mono">/lib/tournament</td><td>motor puro + tests — standings, tiebreakers, cups, bracket, fixture, scheduler, price</td></tr>
-<tr><td class="mono">/lib/services</td><td>registration · payment · tournament · notification · audit</td></tr>
-<tr><td class="mono">/lib/auth</td><td>config Auth.js · guards de rol y ownership</td></tr>
-<tr><td class="mono">/lib/payments</td><td>cliente MP · mapeo de estados · verificación</td></tr>
+<tr><td class="mono">/lib/services</td><td>registration · payment (confirmManualPayment + MP dormido) · groups · results · cups · config · admin-teams · waitlist · notification(-dispatch) · audit</td></tr>
+<tr><td class="mono">/lib/auth</td><td>config Auth.js (edge) · index (magic link) · staff (usuario/contraseña) · guards</td></tr>
+<tr><td class="mono">/lib/payments</td><td>cliente MP · mapeo de estados · verificación — usado solo si <code>paymentMethod = MERCADOPAGO</code></td></tr>
+<tr><td class="mono">/lib/tournament/whatsapp.ts</td><td>link wa.me con mensaje precargado (función pura)</td></tr>
 <tr><td class="mono">/lib/validation</td><td>esquemas Zod compartidos</td></tr>
 <tr><td class="mono">/lib/email</td><td>templates React Email</td></tr>
 <tr><td class="mono">/prisma</td><td>schema.prisma · migrations · seed.ts</td></tr>
@@ -972,8 +975,8 @@
         <li><strong>Responsable</strong> — nombre, teléfono, email. Crea o vincula el <code>User</code> (magic link). Un mismo email puede administrar varios equipos.</li>
         <li><strong>Jugadores</strong> — alta uno por uno. Valida documento duplicado en el equipo y edad mínima (16). Muestra en vivo el plantel: total, hombres/mujeres, y recuerda que el límite de <strong>3 hombres es en cancha</strong>, no en el plantel.</li>
         <li><strong>Resumen</strong> — precio desglosado y recalculado en backend (base + adicionales + recargo de medio de pago = total).</li>
-        <li><strong>Pago</strong> — el backend valida el plantel (mín/máx), congela la cotización, crea <code>Registration</code> + <code>Payment</code> + preferencia de MP y redirige al checkout.</li>
-        <li><strong>Confirmación</strong> — pantalla “estamos confirmando tu pago”. La verdad la da el webhook, no el retorno del navegador.</li>
+        <li><strong>Pago</strong> — el backend valida el plantel (mín/máx), congela la cotización y crea <code>Registration</code> en <code>PENDING_PAYMENT</code>. Muestra alias/CBU (copiables) y un botón que abre WhatsApp con el mensaje precargado para mandar el comprobante.</li>
+        <li><strong>Confirmación</strong> — el equipo queda <code>PENDING_PAYMENT</code> hasta que el admin revisa el comprobante en WhatsApp y confirma desde <code>/admin/pagos</code> o la ficha del equipo (<code>confirmManualPayment</code>). No hay confirmación automática de terceros.</li>
       </ol>
 
       <h4>Qué incluye la inscripción (se comunica en el paso 4)</h4>
@@ -983,15 +986,14 @@
       <ul class="states" aria-label="Máquina de estados de Registration">
         <li>DRAFT</li><span class="arrow">→</span>
         <li>PENDING_PAYMENT</li><span class="arrow">→</span>
-        <li>PAYMENT_STARTED</li><span class="arrow">→</span>
-        <li>PAYMENT_APPROVED</li><span class="arrow">→</span>
         <li>CONFIRMED</li>
+        <li class="branch">PAYMENT_STARTED / PAYMENT_APPROVED (solo si se reactiva MP)</li>
         <li class="branch">PAYMENT_REJECTED → reintento</li>
         <li class="branch">OBSERVED</li>
         <li class="branch">CANCELLED</li>
         <li class="branch">WAITLISTED</li>
       </ul>
-      <p>El sistema muestra este estado al responsable en todo momento en <code>/mi-equipo</code>. La transición a <code>CONFIRMED</code> es automática al validar el pago; a <code>OBSERVED</code> / <code>CANCELLED</code> solo por el admin, con registro en <code>AuditLog</code>.</p>
+      <p>El sistema muestra este estado al responsable en todo momento en <code>/mi-equipo</code>. Con transferencia, la transición <code>PENDING_PAYMENT → CONFIRMED</code> la hace el <strong>admin a mano</strong> tras verificar el comprobante (<code>confirmManualPayment</code>, con <code>AuditLog</code>); a <code>OBSERVED</code> / <code>CANCELLED</code> también solo el admin. Si se reactivara Mercado Pago, esa transición vuelve a ser automática vía webhook.</p>
 
       <h4>Edición posterior</h4>
       <p>El responsable edita datos del equipo hasta <code>teamEditLockAt</code> y el plantel hasta <code>rosterLockAt</code>. Después de esas fechas, solo el admin — y cada cambio queda en el audit log.</p>
@@ -999,9 +1001,31 @@
 
     <!-- 7 -->
     <section id="pago">
-      <h2><span class="num">07</span> Flujo de pago — Mercado Pago</h2>
-      <p class="lede">Integración basada en el flujo oficial de Checkout Pro. Nunca se guardan datos de tarjeta. El estado de la inscripción cambia únicamente tras una confirmación validada contra la API de MP. Los webhooks son idempotentes.</p>
+      <h2><span class="num">07</span> Flujo de pago</h2>
+      <p class="lede"><strong>Medio de pago por defecto: transferencia bancaria manual.</strong> Se decidió no usar Mercado Pago como medio principal — cobra una comisión alta para un torneo social. El flujo de Checkout Pro queda implementado, testeado y disponible como opción (<code>TournamentConfig.paymentMethod = MERCADOPAGO</code>), pero apagado.</p>
 
+      <h3>Transferencia bancaria (default)</h3>
+      <ol class="steps">
+        <li><strong>Registro</strong> (servidor) — al cerrar el wizard, <code>Registration</code> queda en <code>PENDING_PAYMENT</code> con <code>totalAmount</code> congelado (nunca se vuelve a confiar en un número externo).</li>
+        <li><strong>Datos para transferir</strong> — <code>/inscripcion/pago/[id]</code> muestra titular, CUIT, banco, alias y CBU (copiables) cargados en <code>TournamentConfig</code>, y un botón <strong>“Enviar comprobante por WhatsApp”</strong> que abre <code>wa.me/&lt;whatsappPhone&gt;</code> con el mensaje precargado (<code>whatsappMessageTemplate</code>, placeholders <code>{team}</code>/<code>{amount}</code>).</li>
+        <li><strong>Revisión humana</strong> — el equipo manda el comprobante por WhatsApp. El admin lo coteja contra el resumen bancario real — no hay validación automática de comprobantes.</li>
+        <li><strong>Confirmación</strong> — el admin confirma desde <code>/admin/pagos</code> (sección “Pendientes de confirmar”, con link directo al WhatsApp del equipo) o desde la ficha del equipo. <code>confirmManualPayment(registrationId, nota?)</code>:
+          <ul>
+            <li>crea un <code>Payment</code> con <code>provider = MANUAL_TRANSFER</code>, <code>amount = Registration.totalAmount</code> — <strong>nunca un monto tipeado a mano</strong></li>
+            <li>misma guarda de sobrecupo que el flujo de MP: si ya no hay cupo, manda a <code>WAITLISTED</code> en vez de confirmar y lo marca para reintegrar</li>
+            <li>avanza <code>Registration</code> → <code>CONFIRMED</code>, encola <code>Notification</code> (pago aprobado + equipo confirmado), escribe <code>AuditLog</code> (<code>payment.manual.confirm</code>)</li>
+            <li>idempotente: confirmar dos veces no duplica el <code>Payment</code> ni la notificación</li>
+          </ul>
+        </li>
+      </ol>
+
+      <div class="callout warn">
+        <span class="k">Riesgo asumido</span>
+        <p>Sin pasarela, la verificación del pago depende de que el admin mire el comprobante contra el movimiento real en el banco. Es el trade-off elegido para no pagar comisión. El <code>AuditLog</code> deja registrado quién confirmó cada pago y cuándo.</p>
+      </div>
+
+      <h3>Mercado Pago (implementado, apagado por defecto)</h3>
+      <p>Si el evento crece o cambia la decisión de comisión, <code>paymentMethod = MERCADOPAGO</code> reactiva el Checkout Pro de siempre:</p>
       <ol class="steps">
         <li><strong>Crear preferencia</strong> (servidor) — monto = <code>Registration.totalAmount</code> recalculado ahora · <code>external_reference = registrationId</code> · <code>notification_url</code> · <code>back_urls</code>. Se guarda <code>mpPreferenceId</code> en un <code>Payment</code> nuevo.</li>
         <li><strong>Checkout</strong> — el usuario paga en el entorno de MP.</li>
@@ -1014,16 +1038,17 @@
             <li>en una transacción: actualiza <code>Payment.status</code>, verifica <code>amount == totalAmount</code>, avanza <code>Registration</code>, escribe <code>AuditLog</code>, encola <code>Notification</code></li>
           </ul>
         </li>
-        <li><strong>Reconciliación</strong> — cron diario que consulta pagos <code>PENDING</code>/<code>IN_PROCESS</code> de las últimas 72 h por si se perdió un webhook.</li>
+        <li><strong>Reconciliación</strong> — cron que consulta pagos <code>PENDING</code>/<code>IN_PROCESS</code> de las últimas 72 h por si se perdió un webhook.</li>
       </ol>
 
       <div class="callout">
-        <span class="k">Separación de responsabilidades</span>
-        <p><code>Payment</code> registra el intento de cobro y su estado en MP. <code>Registration</code> gobierna el proceso de inscripción y la cotización. <code>Team</code> es la ficha deportiva. Un webrole nunca escribe fuera de su entidad; los estados de <code>Team</code> son caché derivada del último <code>Payment</code> aprobado.</p>
+        <span class="k">Separación de responsabilidades (vale para los dos medios)</span>
+        <p><code>Payment</code> registra el intento/confirmación de cobro, sea manual o de MP. <code>Registration</code> gobierna el proceso de inscripción y la cotización. <code>Team</code> es la ficha deportiva. Los estados de <code>Team</code> son caché derivada del último <code>Payment</code> aprobado.</p>
       </div>
 
       <h4>Variables de entorno</h4>
-      <p class="mono" style="font-size:.8rem;color:var(--ink-soft)">DATABASE_URL · AUTH_SECRET · AUTH_URL · RESEND_API_KEY · EMAIL_FROM · MP_ACCESS_TOKEN · MP_PUBLIC_KEY · MP_WEBHOOK_SECRET · APP_URL · MP_BACK_URL_SUCCESS/FAILURE/PENDING · UPSTASH_REDIS_REST_URL · UPSTASH_REDIS_REST_TOKEN · BLOB_READ_WRITE_TOKEN · ADMIN_EMAILS</p>
+      <p class="mono" style="font-size:.8rem;color:var(--ink-soft)">DATABASE_URL · AUTH_SECRET · AUTH_URL · RESEND_API_KEY · EMAIL_FROM · APP_URL · ADMIN_EMAILS · STAFF_USERNAME/PASSWORD_HASH · CRON_SECRET</p>
+      <p class="mono" style="font-size:.8rem;color:var(--ink-faint)">Solo si se reactiva MP: MP_ACCESS_TOKEN · MP_PUBLIC_KEY · MP_WEBHOOK_SECRET. Los datos bancarios y el WhatsApp de contacto NO son variables de entorno — se cargan en <code>TournamentConfig</code> desde <code>/admin/configuracion</code>.</p>
     </section>
 
     <!-- 8 -->
@@ -1068,14 +1093,15 @@
           <caption>Superficie principal</caption>
           <thead><tr><th>Tipo</th><th>Ruta / acción</th><th>Rol</th></tr></thead>
           <tbody>
-            <tr><td>Action</td><td><code>registration.saveDraft</code> · <code>registration.addPlayer</code> · <code>registration.quote</code> · <code>registration.createPreference</code></td><td>PUBLIC / TEAM_MANAGER</td></tr>
+            <tr><td>Action</td><td><code>registration.submit</code> (wizard) · <code>registration.addPlayer</code></td><td>PUBLIC / TEAM_MANAGER</td></tr>
             <tr><td>Action</td><td><code>team.update</code> · <code>team.updatePlayer</code> · <code>team.removePlayer</code></td><td>TEAM_MANAGER (ownership) / ADMIN</td></tr>
             <tr><td>Action</td><td><code>admin.team.*</code> · <code>admin.assignGroup</code> · <code>admin.assignSeed</code> · <code>admin.setStatus</code></td><td>ADMIN</td></tr>
+            <tr><td>Action</td><td><strong><code>confirmManualPayment</code></strong> (ficha de equipo y <code>/admin/pagos</code>) — confirma la transferencia, monto siempre desde <code>Registration.totalAmount</code></td><td>ADMIN</td></tr>
             <tr><td>Action</td><td><code>admin.tournament.drawGroups</code> · <code>generateFixture</code> · <code>publishGroups</code> · <code>closeGroups</code> · <code>generateCups</code></td><td>ADMIN</td></tr>
             <tr><td>Action</td><td><code>admin.match.setResult</code> · <code>admin.match.setWalkover</code> · <code>admin.match.correctResult</code></td><td>ADMIN</td></tr>
             <tr><td>Action</td><td><code>admin.config.update</code> · <code>admin.export.teams</code> · <code>admin.export.players</code></td><td>ADMIN</td></tr>
-            <tr><td>Route</td><td><code>POST /api/webhooks/mercadopago</code></td><td>MP (firma)</td></tr>
-            <tr><td>Route</td><td><code>GET /api/cron/upcoming-matches</code> · <code>promote-waitlist</code> · <code>reconcile-payments</code></td><td>Cron (secret)</td></tr>
+            <tr><td>Route</td><td><code>POST /api/webhooks/mercadopago</code> — solo relevante si se reactiva MP</td><td>MP (firma)</td></tr>
+            <tr><td>Route</td><td><code>GET /api/cron/notifications</code> · <code>waitlist</code> · <code>reconcile-payments</code></td><td>Cron (secret)</td></tr>
             <tr><td>Route</td><td><code>GET /api/public/tournament</code> — grupos, posiciones, fixture, llaves (cacheado)</td><td>PUBLIC</td></tr>
           </tbody>
         </table>
@@ -1105,7 +1131,11 @@
         </div>
         <div class="panel">
           <h4>Precios</h4>
-          <ul><li>basePlayers (10) · earlyPrice · latePrice · priceChangeAt</li><li>extraPlayerPrice · paymentSurchargePct · currency</li></ul>
+          <ul><li>basePlayers (10) · earlyPrice · latePrice · priceChangeAt</li><li>extraPlayerPrice · paymentSurchargePct (0 por defecto) · currency</li></ul>
+        </div>
+        <div class="panel">
+          <h4>Medio de pago</h4>
+          <ul><li>paymentMethod: MANUAL_TRANSFER (default) | MERCADOPAGO</li><li>bankHolderName/Cuit/Name/Alias/Cbu · whatsappPhone · whatsappMessageTemplate</li></ul>
         </div>
         <div class="panel">
           <h4>Fechas y contenido</h4>
@@ -1132,11 +1162,10 @@
         <div class="panel">
           <h4>Pagos</h4>
           <ul>
-            <li><strong>Webhook duplicado / fuera de orden</strong> — unique en <code>WebhookEvent</code> + estados idempotentes.</li>
-            <li><strong>Pago por monto viejo</strong> (agregó jugadores) — verificación en webhook → <code>OBSERVED</code>.</li>
-            <li><strong>Doble pago</strong> (dos pestañas) — segundo <code>Payment</code> aprobado se marca para reembolso, no rompe la inscripción.</li>
-            <li><strong>Equipos 63 / 64 / 65</strong> — re-chequeo de cupo en la confirmación; el 65 va a <code>WAITLISTED</code> + reembolso.</li>
-            <li><strong>Chargeback / reversa tardía</strong> — webhook <code>refunded</code> → <code>OBSERVED</code> + alerta.</li>
+            <li><strong>Comprobante apócrifo o adulterado</strong> — riesgo propio de la transferencia manual; mitigado solo por revisión humana contra el extracto bancario real, no hay validación automática. Trade-off aceptado por no pagar comisión.</li>
+            <li><strong>Confirmar dos veces</strong> — <code>confirmManualPayment</code> es idempotente: no duplica el <code>Payment</code> ni la notificación.</li>
+            <li><strong>Equipos 63 / 64 / 65</strong> — re-chequeo de cupo también en la confirmación manual; el 65 va a <code>WAITLISTED</code> + reintegro.</li>
+            <li><strong>Si se reactiva Mercado Pago</strong>: webhook duplicado (unique en <code>WebhookEvent</code>), pago por monto viejo → <code>OBSERVED</code>, doble pago (dos pestañas), chargeback tardío → <code>OBSERVED</code> + alerta — todo ya implementado y testeado, solo dormido.</li>
           </ul>
         </div>
         <div class="panel">
@@ -1238,6 +1267,10 @@
           </tbody>
         </table>
       </div>
+      <div class="callout decided">
+        <span class="k">Post Fase 6 · 14/10/2026</span>
+        <p>Se reemplazó Mercado Pago como medio de pago principal por <strong>transferencia bancaria manual</strong> (comisión alta para un evento social). Mercado Pago queda implementado, testeado y disponible por configuración, pero apagado por defecto. Ver <a href="#pago">§07</a> y <a href="#decisiones">§15</a>.</p>
+      </div>
     </section>
 
     <!-- 15 -->
@@ -1254,10 +1287,10 @@
             <tr><th scope="row">Asignación de copas</th><td>por posición en el grupo</td></tr>
             <tr><th scope="row">Inscripción</th><td>abierta por orden de llegada, tope 64 + lista de espera</td></tr>
             <tr><th scope="row">Sorteo de grupos</th><td>manual por el admin</td></tr>
-            <tr><th scope="row">Mercado Pago</th><td>cuenta creada, credenciales pendientes — se desarrolla en sandbox</td></tr>
-            <tr><th scope="row">Comisión MP</th><td>se suma al precio del equipo (<code>paymentSurchargePct</code>)</td></tr>
+            <tr><th scope="row">Medio de pago</th><td><strong>transferencia bancaria manual</strong> (alias/CBU + comprobante por WhatsApp, confirmado a mano por el admin) — decidido el 14/10/2026 para evitar la comisión de Mercado Pago</td></tr>
+            <tr><th scope="row">Mercado Pago</th><td>queda implementado y testeado pero <strong>apagado por defecto</strong> (<code>paymentMethod = MERCADOPAGO</code> lo reactiva)</td></tr>
+            <tr><th scope="row">Recargo del medio de pago</th><td>0% por defecto (<code>paymentSurchargeBp</code>) — antes era el 6% de MP</td></tr>
             <tr><th scope="row">Reembolsos</th><td>total ante cualquier baja previa al torneo</td></tr>
-            <tr><th scope="row">Pago manual</th><td>no — todo por Mercado Pago</td></tr>
             <tr><th scope="row">Edad mínima</th><td>16 años</td></tr>
             <tr><th scope="row">Datos de jugador obligatorios</th><td>nombre, apellido, DNI, género (+ fecha de nacimiento para validar edad)</td></tr>
             <tr><th scope="row">Multi-equipo por responsable</th><td>sí</td></tr>
@@ -1267,14 +1300,16 @@
         </table>
       </div>
 
-      <h3>Pendiente (no bloquea la Fase 1)</h3>
+      <h3>Pendiente</h3>
       <ul>
-        <li><strong>Credenciales de MP de producción</strong> y datos de facturación — necesarios para cerrar la Fase 2 y para producción.</li>
-        <li><strong>Valor exacto de <code>paymentSurchargePct</code></strong> y <strong><code>priceChangeAt</code></strong> (la fecha de cambio de precio; el pliego menciona 15/11 como referencia).</li>
+        <li><strong>Datos bancarios reales</strong> (titular, CUIT, banco, alias, CBU) y el <strong>WhatsApp de contacto</strong> — hay que cargarlos en <code>/admin/configuracion</code> antes de abrir inscripciones; el seed los deja en placeholder.</li>
+        <li><strong>Valor exacto de <code>priceChangeAt</code></strong> (la fecha de cambio de precio; el pliego menciona 15/11 como referencia).</li>
         <li><strong>Ventana de pago de la lista de espera</strong> (ej. 24 o 48 h) antes de pasar al siguiente.</li>
         <li><strong>Consentimiento para menores de 16–18</strong>: si se pide una declaración del responsable al cargar un jugador menor de 18.</li>
         <li><strong>Logo, tipografía de marca y dominio</strong> definitivos.</li>
         <li><strong>Reglamento oficial completo</strong> (texto final para la sección Reglamento) y las imágenes mencionadas en el pedido, que no llegaron.</li>
+        <li><strong>Deploy productivo</strong> (Vercel + Neon/Supabase, <code>STAFF_PASSWORD_HASH</code>, credenciales reales de Resend).</li>
+        <li><strong>Manual de uso para la organización</strong> — pedido, todavía no armado.</li>
       </ul>
     </section>
   </main>

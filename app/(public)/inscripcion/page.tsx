@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Inscribí a tu equipo",
-  description: "Inscripción online al torneo Seven Mixto Hurling. Cargá tu equipo, tu plantel y pagá con Mercado Pago.",
+  description: "Inscripción online al torneo Seven Mixto Hurling. Cargá tu equipo, tu plantel y pagá por transferencia.",
 };
 
 const INCLUSIONS_FALLBACK = [

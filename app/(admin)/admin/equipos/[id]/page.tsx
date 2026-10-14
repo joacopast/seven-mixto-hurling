@@ -10,6 +10,7 @@ import {
   AddPlayerForm,
   RemovePlayerButton,
   DeleteTeamButton,
+  ConfirmPaymentButton,
 } from "./team-editor";
 
 export const dynamic = "force-dynamic";
@@ -73,8 +74,30 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
               value={team.registration?.quotedAt?.toLocaleString("es-AR") ?? "—"}
             />
           </dl>
+          {team.registration && team.registration.payments.length > 0 && (
+            <ul className="mt-3 space-y-1 border-t border-line pt-3 text-xs text-ink-soft">
+              {team.registration.payments.map((p) => (
+                <li key={p.id} className="flex justify-between gap-2">
+                  <span>
+                    {p.provider === "MANUAL_TRANSFER" ? "Transferencia" : "Mercado Pago"} ·{" "}
+                    {p.approvedAt?.toLocaleString("es-AR") ?? p.createdAt.toLocaleString("es-AR")}
+                  </span>
+                  <span className="font-mono">{formatArs(p.amount)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
       </div>
+
+      {team.registration &&
+        !["CONFIRMED", "PAYMENT_APPROVED", "CANCELLED"].includes(team.registrationStatus) && (
+          <ConfirmPaymentButton
+            registrationId={team.registration.id}
+            teamId={team.id}
+            amountLabel={formatArs(team.registration.totalAmount)}
+          />
+        )}
 
       <Card>
         <h2 className="font-display text-lg font-semibold text-ink">Editar equipo</h2>

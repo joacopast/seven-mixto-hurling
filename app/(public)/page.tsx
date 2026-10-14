@@ -33,7 +33,7 @@ const FAQ_FALLBACK = [
   },
   {
     q: "¿Cómo se paga?",
-    a: "Online con Mercado Pago, al final de la inscripción. La inscripción queda confirmada automáticamente cuando se acredita el pago.",
+    a: "Por transferencia bancaria. Al final de la inscripción te mostramos el alias/CBU y un link directo a WhatsApp para mandar el comprobante. La organización confirma el pago en cuanto lo recibe.",
   },
   {
     q: "¿Puedo editar mi equipo después de inscribirme?",
@@ -244,7 +244,7 @@ export default async function HomePage() {
           {[
             ["Datos del equipo y responsable", "Nombre, escudo y contacto. Creás tu acceso con un enlace por email."],
             ["Cargás tu plantel", "Jugador por jugador. El sistema valida edad, documentos y composición."],
-            ["Pagás y quedás confirmado", "Mercado Pago. Al acreditarse el pago, tu equipo queda adentro automáticamente."],
+            ["Pagás y quedás confirmado", "Transferís y mandás el comprobante por WhatsApp. En cuanto lo verificamos, tu equipo queda adentro."],
           ].map(([title, desc], i) => (
             <li key={title} className="rounded-card border border-line-soft bg-surface p-6">
               <div className="font-display text-2xl font-semibold text-pop-soft">0{i + 1}</div>

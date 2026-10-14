@@ -60,6 +60,15 @@ export async function updateTournamentConfig(
   if (input.minPlayers > input.maxPlayers) {
     warnings.push("El mínimo de jugadores del plantel es mayor que el máximo.");
   }
+  if (input.paymentMethod === "MANUAL_TRANSFER" && (!input.bankAlias?.trim() && !input.bankCbu?.trim())) {
+    warnings.push("No cargaste alias ni CBU: los equipos no van a saber a dónde transferir.");
+  }
+  if (input.paymentMethod === "MANUAL_TRANSFER" && !input.whatsappPhone?.trim()) {
+    warnings.push("No cargaste el WhatsApp de contacto para recibir comprobantes.");
+  }
+  if (input.paymentMethod === "MERCADOPAGO") {
+    warnings.push("Mercado Pago cobra comisión por cada cobro; confirmá que es lo que querés usar.");
+  }
 
   const cupNames = input.cupNames
     .split(",")
@@ -132,6 +141,15 @@ export async function updateTournamentConfig(
         extraPlayerPrice: input.extraPlayerPrice,
         priceChangeAt: input.priceChangeAt,
         paymentSurchargeBp: Math.round(input.paymentSurchargePct * 100),
+
+        paymentMethod: input.paymentMethod,
+        bankHolderName: input.bankHolderName || null,
+        bankCuit: input.bankCuit || null,
+        bankName: input.bankName || null,
+        bankAlias: input.bankAlias || null,
+        bankCbu: input.bankCbu || null,
+        whatsappPhone: input.whatsappPhone || null,
+        whatsappMessageTemplate: input.whatsappMessageTemplate || undefined,
 
         registrationOpensAt: input.registrationOpensAt,
         registrationClosesAt: input.registrationClosesAt,
