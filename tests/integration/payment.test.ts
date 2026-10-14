@@ -59,7 +59,7 @@ function mpPayment(over: Partial<MpPayment> & { external_reference: string }): M
 function buildRegInput(over: { name?: string; email?: string; players?: number } = {}) {
   const n = over.players ?? 12;
   return {
-    team: { name: over.name ?? "Los Tréboles", shortName: "", clubTag: "" },
+    team: { name: over.name ?? "Argentina" },
     manager: {
       contactName: "Aoife Byrne",
       contactEmail: over.email ?? "treboles@test.local",
@@ -276,7 +276,7 @@ describe("webhook — sobrecupo", () => {
   it("no confirma el equipo si ya hay maxTeams confirmados; lo manda a lista de espera", async () => {
     await seedTournament({ maxTeams: 1 });
 
-    const a = await createRegistration(buildRegInput({ name: "A", email: "a@test.local" }));
+    const a = await createRegistration(buildRegInput({ name: "Brasil", email: "a@test.local" }));
     await createCheckoutForRegistration(a.registrationId);
     mpPayment({ external_reference: a.registrationId, id: 700, transaction_amount: 330000 });
     await webhook(700);
@@ -284,7 +284,7 @@ describe("webhook — sobrecupo", () => {
     // El torneo ahora tiene 1 confirmado (= maxTeams). Segundo equipo estaba PENDING
     // desde antes de llenarse (creado ok porque maxTeams cuenta occupying, subamos a 2).
     await testDb.tournamentConfig.updateMany({ data: { maxTeams: 2 } });
-    const b = await createRegistration(buildRegInput({ name: "B", email: "b@test.local" }));
+    const b = await createRegistration(buildRegInput({ name: "Chile", email: "b@test.local" }));
     await createCheckoutForRegistration(b.registrationId);
     // volvemos a 1 el tope: al confirmar B habría 2 confirmados > 1
     await testDb.tournamentConfig.updateMany({ data: { maxTeams: 1 } });

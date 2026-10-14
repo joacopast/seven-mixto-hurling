@@ -1,11 +1,13 @@
 "use client";
 
 import { useActionState } from "react";
-import { Button, Field, Input } from "@/components/ui";
+import { Button, Field, Input, Select } from "@/components/ui";
+import { COUNTRIES } from "@/lib/countries";
 import { joinWaitlistAction, type WaitlistState } from "./waitlist-actions";
 
-export function WaitlistForm() {
+export function WaitlistForm({ takenCountries }: { takenCountries: string[] }) {
   const [state, action, pending] = useActionState<WaitlistState, FormData>(joinWaitlistAction, {});
+  const taken = new Set(takenCountries);
 
   if (state.position) {
     return (
@@ -20,8 +22,16 @@ export function WaitlistForm() {
 
   return (
     <form action={action} className="flex flex-col gap-4 text-left">
-      <Field label="Nombre del equipo" htmlFor="teamName" error={state.fieldErrors?.teamName}>
-        <Input id="teamName" name="teamName" required />
+      <Field label="País" htmlFor="teamName" error={state.fieldErrors?.teamName}>
+        <Select id="teamName" name="teamName" required defaultValue="">
+          <option value="">Elegí un país…</option>
+          {COUNTRIES.map((c) => (
+            <option key={c.name} value={c.name} disabled={taken.has(c.name)}>
+              {c.name}
+              {taken.has(c.name) ? " (ya inscripto)" : ""}
+            </option>
+          ))}
+        </Select>
       </Field>
       <Field label="Responsable" htmlFor="contactName" error={state.fieldErrors?.contactName}>
         <Input id="contactName" name="contactName" required />

@@ -231,11 +231,12 @@ model Team {
   tournamentId String
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 
+  /// Nombre del país (torneo formato mundial) — sale de lib/countries.ts.
   name      String
   slug      String
+  /// Código ISO 3166-1 alfa-3 del país, automático — nunca se tipea a mano.
   shortName String?
   crestUrl  String?
-  clubTag   String?
 
   managerUserId String
   manager       User   @relation("TeamManager", fields: [managerUserId], references: [id])

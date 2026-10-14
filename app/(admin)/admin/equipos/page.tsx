@@ -98,7 +98,9 @@ export default async function AdminTeamsPage({
                   <Link href={`/admin/equipos/${t.id}`} className="font-medium text-accent">
                     {t.name}
                   </Link>
-                  {t.clubTag && <span className="ml-2 text-xs text-ink-faint">{t.clubTag}</span>}
+                  {t.shortName && (
+                    <span className="ml-2 font-mono text-xs text-ink-faint">{t.shortName}</span>
+                  )}
                 </td>
                 <td className="px-3 py-2 text-ink-soft">
                   <div>{t.contactName}</div>

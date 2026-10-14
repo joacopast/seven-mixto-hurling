@@ -169,6 +169,31 @@ mínima contra `tournament.startDate`. UI: `app/(team)/mi-equipo/player-row.tsx`
 edición ok, equipo ajeno, documento duplicado, plantel bloqueado, plantel sin bloquear,
 edad mínima).
 
+Torneo formato mundial — equipos son países (2026-10-14): decisión de negocio nueva,
+cambia el modelo de equipo de raíz. `lib/countries.ts` — 195 países (193 ONU + Vaticano +
+Palestina) en español (exónimos RAE/Fundéu: Catar, Baréin, Bangladés, Birmania, etc.),
+cada uno con su código ISO 3166-1 alfa-3. El nombre del equipo (`Team.name`) ahora **tiene
+que ser** uno de esos países — se valida con `isCountryName()` en los 3 lugares donde se
+crea/edita un equipo: inscripción pública (`lib/services/registration.ts`), alta/edición
+admin (`lib/services/admin-teams.ts`) y lista de espera (`lib/services/waitlist.ts`). Un
+país, un equipo: los tres chequean que ese país no esté ya anotado (`registrationStatus
+!= CANCELLED`) y tiran `DUPLICATE_TEAM`/`DUP_COUNTRY` si choca — chequeo a nivel
+aplicación, no constraint de DB (ver nota abajo). Los tres `<select>` (wizard, alta admin,
+lista de espera) deshabilitan con "(ya inscripto)" los países que ya están tomados, para
+no hacer elegir algo que después va a rechazar.
+
+`Team.shortName` (código ISO, ej. "ARG") pasa a ser **automático** — nunca se tipea,
+sale de `countryCode()` al crear o editar el equipo. Se sacó `Team.clubTag` del todo
+(migración `world_cup_teams_are_countries`, `DROP COLUMN`) y los campos "Nombre corto" /
+"Club o barrio" de los 3 formularios (wizard, alta admin, editor admin) — ya no tienen
+sentido con equipos = países.
+
+Nota sobre la carrera de inscripción simultánea: el chequeo de "país ya tomado" es
+best-effort a nivel aplicación (mismo criterio que ya usaba el cupo del torneo), no un
+`@@unique` real en la base — agregar esa constraint pedía un índice único parcial (para
+liberar el país si el equipo se cancela) y esto no es Postgres estándar en Prisma sin
+SQL a mano. Para el volumen de este torneo no hace falta más que esto.
+
 Pendiente / próximo: cargar alias/CBU/WhatsApp reales en `/admin/configuracion`,
 pulido visual final, más cobertura e2e (pago, admin), pasar a Vercel Pro antes del
 evento. Discutido pero no implementado: agregar/sacar jugadores desde el portal con

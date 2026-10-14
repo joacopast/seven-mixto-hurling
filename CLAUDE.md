@@ -130,8 +130,10 @@ Nota: al tocar `tailwind.config.ts`, reiniciar `next dev` con `rm -rf .next` (ca
 
 ## Decisiones de negocio confirmadas
 
-Evento de 1 día · copas por eliminación directa simple sin 3er puesto · asignación de copa
-por posición en el grupo · inscripción abierta por orden de llegada · sorteo de grupos manual ·
+Evento de 1 día · **formato mundial: los equipos son países** (un país, un equipo — se
+elige de una lista fija de 195, `lib/countries.ts`, nombre + código ISO automático) ·
+copas por eliminación directa simple sin 3er puesto · asignación de copa por posición en
+el grupo · inscripción abierta por orden de llegada · sorteo de grupos manual ·
 **pago por transferencia bancaria (alias/CBU) con comprobante por WhatsApp, confirmado a
 mano por el admin — no se usa Mercado Pago por la comisión** · reembolso total ante
 cualquier baja · edad mínima 16 · DNI obligatorio · multi-equipo por responsable · lista

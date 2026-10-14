@@ -5,9 +5,12 @@ import { Button, Field, Input, Select, Callout } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { calculatePrice, formatArs, type PricingConfig } from "@/lib/tournament/pricing";
 import { validateRoster, type RosterConfig } from "@/lib/tournament/roster";
+import { COUNTRIES } from "@/lib/countries";
 import { submitRegistration } from "./actions";
 
 export interface WizardConfig {
+  /** Países ya anotados en el torneo (cualquier estado salvo cancelado) — no se pueden elegir de nuevo. */
+  takenCountries: string[];
   basePlayers: number;
   earlyPrice: number;
   latePrice: number;
@@ -39,7 +42,7 @@ interface PlayerDraft {
 }
 
 interface Draft {
-  team: { name: string; shortName: string; clubTag: string };
+  team: { name: string };
   manager: { contactName: string; contactEmail: string; contactPhone: string };
   players: PlayerDraft[];
 }
@@ -59,7 +62,7 @@ const EMPTY_PLAYER: PlayerDraft = {
 };
 
 const EMPTY_DRAFT: Draft = {
-  team: { name: "", shortName: "", clubTag: "" },
+  team: { name: "" },
   manager: { contactName: "", contactEmail: "", contactPhone: "" },
   players: [],
 };
@@ -196,7 +199,9 @@ export function Wizard({ config }: { config: WizardConfig }) {
         <Progress step={step} />
 
         <div className="mt-6 rounded-card border border-line-soft bg-surface p-5 sm:p-6">
-          {step === 0 && <TeamStep draft={draft} setDraft={setDraft} />}
+          {step === 0 && (
+            <TeamStep draft={draft} setDraft={setDraft} takenCountries={config.takenCountries} />
+          )}
           {step === 1 && <ManagerStep draft={draft} setDraft={setDraft} />}
           {step === 2 && (
             <PlayersStep draft={draft} setDraft={setDraft} config={config} roster={roster} />
@@ -264,42 +269,36 @@ function Progress({ step }: { step: number }) {
 function TeamStep({
   draft,
   setDraft,
+  takenCountries,
 }: {
   draft: Draft;
   setDraft: React.Dispatch<React.SetStateAction<Draft>>;
+  takenCountries: string[];
 }) {
-  const set = (k: keyof Draft["team"], v: string) =>
-    setDraft((d) => ({ ...d, team: { ...d.team, [k]: v } }));
+  const taken = new Set(takenCountries);
   return (
     <div className="flex flex-col gap-5">
       <h2 className="font-display text-xl font-semibold text-ink">Datos del equipo</h2>
-      <Field label="Nombre del equipo" htmlFor="name">
-        <Input
+      <p className="text-sm text-ink-soft">
+        Torneo formato mundial: tu equipo representa a un país. Un país, un equipo — elegí el que
+        vas a defender.
+      </p>
+      <Field label="País" htmlFor="name">
+        <Select
           id="name"
           value={draft.team.name}
-          onChange={(e) => set("name", e.target.value)}
-          maxLength={80}
+          onChange={(e) => setDraft((d) => ({ ...d, team: { name: e.target.value } }))}
           required
-        />
+        >
+          <option value="">Elegí un país…</option>
+          {COUNTRIES.map((c) => (
+            <option key={c.name} value={c.name} disabled={taken.has(c.name) && c.name !== draft.team.name}>
+              {c.name}
+              {taken.has(c.name) && c.name !== draft.team.name ? " (ya inscripto)" : ""}
+            </option>
+          ))}
+        </Select>
       </Field>
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Nombre corto" htmlFor="shortName" hint="Para tablas y llaves. Opcional.">
-          <Input
-            id="shortName"
-            value={draft.team.shortName}
-            onChange={(e) => set("shortName", e.target.value)}
-            maxLength={20}
-          />
-        </Field>
-        <Field label="Club / barrio" htmlFor="clubTag" hint="Opcional.">
-          <Input
-            id="clubTag"
-            value={draft.team.clubTag}
-            onChange={(e) => set("clubTag", e.target.value)}
-            maxLength={40}
-          />
-        </Field>
-      </div>
       <p className="text-xs text-ink-faint">
         El escudo lo vas a poder subir después, desde el portal del equipo.
       </p>
@@ -554,8 +553,7 @@ function SummaryStep({
       <h2 className="font-display text-xl font-semibold text-ink">Revisá y confirmá</h2>
 
       <dl className="grid gap-3 text-sm sm:grid-cols-2">
-        <Row label="Equipo" value={draft.team.name} />
-        <Row label="Nombre corto" value={draft.team.shortName || "—"} />
+        <Row label="País" value={draft.team.name} />
         <Row label="Responsable" value={draft.manager.contactName} />
         <Row label="Email" value={draft.manager.contactEmail} />
         <Row label="Teléfono" value={draft.manager.contactPhone} />

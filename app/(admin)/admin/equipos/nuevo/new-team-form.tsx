@@ -2,23 +2,25 @@
 
 import { useActionState } from "react";
 import { Button, Field, Input, Select } from "@/components/ui";
+import { COUNTRIES } from "@/lib/countries";
 import { createTeam, type NewTeamState } from "./actions";
 
-export function NewTeamForm() {
+export function NewTeamForm({ takenCountries }: { takenCountries: string[] }) {
   const [state, action, pending] = useActionState<NewTeamState, FormData>(createTeam, {});
+  const taken = new Set(takenCountries);
   return (
     <form action={action} className="flex flex-col gap-4">
-      <Field label="Nombre del equipo" htmlFor="name">
-        <Input id="name" name="name" required />
+      <Field label="País" htmlFor="name" hint="Torneo formato mundial: un país, un equipo.">
+        <Select id="name" name="name" required defaultValue="">
+          <option value="">Elegí un país…</option>
+          {COUNTRIES.map((c) => (
+            <option key={c.name} value={c.name} disabled={taken.has(c.name)}>
+              {c.name}
+              {taken.has(c.name) ? " (ya inscripto)" : ""}
+            </option>
+          ))}
+        </Select>
       </Field>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Nombre corto" htmlFor="shortName">
-          <Input id="shortName" name="shortName" maxLength={20} />
-        </Field>
-        <Field label="Club / barrio" htmlFor="clubTag">
-          <Input id="clubTag" name="clubTag" maxLength={40} />
-        </Field>
-      </div>
       <Field label="Responsable" htmlFor="contactName">
         <Input id="contactName" name="contactName" required />
       </Field>

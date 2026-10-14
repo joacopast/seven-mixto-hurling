@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/slug";
+import { countryCode } from "@/lib/countries";
 import { writeAudit } from "@/lib/services/audit";
 import { enqueueNotification } from "@/lib/services/notification";
 import { calculatePrice, type PriceQuote } from "@/lib/tournament/pricing";
@@ -110,6 +111,14 @@ export async function createRegistration(
       throw new RegistrationError("Los cupos están completos.", "TOURNAMENT_FULL");
     }
 
+    // Un país, un equipo — torneo formato mundial.
+    const taken = await tx.team.findFirst({
+      where: { tournamentId: tournament.id, name: input.team.name, registrationStatus: { not: "CANCELLED" } },
+    });
+    if (taken) {
+      throw new RegistrationError(`${input.team.name} ya está inscripto en el torneo.`, "DUPLICATE_TEAM");
+    }
+
     // Responsable: usuario existente o nuevo (sin verificar; se verifica con el magic link)
     const email = input.manager.contactEmail;
     let user = await tx.user.findUnique({ where: { email } });
@@ -135,8 +144,7 @@ export async function createRegistration(
         tournamentId: tournament.id,
         name: input.team.name,
         slug,
-        shortName: input.team.shortName || null,
-        clubTag: input.team.clubTag || null,
+        shortName: countryCode(input.team.name),
         managerUserId: user.id,
         contactName: input.manager.contactName,
         contactEmail: email,

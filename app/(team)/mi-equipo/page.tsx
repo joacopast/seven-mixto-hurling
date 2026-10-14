@@ -76,7 +76,7 @@ export default async function MiEquipoPage({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-semibold text-ink">{active.name}</h1>
-          {active.clubTag && <p className="text-sm text-ink-faint">{active.clubTag}</p>}
+          {active.shortName && <p className="font-mono text-sm text-ink-faint">{active.shortName}</p>}
         </div>
         <Badge tone={REGISTRATION_STATUS_TONE[active.registrationStatus]}>
           {REGISTRATION_STATUS_LABEL[active.registrationStatus]}

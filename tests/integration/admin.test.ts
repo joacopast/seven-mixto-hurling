@@ -27,7 +27,7 @@ describe("admin-teams", () => {
     const t = await seedTournament();
     const team = await adminCreateTeam({
       tournamentId: t.id,
-      name: "Invitados FC",
+      name: "Alemania",
       contactName: "Org",
       contactEmail: "invitados@test.local",
       contactPhone: "1",
@@ -49,12 +49,41 @@ describe("admin-teams", () => {
   it("edita datos del equipo y audita el diff", async () => {
     const t = await seedTournament();
     const [team] = await seedConfirmedTeams(t.id, 1);
-    await adminUpdateTeam(team!.id, { name: "Nombre Nuevo", seed: 5 });
+    await adminUpdateTeam(team!.id, { name: "Francia", seed: 5 });
     const fresh = await testDb.team.findUniqueOrThrow({ where: { id: team!.id } });
-    expect(fresh.name).toBe("Nombre Nuevo");
+    expect(fresh.name).toBe("Francia");
+    expect(fresh.shortName).toBe("FRA");
     expect(fresh.seed).toBe(5);
     const audit = await testDb.auditLog.findFirstOrThrow({ where: { action: "team.admin.update" } });
     expect(audit.previousValue).toMatchObject({ name: "Equipo team01" });
+  });
+
+  it("rechaza crear o editar un equipo con un país ya inscripto (torneo formato mundial)", async () => {
+    const t = await seedTournament();
+    await adminCreateTeam({
+      tournamentId: t.id,
+      name: "España",
+      contactName: "Org",
+      contactEmail: "esp@test.local",
+      contactPhone: "1",
+      registrationStatus: "CONFIRMED",
+    });
+
+    await expect(
+      adminCreateTeam({
+        tournamentId: t.id,
+        name: "España",
+        contactName: "Org 2",
+        contactEmail: "esp2@test.local",
+        contactPhone: "2",
+        registrationStatus: "CONFIRMED",
+      }),
+    ).rejects.toMatchObject({ code: "DUP_COUNTRY" });
+
+    const [otro] = await seedConfirmedTeams(t.id, 1, { prefix: "otro" });
+    await expect(adminUpdateTeam(otro!.id, { name: "España" })).rejects.toMatchObject({
+      code: "DUP_COUNTRY",
+    });
   });
 
   it("agrega y quita jugadores; rechaza documento duplicado", async () => {
@@ -176,10 +205,20 @@ describe("lista de espera", () => {
     const t = await seedTournament({ maxTeams: 2 });
     await seedConfirmedTeams(t.id, 2);
     // 2 en lista de espera
-    await joinWaitlist({ teamName: "Espera 1", contactName: "A", contactEmail: "e1@test.local", contactPhone: "1" });
-    await joinWaitlist({ teamName: "Espera 2", contactName: "B", contactEmail: "e2@test.local", contactPhone: "2" });
+    await joinWaitlist({ teamName: "Portugal", contactName: "A", contactEmail: "e1@test.local", contactPhone: "1" });
+    await joinWaitlist({ teamName: "Países Bajos", contactName: "B", contactEmail: "e2@test.local", contactPhone: "2" });
     return t;
   }
+
+  it("joinWaitlist rechaza un país ya inscripto", async () => {
+    const t = await seedTournament();
+    await seedConfirmedTeams(t.id, 1); // ocupa el torneo con un equipo (no un país real, va directo a DB)
+    await joinWaitlist({ teamName: "Japón", contactName: "A", contactEmail: "e1@test.local", contactPhone: "1" });
+
+    await expect(
+      joinWaitlist({ teamName: "Japón", contactName: "B", contactEmail: "e2@test.local", contactPhone: "2" }),
+    ).rejects.toMatchObject({ code: "DUPLICATE_TEAM" });
+  });
 
   it("promoteWaitlistEntry rechaza si no hay cupos", async () => {
     const t = await fullTournamentWithWaitlist();

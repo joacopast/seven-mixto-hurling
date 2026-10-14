@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isCountryName } from "@/lib/countries";
 
 /** Normaliza un documento: saca puntos, espacios y guiones. */
 export const normalizeDoc = (doc: string) => doc.replace(/[.\s-]/g, "").trim().toUpperCase();
@@ -7,9 +8,8 @@ const nonEmpty = (max: number, label: string) =>
   z.string().trim().min(1, `${label} es obligatorio.`).max(max, `${label} es demasiado largo.`);
 
 export const teamInfoSchema = z.object({
-  name: nonEmpty(80, "El nombre del equipo"),
-  shortName: z.string().trim().max(20).optional().or(z.literal("")),
-  clubTag: z.string().trim().max(40).optional().or(z.literal("")),
+  /** Nombre del país elegido (torneo formato mundial) — debe salir de lib/countries.ts. */
+  name: nonEmpty(80, "El país").refine(isCountryName, "Elegí un país de la lista."),
 });
 
 export const managerSchema = z.object({

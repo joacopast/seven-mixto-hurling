@@ -6,7 +6,7 @@ import { confirmManualPayment, PaymentError } from "@/lib/services/payment";
 
 function buildRegInput(over: { name?: string; email?: string } = {}) {
   return {
-    team: { name: over.name ?? "Los Tréboles", shortName: "", clubTag: "" },
+    team: { name: over.name ?? "Argentina" },
     manager: {
       contactName: "Aoife Byrne",
       contactEmail: over.email ?? "treboles@test.local",
@@ -91,7 +91,7 @@ describe("confirmManualPayment — transferencia confirmada a mano", () => {
     const t = await seedTournament({ maxTeams: 1 });
     const a = await adminCreateTeam({
       tournamentId: t.id,
-      name: "Equipo A",
+      name: "Brasil",
       contactName: "A",
       contactEmail: "a@test.local",
       contactPhone: "1",
@@ -99,7 +99,7 @@ describe("confirmManualPayment — transferencia confirmada a mano", () => {
     });
     const b = await adminCreateTeam({
       tournamentId: t.id,
-      name: "Equipo B",
+      name: "Chile",
       contactName: "B",
       contactEmail: "b@test.local",
       contactPhone: "2",

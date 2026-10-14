@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Field, Input, Select } from "@/components/ui";
+import { COUNTRIES } from "@/lib/countries";
 import {
   updateTeam,
   addPlayer,
@@ -16,8 +17,6 @@ import {
 interface TeamData {
   id: string;
   name: string;
-  shortName: string | null;
-  clubTag: string | null;
   contactName: string;
   contactEmail: string;
   contactPhone: string;
@@ -25,19 +24,21 @@ interface TeamData {
   adminNotes: string | null;
 }
 
-export function TeamEditForm({ team }: { team: TeamData }) {
+export function TeamEditForm({ team, takenCountries }: { team: TeamData; takenCountries: string[] }) {
   const [state, action, pending] = useActionState<TeamEditState, FormData>(updateTeam, {});
+  const taken = new Set(takenCountries);
   return (
     <form action={action} className="grid gap-4 sm:grid-cols-2">
       <input type="hidden" name="teamId" value={team.id} />
-      <Field label="Nombre" htmlFor="e-name">
-        <Input id="e-name" name="name" defaultValue={team.name} />
-      </Field>
-      <Field label="Nombre corto" htmlFor="e-short">
-        <Input id="e-short" name="shortName" defaultValue={team.shortName ?? ""} />
-      </Field>
-      <Field label="Club / barrio" htmlFor="e-club">
-        <Input id="e-club" name="clubTag" defaultValue={team.clubTag ?? ""} />
+      <Field label="País" htmlFor="e-name">
+        <Select id="e-name" name="name" defaultValue={team.name}>
+          {COUNTRIES.map((c) => (
+            <option key={c.name} value={c.name} disabled={taken.has(c.name)}>
+              {c.name}
+              {taken.has(c.name) ? " (ya inscripto)" : ""}
+            </option>
+          ))}
+        </Select>
       </Field>
       <Field label="Seed / ranking" htmlFor="e-seed" hint="Vacío = sin seed.">
         <Input id="e-seed" name="seed" type="number" defaultValue={team.seed ?? ""} />

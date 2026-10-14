@@ -3,12 +3,13 @@ import { db } from "@/lib/db";
 import { slugify } from "@/lib/slug";
 import { writeAudit } from "@/lib/services/audit";
 import { normalizeDoc } from "@/lib/validation/registration";
+import { countryCode } from "@/lib/countries";
 import type { Prisma, RegistrationStatus } from "@prisma/client";
 
 export class AdminTeamError extends Error {
   constructor(
     message: string,
-    public code: "NOT_FOUND" | "HAS_MATCHES" | "DUP_DOC" | "BAD_INPUT",
+    public code: "NOT_FOUND" | "HAS_MATCHES" | "DUP_DOC" | "DUP_COUNTRY" | "BAD_INPUT",
   ) {
     super(message);
     this.name = "AdminTeamError";
@@ -34,9 +35,8 @@ async function uniqueSlug(tx: Prisma.TransactionClient, tournamentId: string, na
 
 export interface AdminCreateTeamInput {
   tournamentId: string;
+  /** Nombre del país (torneo formato mundial) — debe salir de lib/countries.ts. */
   name: string;
-  shortName?: string;
-  clubTag?: string;
   contactName: string;
   contactEmail: string;
   contactPhone: string;
@@ -45,6 +45,17 @@ export interface AdminCreateTeamInput {
 }
 
 export async function adminCreateTeam(input: AdminCreateTeamInput, ctx: Ctx = {}) {
+  const taken = await db.team.findFirst({
+    where: {
+      tournamentId: input.tournamentId,
+      name: input.name,
+      registrationStatus: { not: "CANCELLED" },
+    },
+  });
+  if (taken) {
+    throw new AdminTeamError(`${input.name} ya está inscripto en el torneo.`, "DUP_COUNTRY");
+  }
+
   return db.$transaction(async (tx) => {
     const email = input.contactEmail.trim().toLowerCase();
     let user = await tx.user.findUnique({ where: { email } });
@@ -62,8 +73,7 @@ export async function adminCreateTeam(input: AdminCreateTeamInput, ctx: Ctx = {}
         tournamentId: input.tournamentId,
         name: input.name,
         slug,
-        shortName: input.shortName || null,
-        clubTag: input.clubTag || null,
+        shortName: countryCode(input.name),
         managerUserId: user.id,
         contactName: input.contactName,
         contactEmail: email,
@@ -97,9 +107,8 @@ export async function adminCreateTeam(input: AdminCreateTeamInput, ctx: Ctx = {}
 }
 
 export interface AdminUpdateTeamInput {
+  /** Nombre del país (torneo formato mundial) — debe salir de lib/countries.ts. */
   name?: string;
-  shortName?: string | null;
-  clubTag?: string | null;
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
@@ -110,6 +119,20 @@ export interface AdminUpdateTeamInput {
 export async function adminUpdateTeam(teamId: string, input: AdminUpdateTeamInput, ctx: Ctx = {}) {
   const team = await db.team.findUnique({ where: { id: teamId } });
   if (!team) throw new AdminTeamError("Equipo no encontrado.", "NOT_FOUND");
+
+  if (input.name !== undefined && input.name !== team.name) {
+    const taken = await db.team.findFirst({
+      where: {
+        tournamentId: team.tournamentId,
+        name: input.name,
+        registrationStatus: { not: "CANCELLED" },
+        NOT: { id: teamId },
+      },
+    });
+    if (taken) {
+      throw new AdminTeamError(`${input.name} ya está inscripto en el torneo.`, "DUP_COUNTRY");
+    }
+  }
 
   const data: Prisma.TeamUpdateInput = {};
   const before: Record<string, string | number | null> = {};
@@ -123,15 +146,8 @@ export async function adminUpdateTeam(teamId: string, input: AdminUpdateTeamInpu
 
   if (input.name !== undefined) {
     data.name = input.name;
+    data.shortName = countryCode(input.name);
     track("name", team.name);
-  }
-  if (input.shortName !== undefined) {
-    data.shortName = input.shortName || null;
-    track("shortName", team.shortName);
-  }
-  if (input.clubTag !== undefined) {
-    data.clubTag = input.clubTag || null;
-    track("clubTag", team.clubTag);
   }
   if (input.contactName !== undefined) {
     data.contactName = input.contactName;

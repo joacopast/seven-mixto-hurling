@@ -4,8 +4,20 @@ import { slugify } from "@/lib/slug";
 import { writeAudit } from "@/lib/services/audit";
 import { enqueueNotification } from "@/lib/services/notification";
 import { getActiveTournament, OCCUPYING_STATUSES } from "@/lib/tournament/queries";
+import { countryCode } from "@/lib/countries";
+
+export class WaitlistError extends Error {
+  constructor(
+    message: string,
+    public code: "DUPLICATE_TEAM",
+  ) {
+    super(message);
+    this.name = "WaitlistError";
+  }
+}
 
 export interface JoinWaitlistInput {
+  /** Nombre del país (torneo formato mundial) — debe salir de lib/countries.ts. */
   teamName: string;
   contactName: string;
   contactEmail: string;
@@ -15,6 +27,13 @@ export interface JoinWaitlistInput {
 /** Suma un equipo a la lista de espera (Registration.status = WAITLISTED). */
 export async function joinWaitlist(input: JoinWaitlistInput, ctx: { ip?: string | null } = {}) {
   const tournament = await getActiveTournament();
+
+  const taken = await db.team.findFirst({
+    where: { tournamentId: tournament.id, name: input.teamName, registrationStatus: { not: "CANCELLED" } },
+  });
+  if (taken) {
+    throw new WaitlistError(`${input.teamName} ya está inscripto en el torneo.`, "DUPLICATE_TEAM");
+  }
 
   return db.$transaction(async (tx) => {
     const email = input.contactEmail.trim().toLowerCase();
@@ -47,6 +66,7 @@ export async function joinWaitlist(input: JoinWaitlistInput, ctx: { ip?: string 
         tournamentId: tournament.id,
         name: input.teamName,
         slug,
+        shortName: countryCode(input.teamName),
         managerUserId: user.id,
         contactName: input.contactName,
         contactEmail: email,

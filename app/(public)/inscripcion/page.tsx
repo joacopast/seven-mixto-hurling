@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { db } from "@/lib/db";
 import { getActiveTournament, getCapacity, registrationIsOpen } from "@/lib/tournament/queries";
 import { Wizard, type WizardConfig } from "./wizard";
 import { WaitlistForm } from "./waitlist-form";
@@ -26,6 +27,11 @@ export default async function InscripcionPage() {
   const config = tournament.config!;
   const capacity = await getCapacity();
   const open = registrationIsOpen(tournament);
+  const takenTeams = await db.team.findMany({
+    where: { tournamentId: tournament.id, registrationStatus: { not: "CANCELLED" } },
+    select: { name: true },
+  });
+  const takenCountries = takenTeams.map((t) => t.name);
 
   if (!open) {
     return (
@@ -51,7 +57,7 @@ export default async function InscripcionPage() {
           libera un lugar, te avisamos por email y te habilitamos el pago.
         </p>
         <div className="mt-8 max-w-md">
-          <WaitlistForm />
+          <WaitlistForm takenCountries={takenCountries} />
         </div>
       </Shell>
     );
@@ -60,6 +66,7 @@ export default async function InscripcionPage() {
   const inclusions = config.inclusionsList.length ? config.inclusionsList : INCLUSIONS_FALLBACK;
 
   const wizardConfig: WizardConfig = {
+    takenCountries,
     basePlayers: config.basePlayers,
     earlyPrice: config.earlyPrice,
     latePrice: config.latePrice,

@@ -28,6 +28,11 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
   });
   if (!team) notFound();
 
+  const takenTeams = await db.team.findMany({
+    where: { tournamentId: team.tournamentId, registrationStatus: { not: "CANCELLED" }, NOT: { id: team.id } },
+    select: { name: true },
+  });
+
   const audit = await db.auditLog.findMany({
     where: { entity: { in: ["Team", "Registration"] }, entityId: { in: [team.id, team.registration?.id ?? ""] } },
     orderBy: { createdAt: "desc" },
@@ -60,7 +65,6 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
             <Item label="Nombre" value={team.contactName} />
             <Item label="Email" value={team.contactEmail} />
             <Item label="Teléfono" value={team.contactPhone} />
-            <Item label="Club / barrio" value={team.clubTag ?? "—"} />
           </dl>
         </Card>
         <Card>
@@ -106,14 +110,13 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
             team={{
               id: team.id,
               name: team.name,
-              shortName: team.shortName,
-              clubTag: team.clubTag,
               contactName: team.contactName,
               contactEmail: team.contactEmail,
               contactPhone: team.contactPhone,
               seed: team.seed,
               adminNotes: team.adminNotes,
             }}
+            takenCountries={takenTeams.map((t) => t.name)}
           />
         </div>
       </Card>

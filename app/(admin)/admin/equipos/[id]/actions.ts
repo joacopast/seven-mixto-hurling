@@ -16,6 +16,7 @@ import {
   AdminTeamError,
 } from "@/lib/services/admin-teams";
 import { confirmManualPayment, PaymentError } from "@/lib/services/payment";
+import { isCountryName } from "@/lib/countries";
 
 async function adminCtx() {
   const admin = await requireRole("ADMIN");
@@ -160,9 +161,7 @@ export async function changeRegistrationStatus(
 
 const teamSchema = z.object({
   teamId: z.string().min(1),
-  name: z.string().trim().min(1).max(80),
-  shortName: z.string().trim().max(20).optional(),
-  clubTag: z.string().trim().max(40).optional(),
+  name: z.string().trim().min(1).max(80).refine(isCountryName, "Elegí un país de la lista."),
   contactName: z.string().trim().min(1).max(80),
   contactEmail: z.string().trim().toLowerCase().email(),
   contactPhone: z.string().trim().min(1).max(30),
@@ -185,8 +184,6 @@ export async function updateTeam(_prev: TeamEditState, formData: FormData): Prom
       d.teamId,
       {
         name: d.name,
-        shortName: d.shortName ?? "",
-        clubTag: d.clubTag ?? "",
         contactName: d.contactName,
         contactEmail: d.contactEmail,
         contactPhone: d.contactPhone,

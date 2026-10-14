@@ -18,7 +18,7 @@ function buildInput(over: Partial<RegistrationSubmitInput> = {}): RegistrationSu
     position: "",
   }));
   return {
-    team: { name: "Los Tréboles", shortName: "TRE", clubTag: "" },
+    team: { name: "Argentina" },
     manager: {
       contactName: "Aoife Byrne",
       contactEmail: "treboles@test.local",
@@ -98,13 +98,13 @@ describe("createRegistration", () => {
 
   it("bloquea el equipo 65 cuando hay 64 cupos ocupados", async () => {
     const tournament = await seedTournament({ maxTeams: 2 });
-    await createRegistration(buildInput({ team: { name: "Equipo A", shortName: "", clubTag: "" }, manager: { contactName: "A", contactEmail: "a@test.local", contactPhone: "1" } }));
-    await createRegistration(buildInput({ team: { name: "Equipo B", shortName: "", clubTag: "" }, manager: { contactName: "B", contactEmail: "b@test.local", contactPhone: "2" } }));
+    await createRegistration(buildInput({ team: { name: "Brasil" }, manager: { contactName: "A", contactEmail: "a@test.local", contactPhone: "1" } }));
+    await createRegistration(buildInput({ team: { name: "Chile" }, manager: { contactName: "B", contactEmail: "b@test.local", contactPhone: "2" } }));
 
     await expect(
       createRegistration(
         buildInput({
-          team: { name: "Equipo C", shortName: "", clubTag: "" },
+          team: { name: "Uruguay" },
           manager: { contactName: "C", contactEmail: "c@test.local", contactPhone: "3" },
         }),
       ),
@@ -114,17 +114,29 @@ describe("createRegistration", () => {
     expect(count).toBe(2);
   });
 
-  it("desambigua el slug cuando el nombre de equipo se repite", async () => {
+  it("rechaza inscribir el mismo país dos veces (torneo formato mundial)", async () => {
     await seedTournament();
-    const a = await createRegistration(buildInput({ manager: { contactName: "A", contactEmail: "a@test.local", contactPhone: "1" } }));
-    const b = await createRegistration(buildInput({ manager: { contactName: "B", contactEmail: "b@test.local", contactPhone: "2" } }));
-    expect(a.teamSlug).not.toBe(b.teamSlug);
+    await createRegistration(buildInput({ manager: { contactName: "A", contactEmail: "a@test.local", contactPhone: "1" } }));
+
+    await expect(
+      createRegistration(buildInput({ manager: { contactName: "B", contactEmail: "b@test.local", contactPhone: "2" } })),
+    ).rejects.toMatchObject({ code: "DUPLICATE_TEAM" });
+
+    const count = await testDb.team.count();
+    expect(count).toBe(1);
+  });
+
+  it("deriva el código ISO del país como shortName automático", async () => {
+    await seedTournament();
+    const res = await createRegistration(buildInput());
+    const team = await testDb.team.findUniqueOrThrow({ where: { id: res.teamId } });
+    expect(team.shortName).toBe("ARG");
   });
 
   it("reutiliza el usuario responsable si ya existe (mismo email, varios equipos)", async () => {
     await seedTournament();
-    await createRegistration(buildInput({ team: { name: "Equipo Uno", shortName: "", clubTag: "" } }));
-    await createRegistration(buildInput({ team: { name: "Equipo Dos", shortName: "", clubTag: "" } }));
+    await createRegistration(buildInput({ team: { name: "Argentina" } }));
+    await createRegistration(buildInput({ team: { name: "Brasil" } }));
     const users = await testDb.user.count({ where: { email: "treboles@test.local" } });
     expect(users).toBe(1);
     const teams = await testDb.team.count();

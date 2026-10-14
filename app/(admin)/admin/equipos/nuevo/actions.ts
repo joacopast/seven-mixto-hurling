@@ -7,12 +7,11 @@ import { z } from "zod";
 import { RegistrationStatus } from "@prisma/client";
 import { requireRole } from "@/lib/auth/guards";
 import { getActiveTournament } from "@/lib/tournament/queries";
-import { adminCreateTeam } from "@/lib/services/admin-teams";
+import { adminCreateTeam, AdminTeamError } from "@/lib/services/admin-teams";
+import { isCountryName } from "@/lib/countries";
 
 const schema = z.object({
-  name: z.string().trim().min(1).max(80),
-  shortName: z.string().trim().max(20).optional(),
-  clubTag: z.string().trim().max(40).optional(),
+  name: z.string().trim().min(1).max(80).refine(isCountryName, "Elegí un país de la lista."),
   contactName: z.string().trim().min(1).max(80),
   contactEmail: z.string().trim().toLowerCase().email(),
   contactPhone: z.string().trim().min(1).max(30),

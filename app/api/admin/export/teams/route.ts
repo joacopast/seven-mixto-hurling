@@ -34,9 +34,8 @@ export async function GET(req: NextRequest) {
 
   const csv = toCsv(
     [
-      "nombre",
-      "nombre_corto",
-      "club",
+      "pais",
+      "codigo",
       "responsable",
       "email",
       "telefono",
@@ -50,7 +49,6 @@ export async function GET(req: NextRequest) {
     teams.map((t) => [
       t.name,
       t.shortName ?? "",
-      t.clubTag ?? "",
       t.contactName,
       t.contactEmail,
       t.contactPhone,

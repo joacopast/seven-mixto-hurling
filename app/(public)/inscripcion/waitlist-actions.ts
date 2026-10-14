@@ -3,11 +3,12 @@
 import { headers } from "next/headers";
 import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
-import { joinWaitlist } from "@/lib/services/waitlist";
+import { joinWaitlist, WaitlistError } from "@/lib/services/waitlist";
 import { getCapacity } from "@/lib/tournament/queries";
+import { isCountryName } from "@/lib/countries";
 
 const schema = z.object({
-  teamName: z.string().trim().min(1, "Obligatorio.").max(80),
+  teamName: z.string().trim().min(1, "Obligatorio.").max(80).refine(isCountryName, "Elegí un país de la lista."),
   contactName: z.string().trim().min(1, "Obligatorio.").max(80),
   contactEmail: z.string().trim().toLowerCase().email("Email inválido."),
   contactPhone: z.string().trim().min(1, "Obligatorio.").max(30),
@@ -50,6 +51,7 @@ export async function joinWaitlistAction(
     const { position } = await joinWaitlist(parsed.data, { ip });
     return { position };
   } catch (err) {
+    if (err instanceof WaitlistError) return { error: err.message };
     console.error("joinWaitlistAction", err);
     return { error: "No pudimos registrarte. Probá de nuevo." };
   }
