@@ -87,6 +87,16 @@ queda implementado y testeado pero apagado por defecto.
 
 148 tests verdes.
 
+Deploy (2026-10-14): Vercel Hobby + Neon + GitHub (`github.com/joacopast/seven-mixto-hurling`).
+Vercel Hobby no permite Cron Jobs nativos más seguidos que 1/día (bloquea el deploy entero
+si `vercel.json` los define) — por eso `vercel.json` quedó sin `crons` y los tres endpoints
+(`/api/cron/notifications` cada 5 min, `/api/cron/reconcile-payments` cada hora,
+`/api/cron/waitlist` cada 30 min) hay que pegarles desde un pinger externo gratuito
+(cron-job.org) con header `Authorization: Bearer <CRON_SECRET>`. Al pasar a Vercel Pro antes
+del evento, se puede volver a poner el `crons` nativo (está en el historial de git) y dar de
+baja el pinger externo. `DIRECT_URL` se agregó al datasource de Prisma — `DATABASE_URL`
+corre con el pooler de Neon en runtime, `DIRECT_URL` (sin pooler) solo la usa `prisma migrate`.
+
 Manual de uso para la organización: `docs/manual-organizacion.html`, publicado como
 Artifact (https://claude.ai/artifact/3ffBmjArdGrBckc4Jq8DQx) — login de staff, mapa del
 panel, checklist antes de abrir inscripción, confirmar pagos por transferencia, lista de
