@@ -106,7 +106,12 @@ export function ConfigForm({ values, structureLocked }: { values: ConfigValues; 
         <Field label="Equipos por grupo" htmlFor="groupSize" error={err("groupSize")}>
           <Input id="groupSize" name="groupSize" type="number" defaultValue={values.groupSize} disabled={structureLocked} />
         </Field>
-        <Field label="Nombres de copas (coma)" htmlFor="cupNames" error={err("cupNames")}>
+        <Field
+          label="Copas (nombres, separados por coma)"
+          htmlFor="cupNames"
+          error={err("cupNames")}
+          hint="La cantidad de copas sale de cuántos nombres pongas acá — sacar uno baja la cantidad. Se puede cambiar incluso después de la fase de grupos (antes de generar las copas). Si el grupo más chico tiene menos equipos que copas, va a rechazar con un error claro al generar."
+        >
           <Input id="cupNames" name="cupNames" defaultValue={values.cupNames} />
         </Field>
         <Field label="Asignación de copas" htmlFor="cupAssignmentStrategy">
