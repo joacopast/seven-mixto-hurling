@@ -14,6 +14,9 @@ export interface PlayerRowData {
   gender: "M" | "F" | "X";
   isPlayer: boolean;
   shirtNumber: number | null;
+  dietaryRestriction: string | null;
+  attendsParty: boolean;
+  age: number;
 }
 
 const initialState: EditPlayerState = {};
@@ -36,10 +39,19 @@ export function PlayerRow({ player, locked }: { player: PlayerRowData; locked: b
         <td className="px-3 py-2 font-mono text-xs text-ink-soft">
           {player.docType} {player.docNumber}
         </td>
+        <td className="px-3 py-2 font-mono text-ink-soft">{player.age}</td>
         <td className="px-3 py-2 text-ink-soft">{player.gender}</td>
         <td className="px-3 py-2 font-mono text-ink-soft">{player.shirtNumber ?? "—"}</td>
         <td className="px-3 py-2">
           {player.isPlayer ? <Badge tone="ok">Juega</Badge> : <Badge tone="neutral">No juega</Badge>}
+        </td>
+        <td className="px-3 py-2 text-xs text-ink-soft">
+          {player.dietaryRestriction ?? "—"}
+          {!player.attendsParty && (
+            <span className="ml-1.5 rounded-full border border-line px-1.5 py-0.5 font-mono text-[10px] uppercase text-ink-faint">
+              No va a la fiesta
+            </span>
+          )}
         </td>
         <td className="px-3 py-2 text-right">
           {!locked && (
@@ -58,7 +70,7 @@ export function PlayerRow({ player, locked }: { player: PlayerRowData; locked: b
 
   return (
     <tr>
-      <td colSpan={6} className="bg-surface-2 px-3 py-4">
+      <td colSpan={7} className="bg-surface-2 px-3 py-4">
         <form action={formAction} className="flex flex-col gap-3">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Nombre" htmlFor={`fn-${player.id}`}>
@@ -94,6 +106,17 @@ export function PlayerRow({ player, locked }: { player: PlayerRowData; locked: b
                 defaultValue={player.shirtNumber ?? ""}
               />
             </Field>
+            <Field
+              label="Restricción alimenticia"
+              htmlFor={`diet-${player.id}`}
+              hint="Opcional: vegetariano, celíaco, alergias…"
+            >
+              <Input
+                id={`diet-${player.id}`}
+                name="dietaryRestriction"
+                defaultValue={player.dietaryRestriction ?? ""}
+              />
+            </Field>
           </div>
 
           <label className="flex items-center gap-2 text-sm text-ink">
@@ -105,6 +128,15 @@ export function PlayerRow({ player, locked }: { player: PlayerRowData; locked: b
             />
             Juega
             <span className="text-xs text-ink-faint">(destildá si acompaña pero no va a jugar)</span>
+          </label>
+          <label className="flex items-center gap-2 text-sm text-ink">
+            <input
+              type="checkbox"
+              name="attendsParty"
+              defaultChecked={player.attendsParty}
+              className="h-4 w-4 rounded border-line accent-accent"
+            />
+            Se queda a la fiesta post torneo
           </label>
 
           {state.error && <p className="text-xs text-danger">{state.error}</p>}

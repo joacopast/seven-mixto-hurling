@@ -8,6 +8,7 @@ import type { Prisma } from "@prisma/client";
 export const OCCUPYING_STATUSES = [
   "PENDING_PAYMENT",
   "PAYMENT_STARTED",
+  "DEPOSIT_PAID",
   "PAYMENT_APPROVED",
   "CONFIRMED",
 ] as const;

@@ -39,6 +39,9 @@ interface PlayerDraft {
   phone: string;
   email: string;
   position: string;
+  dietaryRestriction: string;
+  /** Si va a quedarse a la fiesta post torneo. */
+  attendsParty: boolean;
 }
 
 interface Draft {
@@ -59,6 +62,8 @@ const EMPTY_PLAYER: PlayerDraft = {
   phone: "",
   email: "",
   position: "",
+  dietaryRestriction: "",
+  attendsParty: true,
 };
 
 const EMPTY_DRAFT: Draft = {
@@ -421,6 +426,16 @@ function PlayersStep({
                     No juega
                   </span>
                 )}
+                {!p.attendsParty && (
+                  <span className="ml-2 rounded-full border border-line px-1.5 py-0.5 font-mono text-[10px] uppercase text-ink-faint">
+                    No va a la fiesta
+                  </span>
+                )}
+                {p.dietaryRestriction && (
+                  <span className="ml-2 rounded-full border border-line px-1.5 py-0.5 font-mono text-[10px] uppercase text-ink-faint">
+                    {p.dietaryRestriction}
+                  </span>
+                )}
               </div>
               <button
                 type="button"
@@ -518,6 +533,17 @@ function PlayersStep({
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
             />
           </Field>
+          <Field
+            label="Restricción alimenticia"
+            htmlFor="pdiet"
+            hint="Opcional: vegetariano, celíaco, alergias…"
+          >
+            <Input
+              id="pdiet"
+              value={form.dietaryRestriction}
+              onChange={(e) => setForm({ ...form, dietaryRestriction: e.target.value })}
+            />
+          </Field>
         </div>
         <label className="mt-3 flex items-center gap-2 text-sm text-ink">
           <input
@@ -530,6 +556,15 @@ function PlayersStep({
           <span className="text-xs text-ink-faint">
             (destildá si acompaña al equipo pero no va a jugar)
           </span>
+        </label>
+        <label className="mt-2 flex items-center gap-2 text-sm text-ink">
+          <input
+            type="checkbox"
+            checked={form.attendsParty}
+            onChange={(e) => setForm({ ...form, attendsParty: e.target.checked })}
+            className="h-4 w-4 rounded border-line accent-accent"
+          />
+          Se queda a la fiesta post torneo
         </label>
         <Button type="submit" variant="secondary" className="mt-4" disabled={!canAdd}>
           Agregar al plantel
@@ -571,6 +606,8 @@ function SummaryStep({
             <li key={i} className="font-mono text-xs">
               {i + 1}. {p.firstName} {p.lastName} · {p.gender}
               {!p.isPlayer && " · no juega"}
+              {!p.attendsParty && " · no va a la fiesta"}
+              {p.dietaryRestriction && ` · ${p.dietaryRestriction}`}
             </li>
           ))}
         </ol>

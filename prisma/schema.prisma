@@ -210,6 +210,8 @@ enum RegistrationStatus {
   DRAFT
   PENDING_PAYMENT
   PAYMENT_STARTED
+  /// Pagó una seña (menos que el total) — reserva el lugar, falta completar el pago.
+  DEPOSIT_PAID
   PAYMENT_APPROVED
   CONFIRMED
   PAYMENT_REJECTED
@@ -306,6 +308,11 @@ model Player {
   email       String?
   shirtNumber Int?
   position    String?
+
+  /// Restricción alimenticia (vegetariano, celíaco, alergias, etc.) — texto libre, opcional.
+  dietaryRestriction String?
+  /// Si va a quedarse a la fiesta post torneo.
+  attendsParty       Boolean @default(true)
 
   /// Distingue jugador (juega partidos, cuenta para la composición de cancha)
   /// de no-jugador (acompaña al equipo pero no juega — igual paga y consume

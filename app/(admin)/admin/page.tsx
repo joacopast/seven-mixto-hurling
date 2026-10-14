@@ -11,7 +11,7 @@ export default async function AdminDashboard() {
   const tournament = await getActiveTournament();
   const capacity = await getCapacity();
 
-  const [byStatus, playerCount, revenue, drafts] = await Promise.all([
+  const [byStatus, playerCount, revenue, drafts, depositsOwed, depositsPaid] = await Promise.all([
     db.team.groupBy({
       by: ["registrationStatus"],
       where: { tournamentId: tournament.id },
@@ -29,7 +29,16 @@ export default async function AdminDashboard() {
       where: { tournamentId: tournament.id, status: "PENDING_PAYMENT" },
       _sum: { totalAmount: true },
     }),
+    db.registration.aggregate({
+      where: { tournamentId: tournament.id, status: "DEPOSIT_PAID" },
+      _sum: { totalAmount: true },
+    }),
+    db.payment.aggregate({
+      where: { registration: { tournamentId: tournament.id, status: "DEPOSIT_PAID" }, status: "APPROVED" },
+      _sum: { amount: true },
+    }),
   ]);
+  const depositsOwedTotal = Math.max(0, (depositsOwed._sum.totalAmount ?? 0) - (depositsPaid._sum.amount ?? 0));
 
   const statusMap = new Map<RegistrationStatus, number>();
   for (const row of byStatus) statusMap.set(row.registrationStatus, row._count);
@@ -38,6 +47,7 @@ export default async function AdminDashboard() {
     { label: "Equipos inscriptos", value: capacity.occupying },
     { label: "Confirmados", value: capacity.confirmed },
     { label: "Pendientes de pago", value: statusMap.get("PENDING_PAYMENT") ?? 0 },
+    { label: "Con seña pagada", value: statusMap.get("DEPOSIT_PAID") ?? 0 },
     { label: "Cupos disponibles", value: capacity.available },
     { label: "Lista de espera", value: capacity.waitlistCount },
     { label: "Jugadores cargados", value: playerCount },
@@ -75,6 +85,12 @@ export default async function AdminDashboard() {
               <dt className="text-ink-soft">Proyectado (pendiente de pago)</dt>
               <dd className="font-mono">{formatArs(drafts._sum.totalAmount ?? 0)}</dd>
             </div>
+            {depositsOwedTotal > 0 && (
+              <div className="flex justify-between">
+                <dt className="text-ink-soft">Falta de señas por reclamar</dt>
+                <dd className="font-mono font-semibold text-warn">{formatArs(depositsOwedTotal)}</dd>
+              </div>
+            )}
           </dl>
         </Card>
 

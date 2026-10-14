@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth/guards";
 import { getActiveTournament } from "@/lib/tournament/queries";
+import { ageOn } from "@/lib/tournament/roster";
 import { toCsv } from "@/lib/csv";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,7 @@ export async function GET(req: NextRequest) {
   }
 
   const tournament = await getActiveTournament();
+  const ageReference = tournament.startDate ?? new Date();
   const players = await db.player.findMany({
     where: { tournamentId: tournament.id },
     orderBy: [{ team: { name: "asc" } }, { lastName: "asc" }],
@@ -25,7 +27,22 @@ export async function GET(req: NextRequest) {
   });
 
   const csv = toCsv(
-    ["equipo", "nombre", "apellido", "tipo_doc", "documento", "nacimiento", "genero", "jugador", "numero", "telefono", "email"],
+    [
+      "equipo",
+      "nombre",
+      "apellido",
+      "tipo_doc",
+      "documento",
+      "nacimiento",
+      "edad",
+      "genero",
+      "jugador",
+      "numero",
+      "telefono",
+      "email",
+      "restriccion_alimenticia",
+      "va_a_la_fiesta",
+    ],
     players.map((p) => [
       p.team.name,
       p.firstName,
@@ -33,11 +50,14 @@ export async function GET(req: NextRequest) {
       p.docType,
       p.docNumber,
       p.birthDate.toISOString().slice(0, 10),
+      ageOn(p.birthDate, ageReference),
       p.gender,
       p.isPlayer ? "Sí" : "No",
       p.shirtNumber ?? "",
       p.phone ?? "",
       p.email ?? "",
+      p.dietaryRestriction ?? "",
+      p.attendsParty ? "Sí" : "No",
     ]),
   );
 

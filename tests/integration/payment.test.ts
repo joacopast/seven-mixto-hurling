@@ -77,6 +77,7 @@ function buildRegInput(over: { name?: string; email?: string; players?: number }
       phone: "",
       email: "",
       position: "",
+      attendsParty: true,
     })),
   };
 }

@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { writeAudit } from "@/lib/services/audit";
 import { enqueueNotification } from "@/lib/services/notification";
-import { calculatePrice } from "@/lib/tournament/pricing";
+import { calculatePrice, formatArs } from "@/lib/tournament/pricing";
 import { CONFIRMED_STATUSES } from "@/lib/tournament/queries";
 import {
   createPreference,
@@ -23,7 +23,9 @@ export class PaymentError extends Error {
     public code:
       | "REGISTRATION_NOT_FOUND"
       | "NOT_PAYABLE"
-      | "ALREADY_PAID",
+      | "ALREADY_PAID"
+      | "INVALID_AMOUNT"
+      | "AMOUNT_TOO_HIGH",
   ) {
     super(message);
     this.name = "PaymentError";
@@ -161,19 +163,34 @@ export async function createCheckoutForRegistration(
  * ============================================================ */
 
 export interface ManualConfirmResult {
-  outcome: "CONFIRMED" | "WAITLISTED_OVERBOOK" | "NOOP";
+  outcome: "CONFIRMED" | "DEPOSIT_RECORDED" | "WAITLISTED_OVERBOOK" | "NOOP";
+  amountPaid?: number;
+  amountOwed?: number;
+}
+
+/** Suma de los pagos ya aprobados de una inscripción. */
+export async function getAmountPaid(registrationId: string): Promise<number> {
+  const agg = await db.payment.aggregate({
+    where: { registrationId, status: "APPROVED" },
+    _sum: { amount: true },
+  });
+  return agg._sum.amount ?? 0;
 }
 
 /**
- * El admin confirma a mano que llegó la transferencia (verificó el comprobante
- * por WhatsApp). El monto SIEMPRE se toma de `Registration.totalAmount` — nunca
- * de un número que tipee el admin — y queda un `Payment` con provider
- * MANUAL_TRANSFER para que /admin/pagos y las estadísticas sigan siendo fuente
- * única de verdad de lo recaudado.
+ * El admin confirma a mano que llegó una transferencia (verificó el comprobante
+ * por WhatsApp). Por default se cobra el saldo completo que falta —
+ * `Registration.totalAmount` menos lo ya aprobado—, pero `opts.amount` permite
+ * registrar una **seña** (menos que el saldo): reserva el lugar del equipo
+ * (`DEPOSIT_PAID`) sin confirmarlo todavía, y lo que falta queda visible en
+ * `/admin/pagos` para poder reclamarlo. Cuando la suma de pagos aprobados
+ * llega al total, confirma la inscripción igual que antes. Siempre queda un
+ * `Payment` con provider MANUAL_TRANSFER para que /admin/pagos y las
+ * estadísticas sigan siendo fuente única de verdad de lo recaudado.
  */
 export async function confirmManualPayment(
   registrationId: string,
-  opts: { note?: string | null } = {},
+  opts: { note?: string | null; amount?: number } = {},
   ctx: { userId?: string | null; ip?: string | null } = {},
 ): Promise<ManualConfirmResult> {
   const registration = await db.registration.findUnique({
@@ -190,13 +207,36 @@ export async function confirmManualPayment(
     throw new PaymentError("Esta inscripción está cancelada.", "NOT_PAYABLE");
   }
 
+  const alreadyPaid = await getAmountPaid(registrationId);
+  const remaining = registration.totalAmount - alreadyPaid;
+  // Si ya se aprobó algún pago y cubre el total, no hay nada más que confirmar.
+  // (totalAmount en 0 con nada pagado todavía — equipo cargado a mano sin cotizar —
+  // no cuenta como "ya pagado": sigue el flujo normal más abajo.)
+  if (alreadyPaid > 0 && remaining <= 0) {
+    return { outcome: "NOOP" };
+  }
+
+  const amount = opts.amount ?? remaining;
+  if (opts.amount !== undefined) {
+    if (!Number.isInteger(amount) || amount <= 0) {
+      throw new PaymentError("El monto tiene que ser mayor a cero.", "INVALID_AMOUNT");
+    }
+    if (amount > remaining) {
+      throw new PaymentError(
+        `El monto no puede superar lo que falta pagar (${formatArs(remaining)}).`,
+        "AMOUNT_TOO_HIGH",
+      );
+    }
+  }
+  const isFullPayment = amount === remaining;
+
   return db.$transaction(async (tx) => {
     const payment = await tx.payment.create({
       data: {
         registrationId,
         provider: "MANUAL_TRANSFER",
         status: "APPROVED",
-        amount: registration.totalAmount,
+        amount,
         currency: registration.tournament!.config!.currency,
         rawPayload: { note: opts.note ?? null },
         approvedAt: new Date(),
@@ -205,6 +245,41 @@ export async function confirmManualPayment(
     });
 
     const auditBase = { tournamentId: registration.tournamentId, entity: "Payment" as const, entityId: payment.id };
+
+    // Pago parcial (seña): reserva el lugar, no confirma todavía.
+    if (!isFullPayment) {
+      const owed = remaining - amount;
+      await tx.registration.update({
+        where: { id: registrationId },
+        data: { status: "DEPOSIT_PAID" },
+      });
+      await tx.team.update({
+        where: { id: registration.teamId },
+        data: { registrationStatus: "DEPOSIT_PAID", paymentStatus: "PENDING" },
+      });
+      await writeAudit(tx, {
+        ...auditBase,
+        userId: ctx.userId,
+        action: "payment.manual.deposit",
+        previousValue: { status: registration.status, paid: alreadyPaid },
+        newValue: { status: "DEPOSIT_PAID", paid: alreadyPaid + amount, owed, note: opts.note ?? null },
+        ip: ctx.ip ?? null,
+      });
+      await enqueueNotification(tx, {
+        type: "PAYMENT_APPROVED",
+        recipientTeamId: registration.teamId,
+        recipientUserId: registration.team!.managerUserId,
+        payload: {
+          kind: "deposit",
+          teamId: registration.teamId,
+          teamName: registration.team!.name,
+          amount,
+          owed,
+        },
+        dedupeKey: `payment-deposit:${payment.id}`,
+      });
+      return { outcome: "DEPOSIT_RECORDED", amountPaid: alreadyPaid + amount, amountOwed: owed };
+    }
 
     // Guarda de cupo: igual que en MP, no confirmar por encima del máximo.
     const confirmedCount = await tx.team.count({
@@ -262,14 +337,14 @@ export async function confirmManualPayment(
       userId: ctx.userId,
       action: "payment.manual.confirm",
       previousValue: { status: registration.status },
-      newValue: { status: "CONFIRMED", amount: registration.totalAmount, note: opts.note ?? null },
+      newValue: { status: "CONFIRMED", amount: alreadyPaid + amount, note: opts.note ?? null },
       ip: ctx.ip ?? null,
     });
     await enqueueNotification(tx, {
       type: "PAYMENT_APPROVED",
       recipientTeamId: registration.teamId,
       recipientUserId: registration.team!.managerUserId,
-      payload: { teamId: registration.teamId, teamName: registration.team!.name, amount: registration.totalAmount },
+      payload: { teamId: registration.teamId, teamName: registration.team!.name, amount: alreadyPaid + amount },
       dedupeKey: `payment-approved:${payment.id}`,
     });
     await enqueueNotification(tx, {
@@ -279,7 +354,7 @@ export async function confirmManualPayment(
       payload: { teamId: registration.teamId, teamName: registration.team!.name },
       dedupeKey: `team-approved:${registration.teamId}`,
     });
-    return { outcome: "CONFIRMED" };
+    return { outcome: "CONFIRMED", amountPaid: registration.totalAmount, amountOwed: 0 };
   });
 }
 

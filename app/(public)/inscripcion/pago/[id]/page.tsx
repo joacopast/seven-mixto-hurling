@@ -15,7 +15,7 @@ import { CopyField } from "./copy-field";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Pago de la inscripción", robots: { index: false } };
 
-const PAYABLE = ["PENDING_PAYMENT", "PAYMENT_STARTED", "PAYMENT_REJECTED"];
+const PAYABLE = ["PENDING_PAYMENT", "PAYMENT_STARTED", "PAYMENT_REJECTED", "DEPOSIT_PAID"];
 
 export default async function PagoPage({
   params,
@@ -29,7 +29,7 @@ export default async function PagoPage({
 
   const registration = await db.registration.findUnique({
     where: { id },
-    include: { team: true },
+    include: { team: true, payments: true },
   });
   if (!registration || !registration.team) notFound();
 
@@ -40,7 +40,11 @@ export default async function PagoPage({
   const status = registration.status;
   const label = REGISTRATION_STATUS_LABEL[status];
   const mpReady = mercadoPagoConfigured();
-  const amountLabel = formatArs(registration.totalAmount);
+  const amountPaid = registration.payments
+    .filter((p) => p.status === "APPROVED")
+    .reduce((sum, p) => sum + p.amount, 0);
+  const amountOwed = Math.max(0, registration.totalAmount - amountPaid);
+  const amountLabel = formatArs(amountOwed);
 
   const whatsappLink = isManual
     ? buildWhatsAppLink(
@@ -114,8 +118,14 @@ export default async function PagoPage({
               <span className="text-sm text-ink-soft">Estado</span>
               <Badge tone={status === "PAYMENT_REJECTED" ? "danger" : "warn"}>{label}</Badge>
             </div>
+            {amountPaid > 0 && (
+              <div className="mt-4 flex items-center justify-between border-t border-line pt-4">
+                <span className="text-sm text-ink-soft">Ya pagaste</span>
+                <span className="font-mono text-paper">{formatArs(amountPaid)}</span>
+              </div>
+            )}
             <div className="mt-4 flex items-center justify-between border-t border-line pt-4">
-              <span className="text-sm text-ink-soft">Total a pagar</span>
+              <span className="text-sm text-ink-soft">{amountPaid > 0 ? "Falta pagar" : "Total a pagar"}</span>
               <span className="font-mono text-xl font-semibold text-paper">{amountLabel}</span>
             </div>
           </Card>

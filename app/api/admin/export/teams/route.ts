@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   const teams = await db.team.findMany({
     where: { tournamentId: tournament.id },
     orderBy: { createdAt: "asc" },
-    include: { registration: true, _count: { select: { players: true } } },
+    include: { registration: { include: { payments: true } }, _count: { select: { players: true } } },
   });
   // Cantidad de JUGADORES reales (isPlayer=true) por equipo, aparte del plantel total.
   const playerCounts = await db.player.groupBy({
@@ -44,21 +44,30 @@ export async function GET(req: NextRequest) {
       "estado",
       "tarifa",
       "total_ars",
+      "pagado_ars",
+      "falta_ars",
       "alta",
     ],
-    teams.map((t) => [
-      t.name,
-      t.shortName ?? "",
-      t.contactName,
-      t.contactEmail,
-      t.contactPhone,
-      t._count.players,
-      realPlayersByTeam.get(t.id) ?? 0,
-      REGISTRATION_STATUS_LABEL[t.registrationStatus],
-      t.registration?.priceTier ?? "",
-      t.registration ? Math.round(t.registration.totalAmount / 100) : "",
-      t.createdAt.toISOString(),
-    ]),
+    teams.map((t) => {
+      const paid =
+        t.registration?.payments.filter((p) => p.status === "APPROVED").reduce((s, p) => s + p.amount, 0) ?? 0;
+      const owed = Math.max(0, (t.registration?.totalAmount ?? 0) - paid);
+      return [
+        t.name,
+        t.shortName ?? "",
+        t.contactName,
+        t.contactEmail,
+        t.contactPhone,
+        t._count.players,
+        realPlayersByTeam.get(t.id) ?? 0,
+        REGISTRATION_STATUS_LABEL[t.registrationStatus],
+        t.registration?.priceTier ?? "",
+        t.registration ? Math.round(t.registration.totalAmount / 100) : "",
+        Math.round(paid / 100),
+        Math.round(owed / 100),
+        t.createdAt.toISOString(),
+      ];
+    }),
   );
 
   return new NextResponse(csv, {

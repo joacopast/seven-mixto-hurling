@@ -66,6 +66,13 @@ export function renderNotification(type: NotificationType, ctx: Ctx): RenderedEm
       return { subject: `Inscripción recibida — ${team}`, html: shell("Inscripción recibida", body, portal), text: stripHtml(body) };
     }
     case "PAYMENT_APPROVED": {
+      if (ctx.extra?.kind === "deposit") {
+        const owed = typeof ctx.extra.owed === "number" ? ctx.extra.owed : undefined;
+        const body = `
+          <p>Recibimos la seña${ctx.amount ? ` de <strong>${formatArs(ctx.amount)}</strong>` : ""} de <strong>${team}</strong>. Tu lugar queda reservado.</p>
+          ${owed ? `<p>Todavía falta abonar <strong>${formatArs(owed)}</strong> para confirmar la inscripción.</p>` : ""}`;
+        return { subject: `Seña recibida — ${team}`, html: shell("Seña recibida", body, portal), text: stripHtml(body) };
+      }
       const body = `
         <p>El pago${ctx.amount ? ` de <strong>${formatArs(ctx.amount)}</strong>` : ""} de <strong>${team}</strong> se acreditó.</p>
         <p>La inscripción quedó <strong>confirmada</strong>. ¡Nos vemos en la cancha!</p>`;

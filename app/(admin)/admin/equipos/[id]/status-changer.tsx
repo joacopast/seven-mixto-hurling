@@ -8,6 +8,7 @@ import { changeRegistrationStatus, type StatusChangeState } from "./actions";
 
 const OPTIONS: RegistrationStatus[] = [
   "PENDING_PAYMENT",
+  "DEPOSIT_PAID",
   "PAYMENT_APPROVED",
   "CONFIRMED",
   "OBSERVED",

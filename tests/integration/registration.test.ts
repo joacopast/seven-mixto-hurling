@@ -16,6 +16,7 @@ function buildInput(over: Partial<RegistrationSubmitInput> = {}): RegistrationSu
     phone: "",
     email: "",
     position: "",
+    attendsParty: true,
   }));
   return {
     team: { name: "Argentina" },
@@ -60,6 +61,22 @@ describe("createRegistration", () => {
       where: { entity: "Registration", entityId: res.registrationId },
     });
     expect(audit?.action).toBe("registration.create");
+  });
+
+  it("guarda restricción alimenticia y asistencia a la fiesta por jugador", async () => {
+    await seedTournament();
+    const input = buildInput({
+      players: [
+        { ...buildInput().players[0]!, dietaryRestriction: "Celíaco", attendsParty: false },
+        ...buildInput().players.slice(1),
+      ],
+    });
+    const res = await createRegistration(input);
+    const players = await testDb.player.findMany({ where: { teamId: res.teamId }, orderBy: { createdAt: "asc" } });
+    expect(players[0]!.dietaryRestriction).toBe("Celíaco");
+    expect(players[0]!.attendsParty).toBe(false);
+    expect(players[1]!.dietaryRestriction).toBeNull();
+    expect(players[1]!.attendsParty).toBe(true);
   });
 
   it("aplica el recargo del medio de pago configurado", async () => {

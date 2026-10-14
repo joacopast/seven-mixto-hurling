@@ -194,6 +194,34 @@ best-effort a nivel aplicación (mismo criterio que ya usaba el cupo del torneo)
 liberar el país si el equipo se cancela) y esto no es Postgres estándar en Prisma sin
 SQL a mano. Para el volumen de este torneo no hace falta más que esto.
 
+Seña / pago parcial + datos de jugador (fiesta, dieta, edad) + CSV (2026-10-14):
+
+- **Seña para reservar el cupo.** `RegistrationStatus.DEPOSIT_PAID` (nuevo, migración
+  `deposit_payment_dietary_party`): un equipo puede pagar menos que el total y reservar
+  su lugar sin confirmarse todavía. `lib/services/payment.ts` → `confirmManualPayment`
+  ahora acepta `opts.amount` (centavos); si es `undefined` cobra el saldo completo (mismo
+  comportamiento de siempre), si es menor al saldo crea el `Payment` APPROVED por ese
+  monto, pasa el equipo a `DEPOSIT_PAID` (`paymentStatus: PENDING`) y encola
+  `PAYMENT_APPROVED` con `payload.kind: "deposit"` (email distinto, "seña recibida").
+  Cuando la suma de pagos aprobados llega al total, confirma igual que antes (guarda de
+  cupo / sobrecupo incluida). Nueva función `getAmountPaid()` (suma de `Payment` APPROVED
+  de una inscripción) — el saldo SIEMPRE se deriva de ahí, nunca de un campo cacheado.
+  `DEPOSIT_PAID` cuenta como cupo ocupado (`OCCUPYING_STATUSES`). UI: `/admin/pagos`
+  (tarjeta "Señas sin completar" + columnas Pagado/Falta en la tabla de pendientes, con
+  input de monto para cargar una seña o el saldo completo) y `/admin/equipos/[id]`
+  (mismo input de monto en el botón de confirmar pago). `/mi-equipo` e
+  `/inscripcion/pago/[id]` muestran "ya pagaste X / falta Y" cuando hay una seña.
+- **Restricción alimenticia, fiesta post torneo y edad por jugador.** `Player` suma
+  `dietaryRestriction` (texto libre, opcional) y `attendsParty` (bool, default `true`).
+  Se cargan en los 3 lugares donde se agrega/edita un jugador (wizard público, alta admin,
+  portal del equipo). La edad se calcula siempre con `ageOn()` (ya existía en
+  `lib/tournament/roster.ts`, usado por la validación de edad mínima) contra
+  `tournament.startDate` — no se guarda, se muestra calculada en `/admin/equipos/[id]`,
+  `/mi-equipo` y el CSV de jugadores.
+- **CSV.** `/api/admin/export/players` suma columnas `edad`, `restriccion_alimenticia`,
+  `va_a_la_fiesta`. `/api/admin/export/teams` suma `pagado_ars` / `falta_ars` (misma suma
+  de pagos aprobados que usa `/admin/pagos`).
+
 Pendiente / próximo: cargar alias/CBU/WhatsApp reales en `/admin/configuracion`,
 pulido visual final, más cobertura e2e (pago, admin), pasar a Vercel Pro antes del
 evento. Discutido pero no implementado: agregar/sacar jugadores desde el portal con

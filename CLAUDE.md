@@ -135,6 +135,7 @@ elige de una lista fija de 195, `lib/countries.ts`, nombre + código ISO automá
 copas por eliminación directa simple sin 3er puesto · asignación de copa por posición en
 el grupo · inscripción abierta por orden de llegada · sorteo de grupos manual ·
 **pago por transferencia bancaria (alias/CBU) con comprobante por WhatsApp, confirmado a
-mano por el admin — no se usa Mercado Pago por la comisión** · reembolso total ante
+mano por el admin — no se usa Mercado Pago por la comisión** · admite **seña** (pago
+parcial que reserva el cupo, `RegistrationStatus.DEPOSIT_PAID`) · reembolso total ante
 cualquier baja · edad mínima 16 · DNI obligatorio · multi-equipo por responsable · lista
 de espera con promoción automática.

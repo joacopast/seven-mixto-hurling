@@ -36,6 +36,8 @@ export const playerSchema = z.object({
   phone: z.string().trim().max(30).optional().or(z.literal("")),
   email: z.union([z.string().trim().toLowerCase().email(), z.literal("")]).optional(),
   position: z.string().trim().max(40).optional().or(z.literal("")),
+  dietaryRestriction: z.string().trim().max(200).optional().or(z.literal("")),
+  attendsParty: z.boolean().default(true),
 });
 
 export const registrationSubmitSchema = z.object({

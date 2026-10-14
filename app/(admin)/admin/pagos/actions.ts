@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { requireRole } from "@/lib/auth/guards";
 import { confirmManualPayment, PaymentError } from "@/lib/services/payment";
+import { formatArs } from "@/lib/tournament/pricing";
 
 export interface ConfirmPaymentState {
   ok?: boolean;
@@ -15,13 +16,19 @@ export interface ConfirmPaymentState {
 export async function confirmPaymentFromList(
   registrationId: string,
   note: string,
+  amountPesos?: number,
 ): Promise<ConfirmPaymentState> {
   const admin = await requireRole("ADMIN");
   const hdrs = await headers();
   const ip = hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
 
   try {
-    const res = await confirmManualPayment(registrationId, { note: note || null }, { userId: admin.id, ip });
+    const amount = amountPesos ? Math.round(amountPesos * 100) : undefined;
+    const res = await confirmManualPayment(
+      registrationId,
+      { note: note || null, amount },
+      { userId: admin.id, ip },
+    );
     revalidatePath("/admin/pagos");
     revalidatePath("/admin");
     revalidatePath("/admin/equipos");
@@ -30,6 +37,9 @@ export async function confirmPaymentFromList(
         ok: true,
         message: "Ya no había cupo: quedó en lista de espera. Hay que reintegrar la transferencia.",
       };
+    }
+    if (res.outcome === "DEPOSIT_RECORDED") {
+      return { ok: true, message: `Seña registrada. Falta ${formatArs(res.amountOwed ?? 0)}.` };
     }
     return { ok: true, message: res.outcome === "NOOP" ? "Ya estaba confirmado." : "Pago confirmado." };
   } catch (err) {

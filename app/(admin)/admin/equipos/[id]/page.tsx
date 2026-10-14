@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { formatArs } from "@/lib/tournament/pricing";
+import { ageOn } from "@/lib/tournament/roster";
 import { REGISTRATION_STATUS_LABEL, REGISTRATION_STATUS_TONE } from "@/lib/tournament/status";
 import { Badge, Card } from "@/components/ui";
 import { StatusChanger } from "./status-changer";
@@ -24,9 +25,16 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
       registration: { include: { payments: true } },
       players: { orderBy: { createdAt: "asc" } },
       manager: true,
+      tournament: true,
     },
   });
   if (!team) notFound();
+  const ageReference = team.tournament.startDate ?? new Date();
+  const amountPaid =
+    team.registration?.payments
+      .filter((p) => p.status === "APPROVED")
+      .reduce((sum, p) => sum + p.amount, 0) ?? 0;
+  const amountOwed = Math.max(0, (team.registration?.totalAmount ?? 0) - amountPaid);
 
   const takenTeams = await db.team.findMany({
     where: { tournamentId: team.tournamentId, registrationStatus: { not: "CANCELLED" }, NOT: { id: team.id } },
@@ -71,6 +79,12 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
           <h2 className="font-display text-lg font-semibold text-ink">Inscripción</h2>
           <dl className="mt-3 space-y-1 text-sm">
             <Item label="Total" value={team.registration ? formatArs(team.registration.totalAmount) : "—"} />
+            {amountPaid > 0 && (
+              <>
+                <Item label="Pagado" value={formatArs(amountPaid)} />
+                {amountOwed > 0 && <Item label="Falta" value={formatArs(amountOwed)} />}
+              </>
+            )}
             <Item label="Tarifa" value={team.registration?.priceTier ?? "—"} />
             <Item label="Jugadores cotizados" value={String(team.registration?.playerCountQuoted ?? 0)} />
             <Item
@@ -99,7 +113,7 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
           <ConfirmPaymentButton
             registrationId={team.registration.id}
             teamId={team.id}
-            amountLabel={formatArs(team.registration.totalAmount)}
+            owedPesos={Math.round(amountOwed / 100)}
           />
         )}
 
@@ -143,10 +157,12 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
               <tr>
                 <th className="px-3 py-2">Jugador</th>
                 <th className="px-3 py-2">Documento</th>
-                <th className="px-3 py-2">Nacimiento</th>
+                <th className="px-3 py-2">Edad</th>
                 <th className="px-3 py-2">Género</th>
                 <th className="px-3 py-2">#</th>
                 <th className="px-3 py-2">Rol</th>
+                <th className="px-3 py-2">Dieta</th>
+                <th className="px-3 py-2">Fiesta</th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
@@ -159,9 +175,7 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
                   <td className="px-3 py-2 font-mono text-xs text-ink-soft">
                     {p.docType} {p.docNumber}
                   </td>
-                  <td className="px-3 py-2 font-mono text-xs text-ink-soft">
-                    {p.birthDate.toISOString().slice(0, 10)}
-                  </td>
+                  <td className="px-3 py-2 font-mono text-ink-soft">{ageOn(p.birthDate, ageReference)}</td>
                   <td className="px-3 py-2 text-ink-soft">{p.gender}</td>
                   <td className="px-3 py-2 font-mono text-ink-soft">{p.shirtNumber ?? "—"}</td>
                   <td className="px-3 py-2">
@@ -169,6 +183,14 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
                       <Badge tone="ok">Juega</Badge>
                     ) : (
                       <Badge tone="neutral">No juega</Badge>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-xs text-ink-soft">{p.dietaryRestriction ?? "—"}</td>
+                  <td className="px-3 py-2">
+                    {p.attendsParty ? (
+                      <Badge tone="ok">Sí</Badge>
+                    ) : (
+                      <Badge tone="neutral">No</Badge>
                     )}
                   </td>
                   <td className="px-3 py-2 text-right">

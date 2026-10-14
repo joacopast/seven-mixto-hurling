@@ -16,6 +16,7 @@ import {
   AdminTeamError,
 } from "@/lib/services/admin-teams";
 import { confirmManualPayment, PaymentError } from "@/lib/services/payment";
+import { formatArs } from "@/lib/tournament/pricing";
 import { isCountryName } from "@/lib/countries";
 
 async function adminCtx() {
@@ -44,10 +45,12 @@ export async function confirmPayment(
   registrationId: string,
   teamId: string,
   note: string,
+  amountPesos?: number,
 ): Promise<ConfirmPaymentState> {
   const ctx = await adminCtx();
   try {
-    const res = await confirmManualPayment(registrationId, { note: note || null }, ctx);
+    const amount = amountPesos ? Math.round(amountPesos * 100) : undefined;
+    const res = await confirmManualPayment(registrationId, { note: note || null, amount }, ctx);
     revalidateTeam(teamId);
     if (res.outcome === "WAITLISTED_OVERBOOK") {
       return {
@@ -57,6 +60,12 @@ export async function confirmPayment(
     }
     if (res.outcome === "NOOP") {
       return { ok: true, message: "Ya estaba confirmado." };
+    }
+    if (res.outcome === "DEPOSIT_RECORDED") {
+      return {
+        ok: true,
+        message: `Seña registrada. Todavía falta ${formatArs(res.amountOwed ?? 0)}.`,
+      };
     }
     return { ok: true, message: "Pago confirmado. El equipo quedó inscripto." };
   } catch (err) {
@@ -86,6 +95,7 @@ function derivePaymentCache(status: RegistrationStatus) {
       return "REJECTED" as const;
     case "PENDING_PAYMENT":
     case "PAYMENT_STARTED":
+    case "DEPOSIT_PAID":
       return "PENDING" as const;
     default:
       return "NONE" as const;
@@ -212,6 +222,8 @@ const playerSchema = z.object({
   gender: z.enum(["M", "F", "X"]),
   isPlayer: z.boolean().default(true),
   shirtNumber: z.union([z.coerce.number().int().min(0).max(999), z.literal("")]).optional(),
+  dietaryRestriction: z.string().trim().max(200).optional(),
+  attendsParty: z.boolean().default(true),
 });
 
 export interface PlayerActionState {
@@ -224,6 +236,7 @@ export async function addPlayer(_prev: PlayerActionState, formData: FormData): P
   const parsed = playerSchema.safeParse({
     ...Object.fromEntries(formData.entries()),
     isPlayer: formData.get("isPlayer") === "on",
+    attendsParty: formData.get("attendsParty") === "on",
   });
   if (!parsed.success) return { error: "Revisá los datos del jugador." };
   const d = parsed.data;
@@ -239,6 +252,8 @@ export async function addPlayer(_prev: PlayerActionState, formData: FormData): P
         gender: d.gender,
         isPlayer: d.isPlayer,
         shirtNumber: d.shirtNumber === "" || d.shirtNumber === undefined ? null : d.shirtNumber,
+        dietaryRestriction: d.dietaryRestriction || undefined,
+        attendsParty: d.attendsParty,
       },
       ctx,
     );

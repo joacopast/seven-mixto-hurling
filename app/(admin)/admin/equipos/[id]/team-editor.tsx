@@ -81,9 +81,14 @@ export function AddPlayerForm({ teamId }: { teamId: string }) {
         <option value="X">Otro</option>
       </Select>
       <Input name="shirtNumber" type="number" placeholder="# (opcional)" />
+      <Input name="dietaryRestriction" placeholder="Restricción alimenticia (opcional)" className="sm:col-span-2" />
       <label className="flex items-center gap-2 text-sm text-ink-soft">
         <input type="checkbox" name="isPlayer" defaultChecked className="h-4 w-4 rounded border-line accent-accent" />
         Juega
+      </label>
+      <label className="flex items-center gap-2 text-sm text-ink-soft">
+        <input type="checkbox" name="attendsParty" defaultChecked className="h-4 w-4 rounded border-line accent-accent" />
+        Va a la fiesta
       </label>
       <div className="sm:col-span-3 flex items-center gap-3">
         <Button type="submit" variant="secondary" disabled={pending}>
@@ -120,37 +125,58 @@ export function RemovePlayerButton({ playerId, teamId }: { playerId: string; tea
 export function ConfirmPaymentButton({
   registrationId,
   teamId,
-  amountLabel,
+  owedPesos,
 }: {
   registrationId: string;
   teamId: string;
-  amountLabel: string;
+  /** Lo que todavía falta pagar, en pesos (no centavos). */
+  owedPesos: number;
 }) {
   const [note, setNote] = useState("");
+  const [amount, setAmount] = useState(String(owedPesos));
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState<string | null>(null);
   const router = useRouter();
+  const amountNum = Number(amount);
+  const isDeposit = amountNum > 0 && amountNum < owedPesos;
 
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-l-[3px] border-line border-l-ok bg-surface p-3">
       <p className="text-sm font-semibold text-paper">Confirmar pago recibido</p>
       <p className="text-xs text-ink-soft">
-        Verificá el comprobante en WhatsApp y confirmá acá. Se cobra siempre{" "}
-        <strong>{amountLabel}</strong> (el monto cargado por la inscripción, no se puede editar).
+        Falta pagar <strong>${owedPesos.toLocaleString("es-AR")}</strong>. Si el equipo transfirió
+        una seña, cargá el monto recibido: queda reservado el lugar (&ldquo;Seña pagada&rdquo;) sin
+        confirmar el equipo todavía, y el saldo pendiente queda visible para reclamarlo.
       </p>
-      <Input
-        placeholder="Nota / referencia (opcional, ej. últimos 4 dígitos, fecha de la transferencia)"
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-      />
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          type="number"
+          min={1}
+          max={owedPesos}
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="w-32"
+        />
+        <Input
+          placeholder="Nota / referencia (opcional, ej. últimos 4 dígitos, fecha de la transferencia)"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          className="flex-1"
+        />
+      </div>
       <div className="flex items-center gap-3">
         <Button
           variant="primary"
-          disabled={pending}
+          disabled={pending || !amountNum || amountNum <= 0}
           onClick={async () => {
-            if (!confirm(`¿Confirmar que se recibió la transferencia de ${amountLabel}?`)) return;
+            if (
+              !confirm(
+                `¿Confirmar que se recibió ${isDeposit ? "la seña de" : "la transferencia de"} $${amountNum.toLocaleString("es-AR")}?`,
+              )
+            )
+              return;
             setPending(true);
-            const res = await confirmPayment(registrationId, teamId, note);
+            const res = await confirmPayment(registrationId, teamId, note, amountNum);
             setPending(false);
             if (res.error) alert(res.error);
             else {
@@ -159,7 +185,7 @@ export function ConfirmPaymentButton({
             }
           }}
         >
-          {pending ? "Confirmando…" : "Confirmar pago"}
+          {pending ? "Confirmando…" : isDeposit ? "Confirmar seña" : "Confirmar pago"}
         </Button>
         {done && <span className="text-sm text-ok">{done}</span>}
       </div>

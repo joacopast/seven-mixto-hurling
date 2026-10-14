@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getActiveTournament } from "@/lib/tournament/queries";
 import { formatArs } from "@/lib/tournament/pricing";
+import { ageOn } from "@/lib/tournament/roster";
 import {
   REGISTRATION_STATUS_LABEL,
   REGISTRATION_STATUS_TONE,
@@ -28,7 +29,7 @@ export default async function MiEquipoPage({
     where: { managerUserId: user.id, tournamentId: tournament.id },
     orderBy: { createdAt: "asc" },
     include: {
-      registration: true,
+      registration: { include: { payments: true } },
       players: { orderBy: { createdAt: "asc" } },
       _count: { select: { players: true } },
     },
@@ -49,6 +50,11 @@ export default async function MiEquipoPage({
   }
 
   const active = teams.find((t) => t.id === teamParam) ?? teams[0]!;
+  const amountPaid =
+    active.registration?.payments
+      .filter((p) => p.status === "APPROVED")
+      .reduce((sum, p) => sum + p.amount, 0) ?? 0;
+  const amountOwed = Math.max(0, (active.registration?.totalAmount ?? 0) - amountPaid);
   const tv = await getTeamTournamentView(active.id);
   const rosterLockAt = tournament.config?.rosterLockAt;
   const rosterLocked = !!rosterLockAt && new Date() > rosterLockAt;
@@ -104,6 +110,19 @@ export default async function MiEquipoPage({
           </div>
         </Card>
       </div>
+
+      {active.registrationStatus === "DEPOSIT_PAID" && active.registration && (
+        <Card className="border-l-[3px] border-l-warn">
+          <p className="font-semibold text-paper">Seña recibida — reservamos tu lugar</p>
+          <p className="mt-1 text-sm text-ink-soft">
+            Ya acreditamos {formatArs(amountPaid)}. Todavía falta <strong>{formatArs(amountOwed)}</strong>{" "}
+            para confirmar la inscripción.
+          </p>
+          <ButtonLink href={`/inscripcion/pago/${active.registration.id}`} className="mt-4">
+            Completar el pago
+          </ButtonLink>
+        </Card>
+      )}
 
       {["PENDING_PAYMENT", "PAYMENT_STARTED", "PAYMENT_REJECTED"].includes(
         active.registrationStatus,
@@ -208,9 +227,11 @@ export default async function MiEquipoPage({
               <tr>
                 <th className="px-3 py-2">Jugador</th>
                 <th className="px-3 py-2">Documento</th>
+                <th className="px-3 py-2">Edad</th>
                 <th className="px-3 py-2">Género</th>
                 <th className="px-3 py-2">#</th>
                 <th className="px-3 py-2">Rol</th>
+                <th className="px-3 py-2">Dieta / fiesta</th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
@@ -229,6 +250,9 @@ export default async function MiEquipoPage({
                     gender: p.gender,
                     isPlayer: p.isPlayer,
                     shirtNumber: p.shirtNumber,
+                    dietaryRestriction: p.dietaryRestriction,
+                    attendsParty: p.attendsParty,
+                    age: ageOn(p.birthDate, tournament.startDate ?? new Date()),
                   }}
                 />
               ))}

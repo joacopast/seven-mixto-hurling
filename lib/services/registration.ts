@@ -164,6 +164,8 @@ export async function createRegistration(
             phone: p.phone || null,
             email: p.email || null,
             position: p.position || null,
+            dietaryRestriction: p.dietaryRestriction || null,
+            attendsParty: p.attendsParty,
           })),
         },
       },

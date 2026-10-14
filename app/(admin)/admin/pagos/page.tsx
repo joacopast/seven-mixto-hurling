@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getActiveTournament } from "@/lib/tournament/queries";
 import { formatArs } from "@/lib/tournament/pricing";
 import { normalizePhone } from "@/lib/tournament/whatsapp";
+import { REGISTRATION_STATUS_LABEL, REGISTRATION_STATUS_TONE } from "@/lib/tournament/status";
 import { Badge, Card } from "@/components/ui";
 import { mercadoPagoConfigured } from "@/lib/payments/mercadopago";
 import { PendingPaymentRow } from "./pending-row";
@@ -25,7 +26,7 @@ const PROVIDER_LABEL: Record<string, string> = {
   MERCADOPAGO: "Mercado Pago",
 };
 
-const PENDING_STATUSES = ["PENDING_PAYMENT", "PAYMENT_REJECTED", "OBSERVED"] as const;
+const PENDING_STATUSES = ["PENDING_PAYMENT", "PAYMENT_REJECTED", "OBSERVED", "DEPOSIT_PAID"] as const;
 
 export default async function AdminPagosPage({
   searchParams,
@@ -63,11 +64,19 @@ export default async function AdminPagosPage({
     db.team.findMany({
       where: { tournamentId: tournament.id, registrationStatus: { in: [...PENDING_STATUSES] } },
       orderBy: { createdAt: "asc" },
-      include: { registration: true },
+      include: { registration: { include: { payments: true } } },
     }),
   ]);
 
   const approved = byStatus.find((s) => s.status === "APPROVED");
+
+  const pendingWithBalance = pendingTeams.map((t) => {
+    const paid = t.registration?.payments.filter((p) => p.status === "APPROVED").reduce((s, p) => s + p.amount, 0) ?? 0;
+    const total = t.registration?.totalAmount ?? 0;
+    return { team: t, paid, owed: Math.max(0, total - paid) };
+  });
+  const deposits = pendingWithBalance.filter((p) => p.team.registrationStatus === "DEPOSIT_PAID");
+  const totalOwedFromDeposits = deposits.reduce((s, p) => s + p.owed, 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -105,6 +114,17 @@ export default async function AdminPagosPage({
             </Card>
           );
         })}
+        <Card className={deposits.length > 0 ? "border-l-[3px] border-l-warn" : undefined}>
+          <div className="font-mono text-[11px] uppercase tracking-wide text-ink-faint">
+            Señas sin completar
+          </div>
+          <div className="mt-2 font-display text-2xl font-semibold text-paper">
+            {deposits.length}
+          </div>
+          {deposits.length > 0 && (
+            <div className="mt-1 text-xs text-ink-soft">Falta reclamar {formatArs(totalOwedFromDeposits)}</div>
+          )}
+        </Card>
       </div>
 
       {isManual && (
@@ -113,34 +133,47 @@ export default async function AdminPagosPage({
             Pendientes de confirmar ({pendingTeams.length})
           </h2>
           <p className="mb-3 text-sm text-ink-soft">
-            Estos equipos todavía no transfirieron o están esperando que confirmes el comprobante
-            que mandaron por WhatsApp.
+            Estos equipos todavía no transfirieron, pagaron solo una seña, o están esperando que
+            confirmes el comprobante que mandaron por WhatsApp.
           </p>
           <div className="overflow-x-auto rounded-card border border-line-soft">
-            <table className="w-full min-w-[40rem] text-sm">
+            <table className="w-full min-w-[48rem] text-sm">
               <thead className="bg-surface-2 text-left font-mono text-[11px] uppercase tracking-wide text-ink-faint">
                 <tr>
                   <th className="px-3 py-2">Equipo</th>
-                  <th className="px-3 py-2">Monto</th>
+                  <th className="px-3 py-2">Estado</th>
+                  <th className="px-3 py-2">Pagado</th>
+                  <th className="px-3 py-2">Falta</th>
                   <th className="px-3 py-2">WhatsApp</th>
                   <th className="px-3 py-2">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line-soft">
-                {pendingTeams.length === 0 && (
+                {pendingWithBalance.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-3 py-8 text-center text-ink-faint">
+                    <td colSpan={6} className="px-3 py-8 text-center text-ink-faint">
                       No hay equipos esperando confirmación.
                     </td>
                   </tr>
                 )}
-                {pendingTeams.map((t) =>
+                {pendingWithBalance.map(({ team: t, paid, owed }) =>
                   t.registration ? (
                     <PendingPaymentRow
                       key={t.id}
                       registrationId={t.registration.id}
                       teamName={t.name}
-                      amountLabel={formatArs(t.registration.totalAmount)}
+                      statusBadge={
+                        t.registrationStatus === "DEPOSIT_PAID" ? (
+                          <Badge tone="warn">Seña pagada</Badge>
+                        ) : (
+                          <Badge tone={REGISTRATION_STATUS_TONE[t.registrationStatus]}>
+                            {REGISTRATION_STATUS_LABEL[t.registrationStatus]}
+                          </Badge>
+                        )
+                      }
+                      paidLabel={paid > 0 ? formatArs(paid) : "—"}
+                      owedLabel={formatArs(owed)}
+                      owedPesos={Math.round(owed / 100)}
                       whatsappLink={
                         t.contactPhone ? `https://wa.me/${normalizePhone(t.contactPhone)}` : null
                       }
