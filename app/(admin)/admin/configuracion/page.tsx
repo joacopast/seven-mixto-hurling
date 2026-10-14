@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { getActiveTournament } from "@/lib/tournament/queries";
 import { ConfigForm, type ConfigValues } from "./config-form";
+import { ResetTournamentDangerZone } from "./danger-zone";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Configuración", robots: { index: false } };
@@ -82,6 +83,7 @@ export default async function AdminConfigPage() {
         Configuración del torneo
       </h1>
       <ConfigForm values={values} structureLocked={groupCount > 0 || matchCount > 0} />
+      <ResetTournamentDangerZone tournamentName={tournament.name} />
     </div>
   );
 }

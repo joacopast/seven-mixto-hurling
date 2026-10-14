@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { requireRole } from "@/lib/auth/guards";
-import { db } from "@/lib/db";
 import { getActiveTournament } from "@/lib/tournament/queries";
 import {
   getConfirmedTeams,
@@ -137,23 +136,6 @@ export async function generateCupsAction(): Promise<ActionState> {
     if (err instanceof CupsError) return { error: err.message };
     throw err;
   }
-}
-
-export async function finishTournament(): Promise<ActionState> {
-  const c = await ctx();
-  const t = await getActiveTournament();
-  const [cupTotal, cupPlayed] = await Promise.all([
-    db.match.count({ where: { tournamentId: t.id, phase: "CUP" } }),
-    db.match.count({
-      where: { tournamentId: t.id, phase: "CUP", status: { in: ["FINISHED", "WALKOVER"] } },
-    }),
-  ]);
-  if (cupTotal === 0 || cupPlayed !== cupTotal) {
-    return { error: "Faltan resultados de copas por cargar." };
-  }
-  await setTournamentStatus(t.id, "FINISHED", c);
-  revalidate();
-  return { ok: true, message: "Torneo finalizado." };
 }
 
 export async function reopenFromFinished(): Promise<ActionState> {

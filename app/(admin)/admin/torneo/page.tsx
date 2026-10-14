@@ -16,7 +16,6 @@ import {
   publishGroups,
   startGroupPhase,
   generateCupsAction,
-  finishTournament,
   reopenFromFinished,
 } from "./actions";
 
@@ -178,25 +177,16 @@ export default async function AdminTorneoPage() {
 
           <Step
             n={6}
-            title="Finalizar torneo"
+            title="Torneo finalizado"
             done={s === "FINISHED"}
             detail={
               s === "FINISHED"
-                ? "campeón, subcampeón y 3er puesto de cada copa"
+                ? "campeón, subcampeón y 3er puesto de cada copa — se finalizó solo al cargar la última final"
                 : cupTotal > 0
-                  ? `${cupPlayed}/${cupTotal} resultados de copas`
+                  ? `${cupPlayed}/${cupTotal} resultados de copas — se finaliza solo al cargar la última final`
                   : "generá las copas primero"
             }
           >
-            {allCupsPlayed && s !== "FINISHED" && (
-              <ActionButton
-                action={finishTournament}
-                variant="primary"
-                confirm="¿Finalizar el torneo? Se va a mostrar el podio de cada copa en /torneo."
-              >
-                Finalizar torneo
-              </ActionButton>
-            )}
             {s === "FINISHED" && (
               <ActionButton
                 action={reopenFromFinished}
@@ -205,9 +195,6 @@ export default async function AdminTorneoPage() {
               >
                 Reabrir (corregir resultado)
               </ActionButton>
-            )}
-            {!allCupsPlayed && cupTotal > 0 && (
-              <p className="text-xs text-ink-faint">Cargá todos los resultados de copas primero.</p>
             )}
           </Step>
         </ol>
