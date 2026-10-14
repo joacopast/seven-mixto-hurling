@@ -1,6 +1,7 @@
 node_modules
 .next
 .env
+.env.test
 .env*.local
 .claude/settings.local.json
 _smoke*
