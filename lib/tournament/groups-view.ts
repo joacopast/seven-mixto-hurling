@@ -4,7 +4,6 @@ import { db } from "@/lib/db";
 export interface GroupStandingRow {
   teamId: string;
   teamName: string;
-  teamShortName: string | null;
   rank: number | null;
   played: number;
   won: number;
@@ -31,7 +30,7 @@ export async function getGroupsWithStandings(tournamentId: string): Promise<Grou
     orderBy: { order: "asc" },
     include: {
       groupTeams: {
-        include: { team: { select: { id: true, name: true, shortName: true } } },
+        include: { team: { select: { id: true, name: true } } },
       },
     },
   });
@@ -44,7 +43,6 @@ export async function getGroupsWithStandings(tournamentId: string): Promise<Grou
       .map((gt) => ({
         teamId: gt.teamId,
         teamName: gt.team.name,
-        teamShortName: gt.team.shortName,
         rank: gt.rank,
         played: gt.played,
         won: gt.won,

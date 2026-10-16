@@ -51,8 +51,8 @@ export async function getCupsWithBrackets(tournamentId: string): Promise<CupView
             include: {
               match: {
                 include: {
-                  homeTeam: { select: { id: true, name: true, shortName: true } },
-                  awayTeam: { select: { id: true, name: true, shortName: true } },
+                  homeTeam: { select: { id: true, name: true } },
+                  awayTeam: { select: { id: true, name: true } },
                   slot: { include: { round: true, field: true } },
                 },
               },
@@ -75,8 +75,7 @@ export async function getCupsWithBrackets(tournamentId: string): Promise<CupView
         .sort((a, b) => a.bracketSlot - b.bracketSlot)
         .map<BracketMatchView>((bm) => {
           const m = bm.match!;
-          const name = (t: { name: string; shortName: string | null } | null) =>
-            t ? t.shortName || t.name : null;
+          const name = (t: { name: string } | null) => t?.name ?? null;
           return {
             matchId: m.id,
             bracketMatchId: bm.id,

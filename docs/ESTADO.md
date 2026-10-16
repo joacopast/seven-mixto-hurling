@@ -319,6 +319,18 @@ correctamente generar copas si falta algún resultado de grupos (`generateCups` 
 `GROUPS_NOT_FINISHED` si hay partidos pendientes — esto ya existía, no es nuevo); se
 mejoró el mensaje para que diga cuántos resultados faltan en vez de un texto genérico.
 
+Nombre completo del país en toda la web, sin abreviar (2026-10-17): a pedido de Joaco, se
+sacó todo uso de `Team.shortName` (código ISO) como texto mostrado — quedaba en varios
+lugares como abreviación tipo "ARG" al lado o en vez del nombre del país. Afectaba:
+`components/standings-table.tsx` (tabla de posiciones), `lib/tournament/bracket-view.ts`
+(nombres en las llaves de copa — público y admin), `lib/tournament/team-view.ts` (nombre
+del rival en "Mis partidos" de `/mi-equipo`), `/mi-equipo` (subtítulo bajo el nombre del
+equipo) y `/admin/equipos` (listado). Se sacó `teamShortName` de `GroupStandingRow`
+(`groups-view.ts`) porque ya no lo usa nadie. El campo `Team.shortName` en la base **no
+se tocó** — sigue derivándose solo del `countryCode()` al crear/editar un equipo — y
+el CSV/XLSX de equipos sigue teniendo la columna "Código" (criterio: eso es un dato de
+exportación/planilla, no "la web"; si Joaco también lo quiere sacar de ahí, avisar).
+
 Pendiente / próximo: cargar alias/CBU/WhatsApp reales en `/admin/configuracion`,
 pulido visual final, más cobertura e2e (pago, admin), pasar a Vercel Pro antes del
 evento, **medir cuántos usuarios simultáneos soporta Vercel Hobby + Neon free antes del

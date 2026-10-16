@@ -58,7 +58,7 @@ export function StandingsTable({
                     </span>
                   </td>
                   <td className="px-2 py-2 text-ink">
-                    <span className="font-medium">{row.teamShortName || row.teamName}</span>
+                    <span className="font-medium">{row.teamName}</span>
                     {showCups && cupIdx >= 0 && cupIdx < 4 && (
                       <span className="ml-2 font-mono text-[10px] text-ink-faint">
                         {CUP_LABEL[cupIdx]}
