@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth/guards";
 import { getActiveTournament } from "@/lib/tournament/queries";
-import { toCsv } from "@/lib/csv";
+import { toXlsx } from "@/lib/xlsx";
 import { REGISTRATION_STATUS_LABEL } from "@/lib/tournament/status";
 
 export const dynamic = "force-dynamic";
@@ -32,21 +32,22 @@ export async function GET(req: NextRequest) {
   });
   const realPlayersByTeam = new Map(playerCounts.map((r) => [r.teamId, r._count]));
 
-  const csv = toCsv(
+  const xlsx = await toXlsx(
+    "Equipos",
     [
-      "pais",
-      "codigo",
-      "responsable",
-      "email",
-      "telefono",
-      "plantel_total",
-      "jugadores_reales",
-      "estado",
-      "tarifa",
-      "total_ars",
-      "pagado_ars",
-      "falta_ars",
-      "alta",
+      "País",
+      "Código",
+      "Responsable",
+      "Email",
+      "Teléfono",
+      "Plantel total",
+      "Jugadores reales",
+      "Estado",
+      "Tarifa",
+      "Total ($)",
+      "Pagado ($)",
+      "Falta ($)",
+      "Alta",
     ],
     teams.map((t) => {
       const paid =
@@ -65,15 +66,15 @@ export async function GET(req: NextRequest) {
         t.registration ? Math.round(t.registration.totalAmount / 100) : "",
         Math.round(paid / 100),
         Math.round(owed / 100),
-        t.createdAt.toISOString(),
+        t.createdAt.toLocaleString("es-AR"),
       ];
     }),
   );
 
-  return new NextResponse(csv, {
+  return new NextResponse(xlsx as BodyInit, {
     headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="equipos-${tournament.slug}.csv"`,
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="equipos-${tournament.slug}.xlsx"`,
     },
   });
 }

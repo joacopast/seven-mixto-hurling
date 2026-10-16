@@ -24,6 +24,7 @@ export async function updateMyPlayerAction(
     ...Object.fromEntries(formData.entries()),
     isPlayer: formData.get("isPlayer") === "on",
     attendsParty: formData.get("attendsParty") === "on",
+    playsHockey: formData.get("playsHockey") === "true",
   };
   const parsed = playerSchema.safeParse(raw);
   if (!parsed.success) {

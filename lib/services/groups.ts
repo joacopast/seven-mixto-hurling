@@ -232,6 +232,10 @@ export async function generateGroupPhaseFixture(tournamentId: string, ctx: Ctx =
       matchDurationMin: tournament.config.matchDurationMin,
       turnoverMin: tournament.config.turnoverMin,
       startsAt,
+      waterBreak: {
+        everyTandas: tournament.config.waterBreakEveryMatches,
+        minutes: tournament.config.waterBreakMinutes,
+      },
     },
     schedulable,
   );

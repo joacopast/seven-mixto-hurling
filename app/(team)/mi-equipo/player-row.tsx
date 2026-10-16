@@ -16,6 +16,7 @@ export interface PlayerRowData {
   shirtNumber: number | null;
   dietaryRestriction: string | null;
   attendsParty: boolean;
+  playsHockey: boolean;
   age: number;
 }
 
@@ -45,6 +46,13 @@ export function PlayerRow({ player, locked }: { player: PlayerRowData; locked: b
         <td className="px-3 py-2">
           {player.isPlayer ? <Badge tone="ok">Juega</Badge> : <Badge tone="neutral">No juega</Badge>}
         </td>
+        <td className="px-3 py-2">
+          {player.playsHockey ? (
+            <Badge tone="ok">Con nivel</Badge>
+          ) : (
+            <Badge tone="neutral">Sin experiencia</Badge>
+          )}
+        </td>
         <td className="px-3 py-2 text-xs text-ink-soft">
           {player.dietaryRestriction ?? "—"}
           {!player.attendsParty && (
@@ -70,7 +78,7 @@ export function PlayerRow({ player, locked }: { player: PlayerRowData; locked: b
 
   return (
     <tr>
-      <td colSpan={7} className="bg-surface-2 px-3 py-4">
+      <td colSpan={8} className="bg-surface-2 px-3 py-4">
         <form action={formAction} className="flex flex-col gap-3">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Nombre" htmlFor={`fn-${player.id}`}>
@@ -116,6 +124,20 @@ export function PlayerRow({ player, locked }: { player: PlayerRowData; locked: b
                 name="dietaryRestriction"
                 defaultValue={player.dietaryRestriction ?? ""}
               />
+            </Field>
+            <Field
+              label="¿Juega hockey?"
+              htmlFor={`hockey-${player.id}`}
+              hint="Ayuda a armar los grupos por nivel."
+            >
+              <Select
+                id={`hockey-${player.id}`}
+                name="playsHockey"
+                defaultValue={player.playsHockey ? "true" : "false"}
+              >
+                <option value="true">Sí, juega hockey</option>
+                <option value="false">No juega hockey</option>
+              </Select>
             </Field>
           </div>
 

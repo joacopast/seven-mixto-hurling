@@ -38,6 +38,8 @@ export const playerSchema = z.object({
   position: z.string().trim().max(40).optional().or(z.literal("")),
   dietaryRestriction: z.string().trim().max(200).optional().or(z.literal("")),
   attendsParty: z.boolean().default(true),
+  /** Si tiene experiencia jugando hockey — para armar los grupos por nivel. */
+  playsHockey: z.boolean().default(true),
 });
 
 export const registrationSubmitSchema = z.object({

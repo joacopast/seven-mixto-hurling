@@ -167,6 +167,7 @@ export async function createRegistration(
             position: p.position || null,
             dietaryRestriction: p.dietaryRestriction || null,
             attendsParty: p.attendsParty,
+            playsHockey: p.playsHockey,
           })),
         },
       },

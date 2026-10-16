@@ -42,6 +42,8 @@ interface PlayerDraft {
   dietaryRestriction: string;
   /** Si va a quedarse a la fiesta post torneo. */
   attendsParty: boolean;
+  /** Si tiene experiencia jugando hockey — para armar los grupos por nivel. */
+  playsHockey: boolean;
 }
 
 interface Draft {
@@ -64,6 +66,7 @@ const EMPTY_PLAYER: PlayerDraft = {
   position: "",
   dietaryRestriction: "",
   attendsParty: true,
+  playsHockey: true,
 };
 
 const EMPTY_DRAFT: Draft = {
@@ -426,6 +429,11 @@ function PlayersStep({
                     No juega
                   </span>
                 )}
+                {!p.playsHockey && (
+                  <span className="ml-2 rounded-full border border-line px-1.5 py-0.5 font-mono text-[10px] uppercase text-ink-faint">
+                    Sin experiencia en hockey
+                  </span>
+                )}
                 {!p.attendsParty && (
                   <span className="ml-2 rounded-full border border-line px-1.5 py-0.5 font-mono text-[10px] uppercase text-ink-faint">
                     No va a la fiesta
@@ -544,6 +552,20 @@ function PlayersStep({
               onChange={(e) => setForm({ ...form, dietaryRestriction: e.target.value })}
             />
           </Field>
+          <Field
+            label="¿Juega hockey?"
+            htmlFor="phockey"
+            hint="Torneo social: marcá que no si acompaña sin experiencia en hockey — ayuda a armar los grupos por nivel."
+          >
+            <Select
+              id="phockey"
+              value={form.playsHockey ? "true" : "false"}
+              onChange={(e) => setForm({ ...form, playsHockey: e.target.value === "true" })}
+            >
+              <option value="true">Sí, juega hockey</option>
+              <option value="false">No juega hockey</option>
+            </Select>
+          </Field>
         </div>
         <label className="mt-3 flex items-center gap-2 text-sm text-ink">
           <input
@@ -606,6 +628,7 @@ function SummaryStep({
             <li key={i} className="font-mono text-xs">
               {i + 1}. {p.firstName} {p.lastName} · {p.gender}
               {!p.isPlayer && " · no juega"}
+              {!p.playsHockey && " · sin experiencia en hockey"}
               {!p.attendsParty && " · no va a la fiesta"}
               {p.dietaryRestriction && ` · ${p.dietaryRestriction}`}
             </li>

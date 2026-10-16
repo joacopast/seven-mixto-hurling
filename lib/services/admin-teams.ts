@@ -219,6 +219,7 @@ export interface AdminPlayerInput {
   position?: string;
   dietaryRestriction?: string;
   attendsParty?: boolean;
+  playsHockey?: boolean;
 }
 
 export async function adminAddPlayer(teamId: string, input: AdminPlayerInput, ctx: Ctx = {}) {
@@ -247,6 +248,7 @@ export async function adminAddPlayer(teamId: string, input: AdminPlayerInput, ct
         position: input.position || null,
         dietaryRestriction: input.dietaryRestriction || null,
         attendsParty: input.attendsParty ?? true,
+        playsHockey: input.playsHockey ?? true,
       },
     });
     await writeAudit(tx, {
@@ -303,6 +305,7 @@ export async function updatePlayer(playerId: string, input: AdminPlayerInput, ct
     position: input.position || null,
     dietaryRestriction: input.dietaryRestriction || null,
     attendsParty: input.attendsParty ?? true,
+    playsHockey: input.playsHockey ?? true,
   };
 
   const before = {

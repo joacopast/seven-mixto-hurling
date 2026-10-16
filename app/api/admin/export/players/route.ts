@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth/guards";
 import { getActiveTournament } from "@/lib/tournament/queries";
 import { ageOn } from "@/lib/tournament/roster";
-import { toCsv } from "@/lib/csv";
+import { toXlsx } from "@/lib/xlsx";
 
 export const dynamic = "force-dynamic";
 
@@ -26,22 +26,24 @@ export async function GET(req: NextRequest) {
     include: { team: { select: { name: true } } },
   });
 
-  const csv = toCsv(
+  const xlsx = await toXlsx(
+    "Jugadores",
     [
-      "equipo",
-      "nombre",
-      "apellido",
-      "tipo_doc",
-      "documento",
-      "nacimiento",
-      "edad",
-      "genero",
-      "jugador",
-      "numero",
-      "telefono",
-      "email",
-      "restriccion_alimenticia",
-      "va_a_la_fiesta",
+      "Equipo",
+      "Nombre",
+      "Apellido",
+      "Tipo doc.",
+      "Documento",
+      "Nacimiento",
+      "Edad",
+      "Género",
+      "Juega",
+      "Nivel hockey",
+      "Número",
+      "Teléfono",
+      "Email",
+      "Restricción alimenticia",
+      "Va a la fiesta",
     ],
     players.map((p) => [
       p.team.name,
@@ -53,6 +55,7 @@ export async function GET(req: NextRequest) {
       ageOn(p.birthDate, ageReference),
       p.gender,
       p.isPlayer ? "Sí" : "No",
+      p.playsHockey ? "Con nivel" : "Sin experiencia",
       p.shirtNumber ?? "",
       p.phone ?? "",
       p.email ?? "",
@@ -61,10 +64,10 @@ export async function GET(req: NextRequest) {
     ]),
   );
 
-  return new NextResponse(csv, {
+  return new NextResponse(xlsx as BodyInit, {
     headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="jugadores-${tournament.slug}.csv"`,
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="jugadores-${tournament.slug}.xlsx"`,
     },
   });
 }

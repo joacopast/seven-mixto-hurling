@@ -121,6 +121,8 @@ export async function updateTournamentConfig(
         fieldCount: input.fieldCount,
         turnoverMin: input.turnoverMin,
         drawResolution: input.drawResolution,
+        waterBreakEveryMatches: input.waterBreakEveryMatches,
+        waterBreakMinutes: input.waterBreakMinutes,
 
         pointsWin: input.pointsWin,
         pointsDraw: input.pointsDraw,

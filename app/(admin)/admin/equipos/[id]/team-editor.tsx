@@ -82,6 +82,10 @@ export function AddPlayerForm({ teamId }: { teamId: string }) {
       </Select>
       <Input name="shirtNumber" type="number" placeholder="# (opcional)" />
       <Input name="dietaryRestriction" placeholder="Restricción alimenticia (opcional)" className="sm:col-span-2" />
+      <Select name="playsHockey" defaultValue="true" aria-label="¿Juega hockey?">
+        <option value="true">Juega hockey</option>
+        <option value="false">No juega hockey</option>
+      </Select>
       <label className="flex items-center gap-2 text-sm text-ink-soft">
         <input type="checkbox" name="isPlayer" defaultChecked className="h-4 w-4 rounded border-line accent-accent" />
         Juega

@@ -52,14 +52,14 @@ export default async function AdminTeamsPage({
             download
             className="rounded-full border border-line px-3 py-2 text-sm text-ink-soft hover:bg-surface-2"
           >
-            Equipos CSV
+            Equipos .xlsx
           </a>
           <a
             href="/api/admin/export/players"
             download
             className="rounded-full border border-line px-3 py-2 text-sm text-ink-soft hover:bg-surface-2"
           >
-            Jugadores CSV
+            Jugadores .xlsx
           </a>
         </div>
       </div>

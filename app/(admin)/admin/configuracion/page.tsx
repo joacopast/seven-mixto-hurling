@@ -41,6 +41,8 @@ export default async function AdminConfigPage() {
     fieldCount: c.fieldCount,
     turnoverMin: c.turnoverMin,
     drawResolution: c.drawResolution,
+    waterBreakEveryMatches: c.waterBreakEveryMatches,
+    waterBreakMinutes: c.waterBreakMinutes,
     pointsWin: c.pointsWin,
     pointsDraw: c.pointsDraw,
     pointsLoss: c.pointsLoss,

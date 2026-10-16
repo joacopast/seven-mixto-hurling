@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getActiveTournament } from "@/lib/tournament/queries";
 import { getGroupFixture } from "@/lib/tournament/groups-view";
 import { ResultRow } from "./result-row";
+import { RescheduleRoundButton } from "./reschedule-round";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Resultados", robots: { index: false } };
@@ -48,11 +49,14 @@ export default async function ResultadosPage() {
         .sort((a, b) => a[0] - b[0])
         .map(([tanda, matches]) => (
           <section key={tanda}>
-            <h2 className="mb-2 font-display text-lg font-semibold text-paper">
+            <h2 className="mb-2 flex flex-wrap items-center gap-2 font-display text-lg font-semibold text-paper">
               {matches[0]!.tandaLabel}
-              <span className="ml-2 font-sans text-xs font-normal text-ink-faint">
+              <span className="font-sans text-xs font-normal text-ink-faint">
                 {matches[0]!.startsAt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
               </span>
+              {matches[0]!.roundId && (
+                <RescheduleRoundButton roundId={matches[0]!.roundId} startsAt={matches[0]!.startsAt} />
+              )}
             </h2>
             <div className="overflow-hidden rounded-card border border-line-soft">
               <table className="w-full text-sm">

@@ -70,6 +70,7 @@ export interface FixtureMatchView {
   id: string;
   tanda: number;
   tandaLabel: string;
+  roundId: string | null;
   startsAt: Date;
   fieldName: string | null;
   groupName: string | null;
@@ -99,6 +100,7 @@ export async function getGroupFixture(tournamentId: string): Promise<FixtureMatc
       id: m.id,
       tanda: m.slot?.round.order ?? 0,
       tandaLabel: m.slot?.round.label ?? "—",
+      roundId: m.slot?.round.id ?? null,
       startsAt: m.slot?.round.startsAt ?? new Date(0),
       fieldName: m.slot?.field.name ?? null,
       groupName: m.group?.name ?? null,

@@ -17,6 +17,7 @@ function buildInput(over: Partial<RegistrationSubmitInput> = {}): RegistrationSu
     email: "",
     position: "",
     attendsParty: true,
+    playsHockey: true,
   }));
   return {
     team: { name: "Argentina" },

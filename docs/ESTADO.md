@@ -241,9 +241,53 @@ de `enqueueNotification`'s dedupe-by-key. Deliberadamente fuera de alcance: camb
 estructura del torneo (grupos, copas, resultados, config) — el pedido fue específicamente
 equipos/pagos/inscripciones.
 
+Pausa de riego + nivel de hockey + reprogramar horarios + export .xlsx (2026-10-16,
+migración `water_break_and_hockey_level`):
+
+- **Pausa de riego entre partidos.** `TournamentConfig.waterBreakEveryMatches` /
+  `waterBreakMinutes` (defaults 4 y 7) — 0 en cualquiera de los dos desactiva la pausa.
+  El motor trabaja en "tandas" (`lib/tournament/scheduler.ts`): todas las canchas juegan
+  en simultáneo por tanda, así que "cada N partidos por cancha" ≈ "cada N tandas".
+  `scheduleMatches` ahora acepta `waterBreak: { everyTandas, minutes }` y `tandasBefore`
+  (cuántas tandas ya transcurrieron antes de esta llamada) — necesario porque
+  `generateCups` llama a `scheduleMatches` una vez por ronda de llave (octavos, cuartos,
+  semis, final), cada vez reseteando el índice local de tanda a 0; sin `tandasBefore` el
+  conteo de riego se reiniciaría en cada ronda y casi nunca llegaría a dispararse durante
+  copas. `tandasBefore` se pasa como la cantidad de tandas GROUP ya jugadas + las tandas
+  de copa ya agendadas en rondas anteriores del mismo `generateCups`, así la pausa sigue
+  contando a lo largo de todo el día (grupos → copas) sin reiniciarse. El avance de
+  `roundStart` entre llamadas queda **sin** los minutos de pausa (deliberado): el offset
+  de pausa se recalcula entero en cada llamada a partir de `tandasBefore`, nunca se
+  acumula a mano — mezclar ambos duplicaría la pausa.
+- **Nivel de hockey por jugador.** `Player.playsHockey` (bool, default `true`) — select
+  "¿Juega hockey?" (Sí/No) en los 3 lugares donde se carga/edita un jugador (wizard
+  público, alta admin, portal del equipo vía `updatePlayer` compartido). Pensado para
+  armar los grupos por nivel en un torneo social donde no todos los integrantes de un
+  equipo tienen experiencia — no afecta precio ni la regla de cancha (eso sigue siendo
+  `isPlayer`). Visible en `/admin/equipos/[id]`, `/mi-equipo` y el export de jugadores.
+- **Reprogramar horarios en cascada.** `lib/services/schedule.ts` → `rescheduleRound`:
+  cambia el `startsAt` de una tanda (`Round`, cualquier fase) y corre el mismo delta sobre
+  **todas** las tandas que arrancan después en el torneo — de cualquier fase, porque
+  físicamente es el mismo día y las mismas canchas (demorar un partido de grupos corre
+  también los horarios de copas, que ya estaban agendados relativos al fin de grupos).
+  Avisa `TIME_CHANGED` (tipo de notificación que ya existía en las plantillas pero nunca
+  se usaba) a cada equipo con un partido afectado, con el horario de su partido afectado
+  más próximo. UI: botón "Reprogramar" en cada tanda de `/admin/torneo/resultados` (no se
+  agregó todavía a `/admin/torneo/copas`, que no agrupa por tanda visualmente — queda
+  pendiente si hace falta editar ahí directamente). Auditado como `round.reschedule`.
+- **Export en .xlsx.** `/api/admin/export/{teams,players}` ahora devuelven `.xlsx` (antes
+  `.csv`) vía `lib/xlsx.ts` (`exceljs`): encabezado con fondo verde de marca, ancho de
+  columna automático, fila de encabezado congelada y autofiltro. `lib/csv.ts` se borró
+  (sin otros usos). Jugadores suma la columna "Nivel hockey".
+
 Pendiente / próximo: cargar alias/CBU/WhatsApp reales en `/admin/configuracion`,
 pulido visual final, más cobertura e2e (pago, admin), pasar a Vercel Pro antes del
-evento. Discutido pero no implementado: agregar/sacar jugadores desde el portal con
-recálculo de pago cuando el plantel supera los 10 incluidos (el precio por jugador
-extra ya existe en `calculatePrice`; falta decidir la política de baja/reembolso
-parcial antes de tocar código).
+evento, **medir cuántos usuarios simultáneos soporta Vercel Hobby + Neon free antes del
+evento** (discutido con Joaco: Hobby no tiene SLA de concurrencia documentado — en la
+práctica aguanta boom bursts cortos tipo "se abre la inscripción", el cuello de botella
+más probable es el pool de conexiones de Neon free, no Vercel; recomendado hacer un load
+test liviano contra producción antes de confiar en esto a ciegas). Discutido pero no
+implementado: agregar/sacar jugadores desde el portal con recálculo de pago cuando el
+plantel supera los 10 incluidos (el precio por jugador extra ya existe en
+`calculatePrice`; falta decidir la política de baja/reembolso parcial antes de tocar
+código).

@@ -25,6 +25,7 @@ function buildRegInput(over: { name?: string; email?: string } = {}) {
       email: "",
       position: "",
       attendsParty: true,
+      playsHockey: true,
     })),
   };
 }

@@ -161,6 +161,7 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
                 <th className="px-3 py-2">Género</th>
                 <th className="px-3 py-2">#</th>
                 <th className="px-3 py-2">Rol</th>
+                <th className="px-3 py-2">Nivel</th>
                 <th className="px-3 py-2">Dieta</th>
                 <th className="px-3 py-2">Fiesta</th>
                 <th className="px-3 py-2" />
@@ -183,6 +184,13 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
                       <Badge tone="ok">Juega</Badge>
                     ) : (
                       <Badge tone="neutral">No juega</Badge>
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    {p.playsHockey ? (
+                      <Badge tone="ok">Con nivel</Badge>
+                    ) : (
+                      <Badge tone="neutral">Sin experiencia</Badge>
                     )}
                   </td>
                   <td className="px-3 py-2 text-xs text-ink-soft">{p.dietaryRestriction ?? "—"}</td>

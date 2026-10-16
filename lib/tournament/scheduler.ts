@@ -6,12 +6,26 @@
  * Objetivo: usar todas las canchas y terminar en la menor cantidad de tandas.
  */
 
+export interface WaterBreakConfig {
+  /** Cada cuántas tandas (≈ partidos por cancha) insertar la pausa. 0 = sin pausas. */
+  everyTandas: number;
+  /** Duración de la pausa, en minutos. */
+  minutes: number;
+}
+
 export interface SchedulerConfig {
   fieldCount: number;
   matchDurationMin: number;
   turnoverMin: number;
   /** Inicio de la primera tanda. */
   startsAt: Date;
+  /** Pausa para regar la cancha, cada N tandas. */
+  waterBreak?: WaterBreakConfig | null;
+  /**
+   * Tandas ya jugadas antes de esta llamada (para que el conteo de la pausa
+   * de riego siga entre fases/rondas en vez de reiniciarse en cada llamada).
+   */
+  tandasBefore?: number;
 }
 
 export interface SchedulableMatch {
@@ -36,6 +50,8 @@ export interface Schedule {
   matches: ScheduledMatch[];
   tandaCount: number;
   tandaStartTimes: Date[];
+  /** Tandas acumuladas incluyendo esta llamada — pasar como `tandasBefore` a la siguiente. */
+  tandasElapsed: number;
 }
 
 /**
@@ -45,6 +61,17 @@ export interface Schedule {
  */
 export function scheduleMatches(config: SchedulerConfig, matches: SchedulableMatch[]): Schedule {
   const slotMinutes = config.matchDurationMin + config.turnoverMin;
+  const tandasBefore = config.tandasBefore ?? 0;
+  const everyTandas = config.waterBreak?.everyTandas ?? 0;
+  const breakMinutes = config.waterBreak?.minutes ?? 0;
+
+  // Minutos de pausa de riego ya acumulados antes de la tanda `localIndex`
+  // (0-indexada dentro de esta llamada) — sigue el conteo entre llamadas
+  // vía `tandasBefore`, así la pausa no se reinicia en cada fase/ronda.
+  const breakMinutesBefore = (localIndex: number): number => {
+    if (everyTandas <= 0 || breakMinutes <= 0) return 0;
+    return Math.floor((tandasBefore + localIndex) / everyTandas) * breakMinutes;
+  };
 
   // Agrupar por unidad, conservando el orden pedido.
   const units = new Map<string, SchedulableMatch[]>();
@@ -83,7 +110,11 @@ export function scheduleMatches(config: SchedulerConfig, matches: SchedulableMat
         ...m,
         tanda: tandaIndex,
         field,
-        startsAt: new Date(config.startsAt.getTime() + tandaIndex * slotMinutes * 60_000),
+        startsAt: new Date(
+          config.startsAt.getTime() +
+            tandaIndex * slotMinutes * 60_000 +
+            breakMinutesBefore(tandaIndex) * 60_000,
+        ),
       });
       tanda.teams.add(m.homeTeamId);
       tanda.teams.add(m.awayTeamId);
@@ -112,7 +143,9 @@ export function scheduleMatches(config: SchedulerConfig, matches: SchedulableMat
     matches: scheduled,
     tandaCount: tandas.length,
     tandaStartTimes: tandas.map(
-      (_, i) => new Date(config.startsAt.getTime() + i * slotMinutes * 60_000),
+      (_, i) =>
+        new Date(config.startsAt.getTime() + i * slotMinutes * 60_000 + breakMinutesBefore(i) * 60_000),
     ),
+    tandasElapsed: tandasBefore + tandas.length,
   };
 }

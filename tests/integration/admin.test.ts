@@ -142,6 +142,8 @@ function configInput(over: Partial<ConfigFormInput> = {}): ConfigFormInput {
     fieldCount: 6,
     turnoverMin: 5,
     drawResolution: "SHOOTOUT",
+    waterBreakEveryMatches: 4,
+    waterBreakMinutes: 7,
     pointsWin: 3,
     pointsDraw: 1,
     pointsLoss: 0,

@@ -146,6 +146,11 @@ model TournamentConfig {
   fieldCount       Int            @default(6)
   turnoverMin      Int            @default(5)
   drawResolution   DrawResolution @default(SHOOTOUT)
+  /// Pausa para regar la cancha cada N partidos por cancha (tandas) — 0 =
+  /// sin pausas. El conteo sigue entre fase de grupos y copas.
+  waterBreakEveryMatches Int @default(4)
+  /// Duración de la pausa de riego, en minutos.
+  waterBreakMinutes      Int @default(7)
 
   // Puntos y desempates
   pointsWin      Int      @default(3)
@@ -319,6 +324,11 @@ model Player {
   /// los beneficios del evento). Cuenta igual para el precio y el mín/máx de
   /// plantel; NO cuenta para la regla de 7 en cancha / máx. 3 hombres.
   isPlayer Boolean @default(true)
+
+  /// Si tiene experiencia jugando hockey — torneo social: puede haber gente
+  /// en el equipo sin experiencia. Se usa para armar los grupos por nivel,
+  /// no afecta precio ni la regla de cancha (eso es `isPlayer`).
+  playsHockey Boolean @default(true)
 
   eligibilityStatus EligibilityStatus @default(PENDING)
 

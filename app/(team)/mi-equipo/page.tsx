@@ -231,6 +231,7 @@ export default async function MiEquipoPage({
                 <th className="px-3 py-2">Género</th>
                 <th className="px-3 py-2">#</th>
                 <th className="px-3 py-2">Rol</th>
+                <th className="px-3 py-2">Nivel</th>
                 <th className="px-3 py-2">Dieta / fiesta</th>
                 <th className="px-3 py-2" />
               </tr>
@@ -252,6 +253,7 @@ export default async function MiEquipoPage({
                     shirtNumber: p.shirtNumber,
                     dietaryRestriction: p.dietaryRestriction,
                     attendsParty: p.attendsParty,
+                    playsHockey: p.playsHockey,
                     age: ageOn(p.birthDate, tournament.startDate ?? new Date()),
                   }}
                 />

@@ -114,3 +114,56 @@ describe("scheduleMatches — configurable", () => {
     expect(() => scheduleMatches({ ...config, fieldCount: 3 }, big)).toThrow();
   });
 });
+
+describe("scheduleMatches — pausa de riego", () => {
+  it("sin waterBreak no inserta pausas", () => {
+    const schedule = scheduleMatches(config, toSchedulable());
+    const diff = schedule.tandaStartTimes[1]!.getTime() - schedule.tandaStartTimes[0]!.getTime();
+    expect(diff).toBe(20 * 60_000);
+  });
+
+  it("inserta la pausa cada N tandas y corre el resto en cascada", () => {
+    const schedule = scheduleMatches(
+      { ...config, waterBreak: { everyTandas: 4, minutes: 7 } },
+      toSchedulable(),
+    );
+    const slotMs = 20 * 60_000;
+    // Tandas 0-3 sin pausa todavía.
+    for (let i = 0; i < 4; i++) {
+      expect(schedule.tandaStartTimes[i]!.getTime()).toBe(config.startsAt.getTime() + i * slotMs);
+    }
+    // La tanda 4 (la 5ta) arranca con +7min de pausa ya acumulados.
+    expect(schedule.tandaStartTimes[4]!.getTime()).toBe(
+      config.startsAt.getTime() + 4 * slotMs + 7 * 60_000,
+    );
+    // La tanda 8 (la 9na) ya acumuló 2 pausas (14 min).
+    expect(schedule.tandaStartTimes[8]!.getTime()).toBe(
+      config.startsAt.getTime() + 8 * slotMs + 14 * 60_000,
+    );
+  });
+
+  it("tandasBefore hace que el conteo siga entre llamadas (ej. entre fases)", () => {
+    // Si ya pasaron 3 tandas antes de esta llamada, la 1ra tanda de esta
+    // llamada (índice 0, pero es la 4ta global) completa el ciclo de 4 y
+    // la 2da (índice 1, 5ta global) ya arranca con la pausa.
+    const schedule = scheduleMatches(
+      { ...config, waterBreak: { everyTandas: 4, minutes: 7 }, tandasBefore: 3 },
+      toSchedulable(),
+    );
+    const slotMs = 20 * 60_000;
+    expect(schedule.tandaStartTimes[0]!.getTime()).toBe(config.startsAt.getTime());
+    expect(schedule.tandaStartTimes[1]!.getTime()).toBe(
+      config.startsAt.getTime() + 1 * slotMs + 7 * 60_000,
+    );
+    expect(schedule.tandasElapsed).toBe(3 + schedule.tandaCount);
+  });
+
+  it("everyTandas en 0 desactiva la pausa aunque minutes esté seteado", () => {
+    const schedule = scheduleMatches(
+      { ...config, waterBreak: { everyTandas: 0, minutes: 7 } },
+      toSchedulable(),
+    );
+    const diff = schedule.tandaStartTimes[5]!.getTime() - schedule.tandaStartTimes[4]!.getTime();
+    expect(diff).toBe(20 * 60_000);
+  });
+});

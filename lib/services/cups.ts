@@ -53,15 +53,18 @@ export async function generateCups(tournamentId: string, ctx: Ctx = {}): Promise
   cups: { name: string; teams: number }[];
   matches: number;
 }> {
-  const tournament = await db.tournament.findUnique({
-    where: { id: tournamentId },
-    include: {
-      config: true,
-      groups: { include: { groupTeams: true }, orderBy: { order: "asc" } },
-      fields: { orderBy: { order: "asc" } },
-      rounds: { where: { phase: "GROUP" }, orderBy: { order: "desc" }, take: 1 },
-    },
-  });
+  const [tournament, groupTandaCount] = await Promise.all([
+    db.tournament.findUnique({
+      where: { id: tournamentId },
+      include: {
+        config: true,
+        groups: { include: { groupTeams: true }, orderBy: { order: "asc" } },
+        fields: { orderBy: { order: "asc" } },
+        rounds: { where: { phase: "GROUP" }, orderBy: { order: "desc" }, take: 1 },
+      },
+    }),
+    db.round.count({ where: { tournamentId, phase: "GROUP" } }),
+  ]);
   if (!tournament?.config) throw new CupsError("Falta configuración.", "WRONG_STATUS");
   if (!["GROUPS_PUBLISHED", "GROUPS_IN_PROGRESS", "CUPS_PUBLISHED"].includes(tournament.status)) {
     throw new CupsError("Las copas se generan al terminar la fase de grupos.", "WRONG_STATUS");
@@ -222,9 +225,12 @@ export async function generateCups(tournamentId: string, ctx: Ctx = {}): Promise
         }
       }
 
-      // Agendado: ronda por ronda, en secuencia.
+      // Agendado: ronda por ronda, en secuencia. `tandasElapsed` arranca en
+      // las tandas que ya jugó la fase de grupos para que la pausa de riego
+      // siga contando en vez de reiniciarse al entrar a copas.
       let roundStart = cupStart;
       let roundOrder = (lastGroupRound?.order ?? 0) + 1;
+      let tandasElapsed = groupTandaCount;
 
       for (const roundName of ROUND_ORDER) {
         const matchIds = matchesByRound.get(roundName) ?? [];
@@ -241,6 +247,11 @@ export async function generateCups(tournamentId: string, ctx: Ctx = {}): Promise
             matchDurationMin: tournament.config!.matchDurationMin,
             turnoverMin: tournament.config!.turnoverMin,
             startsAt: roundStart,
+            waterBreak: {
+              everyTandas: tournament.config!.waterBreakEveryMatches,
+              minutes: tournament.config!.waterBreakMinutes,
+            },
+            tandasBefore: tandasElapsed,
           },
           matchRows.map((m, i) => ({
             ref: m.id,
@@ -282,6 +293,7 @@ export async function generateCups(tournamentId: string, ctx: Ctx = {}): Promise
         }
 
         roundStart = new Date(roundStart.getTime() + schedule.tandaCount * slotMin * 60_000);
+        tandasElapsed = schedule.tandasElapsed;
       }
 
       await tx.tournament.update({ where: { id: tournamentId }, data: { status: "CUPS_PUBLISHED" } });

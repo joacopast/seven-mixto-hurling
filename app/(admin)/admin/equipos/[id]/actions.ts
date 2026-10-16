@@ -224,6 +224,10 @@ const playerSchema = z.object({
   shirtNumber: z.union([z.coerce.number().int().min(0).max(999), z.literal("")]).optional(),
   dietaryRestriction: z.string().trim().max(200).optional(),
   attendsParty: z.boolean().default(true),
+  playsHockey: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((v) => v === "true"),
 });
 
 export interface PlayerActionState {
@@ -254,6 +258,7 @@ export async function addPlayer(_prev: PlayerActionState, formData: FormData): P
         shirtNumber: d.shirtNumber === "" || d.shirtNumber === undefined ? null : d.shirtNumber,
         dietaryRestriction: d.dietaryRestriction || undefined,
         attendsParty: d.attendsParty,
+        playsHockey: d.playsHockey,
       },
       ctx,
     );

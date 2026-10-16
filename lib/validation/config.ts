@@ -47,6 +47,9 @@ export const configFormSchema = z.object({
   fieldCount: z.coerce.number().int().min(1).max(40),
   turnoverMin: z.coerce.number().int().min(0).max(60),
   drawResolution: z.enum(["SHOOTOUT", "EXTRA_TIME", "NONE"]),
+  /** Cada cuántos partidos por cancha se pausa para regar. 0 = sin pausas. */
+  waterBreakEveryMatches: z.coerce.number().int().min(0).max(50),
+  waterBreakMinutes: z.coerce.number().int().min(0).max(60),
 
   // Puntos y desempates
   pointsWin: z.coerce.number().int().min(0).max(10),

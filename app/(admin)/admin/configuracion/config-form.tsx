@@ -20,6 +20,8 @@ export interface ConfigValues {
   fieldCount: number;
   turnoverMin: number;
   drawResolution: string;
+  waterBreakEveryMatches: number;
+  waterBreakMinutes: number;
   pointsWin: number;
   pointsDraw: number;
   pointsLoss: number;
@@ -142,6 +144,26 @@ export function ConfigForm({ values, structureLocked }: { values: ConfigValues; 
             <option value="EXTRA_TIME">Tiempo extra</option>
             <option value="NONE">Sin definición</option>
           </Select>
+        </Field>
+        <Field
+          label="Pausa de riego cada (partidos por cancha)"
+          htmlFor="waterBreakEveryMatches"
+          hint="0 = sin pausas de riego."
+        >
+          <Input
+            id="waterBreakEveryMatches"
+            name="waterBreakEveryMatches"
+            type="number"
+            defaultValue={values.waterBreakEveryMatches}
+          />
+        </Field>
+        <Field label="Duración de la pausa (min)" htmlFor="waterBreakMinutes">
+          <Input
+            id="waterBreakMinutes"
+            name="waterBreakMinutes"
+            type="number"
+            defaultValue={values.waterBreakMinutes}
+          />
         </Field>
       </Section>
 
