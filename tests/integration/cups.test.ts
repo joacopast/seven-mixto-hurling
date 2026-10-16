@@ -104,6 +104,25 @@ describe("generateCups", () => {
     expect(semiRound!.startsAt.getTime()).toBeLessThan(finalRound!.startsAt.getTime());
   });
 
+  it("prioriza las canchas 1, 2 y 3 (las mejores) para las copas de mayor categoría en cada ronda", async () => {
+    const { t } = await playGroupPhase();
+    await generateCups(t.id);
+
+    const finals = await testDb.bracketMatch.findMany({
+      where: { round: "FINAL", bracket: { cup: { tournamentId: t.id } } },
+      include: { bracket: { include: { cup: true } }, match: { include: { slot: { include: { field: true } } } } },
+    });
+    const fieldOrderByCupName = new Map(
+      finals.map((bm) => [bm.bracket.cup.name, bm.match!.slot!.field.order]),
+    );
+    // 4 copas, 4 canchas disponibles en este fixture: Oro se lleva la 1, Plata
+    // la 2, Bronce la 3 — las "mejores" — y Madera queda con la que sobra.
+    expect(fieldOrderByCupName.get("ORO")).toBe(1);
+    expect(fieldOrderByCupName.get("PLATA")).toBe(2);
+    expect(fieldOrderByCupName.get("BRONCE")).toBe(3);
+    expect(fieldOrderByCupName.get("MADERA")).toBe(4);
+  });
+
   it("rechaza generar si faltan resultados de grupos", async () => {
     const t = await seedTournament();
     await testDb.tournamentConfig.updateMany({ where: { tournamentId: t.id }, data: { groupCount: 4, groupSize: 4, fieldCount: 4 } });

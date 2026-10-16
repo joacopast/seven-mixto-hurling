@@ -142,4 +142,7 @@ de espera con promoción automática · un solo campo por jugador para "juega al
 no" (`Player.playsHockey`, default `true`) — torneo social, no todos los integrantes de
 un equipo son jugadores de hockey; cuenta para armar grupos por nivel, la regla de
 cancha (7 en cancha, máx. 3 hombres) y la edad mínima · pausa de riego cada N partidos
-por cancha (`TournamentConfig.waterBreakEveryMatches/waterBreakMinutes`, default 4×7min).
+por cancha (`TournamentConfig.waterBreakEveryMatches/waterBreakMinutes`, default 4×7min)
+· 6 canchas, las canchas 1-2-3 son las mejores — las copas de mayor categoría (Oro,
+Plata, Bronce, en ese orden) priorizan esas canchas en cada ronda de copas, incluida la
+final (`lib/services/cups.ts`).

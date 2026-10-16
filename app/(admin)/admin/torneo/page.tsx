@@ -15,7 +15,6 @@ import {
   autoDrawGroups,
   generateFixture,
   publishGroups,
-  startGroupPhase,
   generateCupsAction,
   reopenFromFinished,
 } from "./actions";
@@ -151,15 +150,18 @@ export default async function AdminTorneoPage() {
               </ActionButton>
             )}
             {s === "GROUPS_PUBLISHED" && (
-              <ActionButton action={startGroupPhase} variant="primary">
-                Marcar “en juego”
-              </ActionButton>
+              <Link
+                href="/admin/torneo/resultados"
+                className="inline-flex h-10 items-center rounded-full bg-paper px-5 text-sm font-semibold text-bg-deep hover:bg-white"
+              >
+                Cargar resultados de grupos
+              </Link>
             )}
           </Step>
 
           <Step
             n={5}
-            title="Generar copas y llaves"
+            title="Pasar a la fase de copas"
             done={cupCount > 0}
             detail={
               cupCount > 0
@@ -173,11 +175,14 @@ export default async function AdminTorneoPage() {
                 variant="primary"
                 confirm={cupCount > 0 ? "Regenera las 4 llaves. ¿Seguir?" : undefined}
               >
-                {cupCount > 0 ? "Regenerar copas" : "Generar copas"}
+                {cupCount > 0 ? "Regenerar copas" : "Pasar a fase de copas"}
               </ActionButton>
             )}
             {!allGroupPlayed && hasFixture && (
-              <p className="text-xs text-ink-faint">Cargá todos los resultados de grupos primero.</p>
+              <p className="text-xs text-ink-faint">
+                Faltan {groupMatchCount - playedCount} de {groupMatchCount} resultados de grupos —
+                hay que cargarlos todos para poder pasar a la fase de copas.
+              </p>
             )}
           </Step>
 

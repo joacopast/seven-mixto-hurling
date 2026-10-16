@@ -122,17 +122,6 @@ export async function publishGroups(): Promise<ActionState> {
   };
 }
 
-export async function startGroupPhase(): Promise<ActionState> {
-  const c = await ctx();
-  const t = await getActiveTournament();
-  if (t.status !== "GROUPS_PUBLISHED") {
-    return { error: "Primero publicá los grupos." };
-  }
-  await setTournamentStatus(t.id, "GROUPS_IN_PROGRESS", c);
-  revalidate();
-  return { ok: true, message: "Fase de grupos en juego." };
-}
-
 export async function generateCupsAction(): Promise<ActionState> {
   const c = await ctx();
   const t = await getActiveTournament();

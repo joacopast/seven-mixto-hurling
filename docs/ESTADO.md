@@ -296,6 +296,29 @@ de las tablas de `/admin/equipos/[id]` y `/mi-equipo` — queda un solo control/
 ese campo como "Jugador"/"No jugador" en la columna "Jugador" (antes eran dos columnas,
 "Juega" y "Nivel hockey").
 
+Prioridad de cancha en copas + mostrar cancha en resultados de copa + simplificar el
+paso "en juego" (2026-10-16): `lib/services/cups.ts` → `generateCups` ahora ordena los
+partidos de cada ronda de copa por tier antes de agendarlos (Oro primero, luego Plata,
+Bronce, Madera), porque el armado de tandas llena las canchas en orden 1, 2, 3… — así
+las canchas 1-3 (las "mejores", a pedido de Joaco) le tocan primero a las copas de mayor
+categoría en cada ronda, incluida la final (con 4 copas y 3 canchas "buenas", Madera es
+la que queda con la cuarta). `findMany` con `id: { in: [...] }` no respeta el orden del
+array de ids — el reordenamiento se hace a mano con un mapa `cupId → tier` construido al
+crear las copas. `/admin/torneo/copas` (`CupResultRow`) ahora muestra la cancha de cada
+partido (mismo formato "C1" que ya usaba `/admin/torneo/resultados`) — antes solo se veía
+en el bracket público. Test: `tests/integration/cups.test.ts` ("prioriza las canchas 1,
+2 y 3…") fija el comportamiento con un fixture de 4 copas × 4 canchas.
+
+Se sacó el botón "Marcar 'en juego'" de `/admin/torneo` (paso 4): no hacía nada más que
+cambiar una etiqueta de estado, y `setGroupMatchResult` ya pasa el torneo a
+`GROUPS_IN_PROGRESS` solo con el primer resultado cargado (ver `lib/services/results.ts`)
+— el botón era 100% redundante y la palabra "en juego" generaba dudas sobre si eso era
+lo que habilitaba pasar a copas. Se reemplazó por un link directo a cargar resultados.
+El paso 5 ("Generar copas y llaves" → ahora "Pasar a la fase de copas") ya bloqueaba
+correctamente generar copas si falta algún resultado de grupos (`generateCups` tira
+`GROUPS_NOT_FINISHED` si hay partidos pendientes — esto ya existía, no es nuevo); se
+mejoró el mensaje para que diga cuántos resultados faltan en vez de un texto genérico.
+
 Pendiente / próximo: cargar alias/CBU/WhatsApp reales en `/admin/configuracion`,
 pulido visual final, más cobertura e2e (pago, admin), pasar a Vercel Pro antes del
 evento, **medir cuántos usuarios simultáneos soporta Vercel Hobby + Neon free antes del

@@ -156,11 +156,15 @@ export async function generateCups(tournamentId: string, ctx: Ctx = {}): Promise
 
       // Todos los partidos de copa, agrupados por ronda para agendarlos.
       const matchesByRound = new Map<BracketRoundName, string[]>();
+      // Para que las canchas 1, 2 y 3 (las mejores) le toquen primero a las
+      // copas de mayor categoría en cada ronda — Oro antes que Plata, etc.
+      const cupTierById = new Map<string, number>();
 
       for (const assignment of cupAssignments) {
         const cup = await tx.cup.create({
           data: { tournamentId, name: assignment.cupName, tier: assignment.tier },
         });
+        cupTierById.set(cup.id, assignment.tier);
         const bracket = await tx.bracket.create({
           data: { cupId: cup.id, type: "SINGLE_ELIM", size: 16 },
         });
@@ -236,10 +240,17 @@ export async function generateCups(tournamentId: string, ctx: Ctx = {}): Promise
         const matchIds = matchesByRound.get(roundName) ?? [];
         if (matchIds.length === 0) continue;
 
-        const matchRows = await tx.match.findMany({
+        // `findMany` con `id: { in }` no respeta el orden de `matchIds` — hay
+        // que reordenar a mano por tier de copa (Oro primero) para que el
+        // armado de tandas (que llena las canchas en orden 1, 2, 3…) les dé
+        // las mejores canchas a las copas de mayor categoría en cada ronda.
+        const matchRowsUnordered = await tx.match.findMany({
           where: { id: { in: matchIds } },
           select: { id: true, cupId: true },
         });
+        const matchRows = [...matchRowsUnordered].sort(
+          (a, b) => (cupTierById.get(a.cupId!) ?? 99) - (cupTierById.get(b.cupId!) ?? 99),
+        );
 
         const schedule = scheduleMatches(
           {
