@@ -24,10 +24,10 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: "asc" },
     include: { registration: { include: { payments: true } }, _count: { select: { players: true } } },
   });
-  // Cantidad de JUGADORES reales (isPlayer=true) por equipo, aparte del plantel total.
+  // Cantidad de jugadores reales (playsHockey=true) por equipo, aparte del plantel total.
   const playerCounts = await db.player.groupBy({
     by: ["teamId"],
-    where: { tournamentId: tournament.id, isPlayer: true },
+    where: { tournamentId: tournament.id, playsHockey: true },
     _count: true,
   });
   const realPlayersByTeam = new Map(playerCounts.map((r) => [r.teamId, r._count]));

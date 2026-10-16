@@ -12,7 +12,6 @@ export interface PlayerRowData {
   docNumber: string;
   birthDate: string; // yyyy-mm-dd
   gender: "M" | "F" | "X";
-  isPlayer: boolean;
   shirtNumber: number | null;
   dietaryRestriction: string | null;
   attendsParty: boolean;
@@ -44,13 +43,10 @@ export function PlayerRow({ player, locked }: { player: PlayerRowData; locked: b
         <td className="px-3 py-2 text-ink-soft">{player.gender}</td>
         <td className="px-3 py-2 font-mono text-ink-soft">{player.shirtNumber ?? "—"}</td>
         <td className="px-3 py-2">
-          {player.isPlayer ? <Badge tone="ok">Juega</Badge> : <Badge tone="neutral">No juega</Badge>}
-        </td>
-        <td className="px-3 py-2">
           {player.playsHockey ? (
-            <Badge tone="ok">Con nivel</Badge>
+            <Badge tone="ok">Jugador</Badge>
           ) : (
-            <Badge tone="neutral">Sin experiencia</Badge>
+            <Badge tone="neutral">No jugador</Badge>
           )}
         </td>
         <td className="px-3 py-2 text-xs text-ink-soft">
@@ -78,7 +74,7 @@ export function PlayerRow({ player, locked }: { player: PlayerRowData; locked: b
 
   return (
     <tr>
-      <td colSpan={8} className="bg-surface-2 px-3 py-4">
+      <td colSpan={7} className="bg-surface-2 px-3 py-4">
         <form action={formAction} className="flex flex-col gap-3">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Nombre" htmlFor={`fn-${player.id}`}>
@@ -141,16 +137,6 @@ export function PlayerRow({ player, locked }: { player: PlayerRowData; locked: b
             </Field>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-ink">
-            <input
-              type="checkbox"
-              name="isPlayer"
-              defaultChecked={player.isPlayer}
-              className="h-4 w-4 rounded border-line accent-accent"
-            />
-            Juega
-            <span className="text-xs text-ink-faint">(destildá si acompaña pero no va a jugar)</span>
-          </label>
           <label className="flex items-center gap-2 text-sm text-ink">
             <input
               type="checkbox"

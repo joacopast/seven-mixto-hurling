@@ -147,9 +147,9 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
         <h2 className="mb-2 font-display text-xl font-semibold text-ink">
           Plantel ({team.players.length})
           {" · "}
-          {team.players.filter((p) => p.isPlayer).length} jugadores
-          {team.players.some((p) => !p.isPlayer) &&
-            ` · ${team.players.filter((p) => !p.isPlayer).length} no juegan`}
+          {team.players.filter((p) => p.playsHockey).length} jugadores
+          {team.players.some((p) => !p.playsHockey) &&
+            ` · ${team.players.filter((p) => !p.playsHockey).length} no jugadores`}
         </h2>
         <div className="overflow-x-auto rounded-xl border border-line">
           <table className="w-full min-w-[44rem] text-sm">
@@ -160,7 +160,6 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
                 <th className="px-3 py-2">Edad</th>
                 <th className="px-3 py-2">Género</th>
                 <th className="px-3 py-2">#</th>
-                <th className="px-3 py-2">Rol</th>
                 <th className="px-3 py-2">Nivel</th>
                 <th className="px-3 py-2">Dieta</th>
                 <th className="px-3 py-2">Fiesta</th>
@@ -180,17 +179,10 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
                   <td className="px-3 py-2 text-ink-soft">{p.gender}</td>
                   <td className="px-3 py-2 font-mono text-ink-soft">{p.shirtNumber ?? "—"}</td>
                   <td className="px-3 py-2">
-                    {p.isPlayer ? (
-                      <Badge tone="ok">Juega</Badge>
-                    ) : (
-                      <Badge tone="neutral">No juega</Badge>
-                    )}
-                  </td>
-                  <td className="px-3 py-2">
                     {p.playsHockey ? (
-                      <Badge tone="ok">Con nivel</Badge>
+                      <Badge tone="ok">Jugador</Badge>
                     ) : (
-                      <Badge tone="neutral">Sin experiencia</Badge>
+                      <Badge tone="neutral">No jugador</Badge>
                     )}
                   </td>
                   <td className="px-3 py-2 text-xs text-ink-soft">{p.dietaryRestriction ?? "—"}</td>

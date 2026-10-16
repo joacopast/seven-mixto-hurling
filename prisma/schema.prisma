@@ -319,15 +319,11 @@ model Player {
   /// Si va a quedarse a la fiesta post torneo.
   attendsParty       Boolean @default(true)
 
-  /// Distingue jugador (juega partidos, cuenta para la composición de cancha)
-  /// de no-jugador (acompaña al equipo pero no juega — igual paga y consume
-  /// los beneficios del evento). Cuenta igual para el precio y el mín/máx de
-  /// plantel; NO cuenta para la regla de 7 en cancha / máx. 3 hombres.
-  isPlayer Boolean @default(true)
-
-  /// Si tiene experiencia jugando hockey — torneo social: puede haber gente
-  /// en el equipo sin experiencia. Se usa para armar los grupos por nivel,
-  /// no afecta precio ni la regla de cancha (eso es `isPlayer`).
+  /// Si juega al hockey — torneo social: puede haber gente en el plantel sin
+  /// experiencia, que paga y participa del evento igual. Se usa para armar
+  /// los grupos por nivel y para la regla de cancha (7 en cancha, máx. 3
+  /// hombres) y la edad mínima — cuenta igual para el precio y el mín/máx
+  /// de plantel.
   playsHockey Boolean @default(true)
 
   eligibilityStatus EligibilityStatus @default(PENDING)

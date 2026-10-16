@@ -27,11 +27,12 @@ export interface RosterPlayerInput {
   gender: Gender;
   shirtNumber?: number | null;
   /**
-   * false = persona del plantel que NO juega (acompaña, no pisa la cancha).
-   * Cuenta igual para el precio y el mín/máx de plantel; NO cuenta para la
-   * regla de cancha (7 en cancha, máx. 3 hombres). Default true.
+   * false = persona del plantel que NO juega al hockey (acompaña, no pisa
+   * la cancha). Cuenta igual para el precio y el mín/máx de plantel; NO
+   * cuenta para la regla de cancha (7 en cancha, máx. 3 hombres) ni para la
+   * edad mínima. Default true.
    */
-  isPlayer?: boolean;
+  playsHockey?: boolean;
 }
 
 export type RosterIssueCode =
@@ -100,7 +101,7 @@ export function validateRoster(
     else if (p.gender === "F") counts.women++;
     else counts.other++;
 
-    if (p.isPlayer !== false) {
+    if (p.playsHockey !== false) {
       playingCounts.total++;
       if (p.gender === "M") playingCounts.men++;
       else if (p.gender === "F") playingCounts.women++;
@@ -144,7 +145,7 @@ export function validateRoster(
       // La edad mínima es una regla de juego (para poder jugar) — no aplica
       // a quien está en el plantel pero no juega.
       const age = ageOn(p.birthDate, referenceDate);
-      if (p.isPlayer !== false && age < config.minPlayerAge) {
+      if (p.playsHockey !== false && age < config.minPlayerAge) {
         issues.push({
           code: "UNDERAGE",
           message: `${p.firstName} ${p.lastName} no cumple la edad mínima de ${config.minPlayerAge} años.`,

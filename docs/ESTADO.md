@@ -263,8 +263,10 @@ migración `water_break_and_hockey_level`):
   "¿Juega hockey?" (Sí/No) en los 3 lugares donde se carga/edita un jugador (wizard
   público, alta admin, portal del equipo vía `updatePlayer` compartido). Pensado para
   armar los grupos por nivel en un torneo social donde no todos los integrantes de un
-  equipo tienen experiencia — no afecta precio ni la regla de cancha (eso sigue siendo
-  `isPlayer`). Visible en `/admin/equipos/[id]`, `/mi-equipo` y el export de jugadores.
+  equipo tienen experiencia. (Nota: el 2026-10-16 se sacó el campo `isPlayer` que existía
+  antes por separado — ver más abajo —, así que ahora `playsHockey` también hace ese
+  trabajo: cuenta para la regla de cancha y la edad mínima.) Visible en
+  `/admin/equipos/[id]`, `/mi-equipo` y el export de jugadores.
 - **Reprogramar horarios en cascada.** `lib/services/schedule.ts` → `rescheduleRound`:
   cambia el `startsAt` de una tanda (`Round`, cualquier fase) y corre el mismo delta sobre
   **todas** las tandas que arrancan después en el torneo — de cualquier fase, porque
@@ -279,6 +281,20 @@ migración `water_break_and_hockey_level`):
   `.csv`) vía `lib/xlsx.ts` (`exceljs`): encabezado con fondo verde de marca, ancho de
   columna automático, fila de encabezado congelada y autofiltro. `lib/csv.ts` se borró
   (sin otros usos). Jugadores suma la columna "Nivel hockey".
+
+Se sacó `Player.isPlayer`, `playsHockey` pasa a cubrir también su rol (2026-10-16,
+migración `remove_is_player_merge_into_plays_hockey`): había dos campos de jugador
+pisándose conceptualmente ("Juega" = participa de los partidos vs. "¿Juega hockey?" =
+nivel para armar grupos) — a pedido de Joaco se unificaron en uno solo. `playsHockey`
+ahora hace todo lo que hacía `isPlayer`: cuenta para la regla de cancha (7 en cancha,
+máx. 3 hombres) y para la edad mínima en `lib/tournament/roster.ts`
+(`RosterPlayerInput.isPlayer` → `.playsHockey`), y para contar "jugadores reales" por
+equipo en `lib/services/groups.ts` (sorteo de grupos) y en el export de equipos. Se
+borró el checkbox "Juega" / badge "Juega"-"No juega" de los 3 formularios de jugador y
+de las tablas de `/admin/equipos/[id]` y `/mi-equipo` — queda un solo control/badge
+("¿Juega hockey?" / "Jugador"-"No jugador"). El export de jugadores (`.xlsx`) muestra
+ese campo como "Jugador"/"No jugador" en la columna "Jugador" (antes eran dos columnas,
+"Juega" y "Nivel hockey").
 
 Pendiente / próximo: cargar alias/CBU/WhatsApp reales en `/admin/configuracion`,
 pulido visual final, más cobertura e2e (pago, admin), pasar a Vercel Pro antes del

@@ -216,9 +216,9 @@ export default async function MiEquipoPage({
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-display text-xl font-semibold text-ink">Plantel</h2>
           <span className="font-mono text-sm text-ink-faint">
-            {active.players.filter((p) => p.isPlayer).length} jugadores
-            {active.players.some((p) => !p.isPlayer) &&
-              ` · ${active.players.filter((p) => !p.isPlayer).length} no juegan`}
+            {active.players.filter((p) => p.playsHockey).length} jugadores
+            {active.players.some((p) => !p.playsHockey) &&
+              ` · ${active.players.filter((p) => !p.playsHockey).length} no jugadores`}
           </span>
         </div>
         <div className="overflow-hidden rounded-xl border border-line">
@@ -230,7 +230,6 @@ export default async function MiEquipoPage({
                 <th className="px-3 py-2">Edad</th>
                 <th className="px-3 py-2">Género</th>
                 <th className="px-3 py-2">#</th>
-                <th className="px-3 py-2">Rol</th>
                 <th className="px-3 py-2">Nivel</th>
                 <th className="px-3 py-2">Dieta / fiesta</th>
                 <th className="px-3 py-2" />
@@ -249,7 +248,6 @@ export default async function MiEquipoPage({
                     docNumber: p.docNumber,
                     birthDate: p.birthDate.toISOString().slice(0, 10),
                     gender: p.gender,
-                    isPlayer: p.isPlayer,
                     shirtNumber: p.shirtNumber,
                     dietaryRestriction: p.dietaryRestriction,
                     attendsParty: p.attendsParty,

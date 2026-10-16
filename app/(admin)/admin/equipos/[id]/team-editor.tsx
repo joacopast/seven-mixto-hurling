@@ -87,10 +87,6 @@ export function AddPlayerForm({ teamId }: { teamId: string }) {
         <option value="false">No juega hockey</option>
       </Select>
       <label className="flex items-center gap-2 text-sm text-ink-soft">
-        <input type="checkbox" name="isPlayer" defaultChecked className="h-4 w-4 rounded border-line accent-accent" />
-        Juega
-      </label>
-      <label className="flex items-center gap-2 text-sm text-ink-soft">
         <input type="checkbox" name="attendsParty" defaultChecked className="h-4 w-4 rounded border-line accent-accent" />
         Va a la fiesta
       </label>

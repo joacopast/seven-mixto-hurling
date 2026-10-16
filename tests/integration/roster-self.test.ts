@@ -17,7 +17,6 @@ function validInput(over: Partial<Parameters<typeof updateMyPlayer>[2]> = {}) {
     docNumber: "40123456",
     birthDate: "1996-05-20",
     gender: "M" as const,
-    isPlayer: true,
     shirtNumber: 7,
     phone: "",
     email: "",

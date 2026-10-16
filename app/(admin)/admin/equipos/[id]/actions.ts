@@ -220,7 +220,6 @@ const playerSchema = z.object({
   docNumber: z.string().trim().min(1).max(20),
   birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   gender: z.enum(["M", "F", "X"]),
-  isPlayer: z.boolean().default(true),
   shirtNumber: z.union([z.coerce.number().int().min(0).max(999), z.literal("")]).optional(),
   dietaryRestriction: z.string().trim().max(200).optional(),
   attendsParty: z.boolean().default(true),
@@ -239,7 +238,6 @@ export async function addPlayer(_prev: PlayerActionState, formData: FormData): P
   const ctx = await adminCtx();
   const parsed = playerSchema.safeParse({
     ...Object.fromEntries(formData.entries()),
-    isPlayer: formData.get("isPlayer") === "on",
     attendsParty: formData.get("attendsParty") === "on",
   });
   if (!parsed.success) return { error: "Revisá los datos del jugador." };
@@ -254,7 +252,6 @@ export async function addPlayer(_prev: PlayerActionState, formData: FormData): P
         docNumber: d.docNumber,
         birthDate: d.birthDate,
         gender: d.gender,
-        isPlayer: d.isPlayer,
         shirtNumber: d.shirtNumber === "" || d.shirtNumber === undefined ? null : d.shirtNumber,
         dietaryRestriction: d.dietaryRestriction || undefined,
         attendsParty: d.attendsParty,

@@ -28,8 +28,6 @@ export const playerSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha de nacimiento inválida.")
     .refine((s) => !Number.isNaN(Date.parse(s)), "Fecha de nacimiento inválida."),
   gender: z.enum(["M", "F", "X"]),
-  /** false = acompaña al equipo pero no juega. Cuenta para el precio y el plantel; no para la cancha. */
-  isPlayer: z.boolean().default(true),
   shirtNumber: z
     .union([z.coerce.number().int().min(0).max(999), z.literal("").transform(() => undefined)])
     .optional(),
@@ -38,7 +36,11 @@ export const playerSchema = z.object({
   position: z.string().trim().max(40).optional().or(z.literal("")),
   dietaryRestriction: z.string().trim().max(200).optional().or(z.literal("")),
   attendsParty: z.boolean().default(true),
-  /** Si tiene experiencia jugando hockey — para armar los grupos por nivel. */
+  /**
+   * Si juega al hockey — false = acompaña al equipo sin jugar. Cuenta para
+   * el precio y el plantel; no para la cancha, la edad mínima, ni para
+   * armar los grupos por nivel.
+   */
   playsHockey: z.boolean().default(true),
 });
 

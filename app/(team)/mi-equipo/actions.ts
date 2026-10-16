@@ -22,7 +22,6 @@ export async function updateMyPlayerAction(
 
   const raw = {
     ...Object.fromEntries(formData.entries()),
-    isPlayer: formData.get("isPlayer") === "on",
     attendsParty: formData.get("attendsParty") === "on",
     playsHockey: formData.get("playsHockey") === "true",
   };

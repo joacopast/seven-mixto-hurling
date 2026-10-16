@@ -211,8 +211,6 @@ export interface AdminPlayerInput {
   docNumber: string;
   birthDate: string; // yyyy-mm-dd
   gender: "M" | "F" | "X";
-  /** false = acompaña al equipo pero no juega. Default true. */
-  isPlayer?: boolean;
   shirtNumber?: number | null;
   phone?: string;
   email?: string;
@@ -241,7 +239,6 @@ export async function adminAddPlayer(teamId: string, input: AdminPlayerInput, ct
         docNumber: doc,
         birthDate: new Date(`${input.birthDate}T00:00:00Z`),
         gender: input.gender,
-        isPlayer: input.isPlayer ?? true,
         shirtNumber: input.shirtNumber ?? null,
         phone: input.phone || null,
         email: input.email || null,
@@ -298,7 +295,6 @@ export async function updatePlayer(playerId: string, input: AdminPlayerInput, ct
     docNumber: doc,
     birthDate,
     gender: input.gender,
-    isPlayer: input.isPlayer ?? true,
     shirtNumber: input.shirtNumber ?? null,
     phone: input.phone || null,
     email: input.email || null,

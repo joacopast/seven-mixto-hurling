@@ -37,7 +37,7 @@ export interface ConfirmedTeamForDraw {
   name: string;
   seed: number | null;
   groupId: string | null;
-  /** Cantidad de JUGADORES reales (isPlayer=true) — no cuenta a los no-jugadores. */
+  /** Cantidad de jugadores reales (playsHockey=true) — no cuenta a los que no juegan. */
   playerCount: number;
 }
 
@@ -50,7 +50,7 @@ export async function getConfirmedTeams(tournamentId: string): Promise<Confirmed
       name: true,
       seed: true,
       groupId: true,
-      _count: { select: { players: { where: { isPlayer: true } } } },
+      _count: { select: { players: { where: { playsHockey: true } } } },
     },
   });
   return teams.map((t) => ({

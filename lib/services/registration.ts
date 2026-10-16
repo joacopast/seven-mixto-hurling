@@ -63,7 +63,7 @@ export async function createRegistration(
     birthDate: new Date(`${p.birthDate}T00:00:00Z`),
     gender: p.gender,
     shirtNumber: p.shirtNumber ?? null,
-    isPlayer: p.isPlayer,
+    playsHockey: p.playsHockey,
   }));
 
   const rosterResult = validateRoster(
@@ -160,7 +160,6 @@ export async function createRegistration(
             docNumber: p.docNumber,
             birthDate: new Date(`${p.birthDate}T00:00:00Z`),
             gender: p.gender,
-            isPlayer: p.isPlayer,
             shirtNumber: p.shirtNumber ?? null,
             phone: p.phone || null,
             email: p.email || null,

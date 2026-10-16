@@ -138,7 +138,8 @@ el grupo · inscripción abierta por orden de llegada · sorteo de grupos manual
 mano por el admin — no se usa Mercado Pago por la comisión** · admite **seña** (pago
 parcial que reserva el cupo, `RegistrationStatus.DEPOSIT_PAID`) · reembolso total ante
 cualquier baja · edad mínima 16 · DNI obligatorio · multi-equipo por responsable · lista
-de espera con promoción automática · jugadores marcan si tienen experiencia en hockey
-(`Player.playsHockey`) para armar grupos por nivel — torneo social, no todos los
-integrantes de un equipo son jugadores de hockey · pausa de riego cada N partidos por
-cancha (`TournamentConfig.waterBreakEveryMatches/waterBreakMinutes`, default 4×7min).
+de espera con promoción automática · un solo campo por jugador para "juega al hockey o
+no" (`Player.playsHockey`, default `true`) — torneo social, no todos los integrantes de
+un equipo son jugadores de hockey; cuenta para armar grupos por nivel, la regla de
+cancha (7 en cancha, máx. 3 hombres) y la edad mínima · pausa de riego cada N partidos
+por cancha (`TournamentConfig.waterBreakEveryMatches/waterBreakMinutes`, default 4×7min).

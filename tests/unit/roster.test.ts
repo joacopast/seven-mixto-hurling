@@ -133,7 +133,7 @@ describe("validateRoster — jugadores vs no-jugadores", () => {
   it("los no-jugadores cuentan para el mínimo/máximo del plantel", () => {
     const players = [
       ...roster(3, { gender: "F" }).map((p, i) => ({ ...p, docNumber: `J${i}`, shirtNumber: i + 1 })),
-      ...roster(4, { gender: "F", isPlayer: false }).map((p, i) => ({
+      ...roster(4, { gender: "F", playsHockey: false }).map((p, i) => ({
         ...p,
         docNumber: `N${i}`,
         shirtNumber: 10 + i,
@@ -151,7 +151,7 @@ describe("validateRoster — jugadores vs no-jugadores", () => {
     // que jueguen, así que no se llega a 7 respetando el máximo de 3 hombres.
     const players = [
       ...roster(4, { gender: "M" }).map((p, i) => ({ ...p, docNumber: `M${i}`, shirtNumber: i + 1 })),
-      ...roster(8, { gender: "F", isPlayer: false }).map((p, i) => ({
+      ...roster(8, { gender: "F", playsHockey: false }).map((p, i) => ({
         ...p,
         docNumber: `N${i}`,
         shirtNumber: 10 + i,
@@ -166,7 +166,7 @@ describe("validateRoster — jugadores vs no-jugadores", () => {
     const players = [
       ...roster(4, { gender: "M" }).map((p, i) => ({ ...p, docNumber: `M${i}`, shirtNumber: i + 1 })),
       ...roster(4, { gender: "F" }).map((p, i) => ({ ...p, docNumber: `W${i}`, shirtNumber: 10 + i })),
-      ...roster(2, { gender: "F", isPlayer: false }).map((p, i) => ({
+      ...roster(2, { gender: "F", playsHockey: false }).map((p, i) => ({
         ...p,
         docNumber: `N${i}`,
         shirtNumber: 20 + i,
@@ -184,7 +184,7 @@ describe("validateRoster — jugadores vs no-jugadores", () => {
         docNumber: "acompanante",
         gender: "M",
         shirtNumber: 30,
-        isPlayer: false,
+        playsHockey: false,
       }),
     ];
     const r = validateRoster(config, players, { referenceDate: ref });
