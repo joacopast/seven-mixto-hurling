@@ -354,6 +354,39 @@ repetir país y solo agrega. Se usó porque producción ya tenía 3 equipos real
 (Brasil, Argentina, Alemania) que no se podían tocar. Quedó el torneo en 63 equipos,
 dejando 1 cupo libre para llegar a 64 con una inscripción real.
 
+Mail por cada cambio de estado + mensaje de WhatsApp al confirmar pago (2026-10-24): a
+pedido de Joaco. **Notificaciones**: se agregó `NotificationType.STATUS_CHANGED`
+(migración `20261024180901_add_status_changed_notification_type`) para los caminos que
+cambiaban `Team.registrationStatus` sin avisarle nunca al responsable — el resto de los
+caminos (pago, promoción de lista de espera, rechazo/reembolso) ya encolaban un email
+específico (`PAYMENT_APPROVED`, `TEAM_APPROVED`, `WAITLIST_INVITED`, `RESULT_POSTED`) y se
+dejaron como estaban, para no mandar dos mails por el mismo evento. Quedaban mudos: el
+cambio manual de estado del admin (`changeRegistrationStatus` en
+`app/(admin)/admin/equipos/[id]/actions.ts`), el alta manual de un equipo
+(`adminCreateTeam`), entrar a la lista de espera por primera vez (`joinWaitlist`) y
+volver a la lista de espera por no pagar a tiempo (`autoPromoteWaitlist` → bloque de
+expiración, en `lib/services/waitlist.ts`). Los cuatro ahora encolan `STATUS_CHANGED`
+dentro de la misma transacción; el render vive en `lib/email/templates.ts`
+(`REGISTRATION_STATUS_LABEL` para el texto del estado + dos variantes con `extra.kind`
+para lista de espera). **Mensaje de WhatsApp**: `buildNextStepsMessage()`
+(`lib/tournament/whatsapp.ts`, función pura, con test unitario) arma un texto fijo —
+nombre del equipo, link a `/mi-equipo`, cómo entrar (magic link, mismo mail de la
+inscripción) y qué se puede hacer desde el portal — pensado para prevenir las preguntas
+básicas repetidas. Se muestra en un `<textarea>` de solo lectura con botón "Copiar"
+(`components/copy-textarea.tsx`, reutilizable) en los dos lugares donde se confirma un
+pago manual: `/admin/equipos/[id]` (`ConfirmPaymentButton`) y `/admin/pagos`
+(`PendingPaymentRow`) — solo en la confirmación completa (`outcome: "CONFIRMED"`), no en
+seña ni sobrecupo. `confirmManualPayment` ahora devuelve `teamName` para no hacer una
+consulta aparte. Bug encontrado y corregido en el camino: en ambos lugares, el
+`router.refresh()` que sigue a la confirmación hacía que el componente dejara de
+renderizarse (en la ficha de equipo, porque el padre deja de mostrar el botón una vez
+`CONFIRMED`; en `/admin/pagos`, porque la fila sale de la lista de pendientes) — el
+mensaje de WhatsApp aparecía un instante y desaparecía solo. Se arregló pasando el
+`registrationStatus` al componente y dejándolo decidir internamente si ya se confirmó en
+esta sesión (ficha de equipo), y en `/admin/pagos` directamente no se refresca la lista
+hasta que el admin toca "Listo, actualizar lista" (para poder copiar el mensaje antes de
+que la fila desaparezca).
+
 Pendiente / próximo: cargar alias/CBU/WhatsApp reales en `/admin/configuracion`,
 pulido visual final, más cobertura e2e (pago, admin), pasar a Vercel Pro antes del
 evento, **medir cuántos usuarios simultáneos soporta Vercel Hobby + Neon free antes del

@@ -102,6 +102,13 @@ export async function joinWaitlist(input: JoinWaitlistInput, ctx: { ip?: string 
       teamName: team.name,
       dedupeKey: `admin-alert:waitlist.join:${registration.id}`,
     });
+    await enqueueNotification(tx, {
+      type: "STATUS_CHANGED",
+      recipientTeamId: team.id,
+      recipientUserId: user.id,
+      payload: { kind: "waitlist_joined", teamId: team.id, teamName: team.name, position },
+      dedupeKey: `waitlist-joined:${registration.id}`,
+    });
 
     return { position };
   });
@@ -234,6 +241,12 @@ export async function autoPromoteWaitlist(tournamentId: string): Promise<{
         teamId: reg.teamId,
         teamName: reg.team.name,
         dedupeKey: `admin-alert:waitlist.expire:${reg.id}:${now.getTime()}`,
+      });
+      await enqueueNotification(tx, {
+        type: "STATUS_CHANGED",
+        recipientTeamId: reg.teamId,
+        payload: { kind: "waitlist_expired", teamId: reg.teamId, teamName: reg.team.name },
+        dedupeKey: `waitlist-expired:${reg.id}:${now.getTime()}`,
       });
     });
     expired++;

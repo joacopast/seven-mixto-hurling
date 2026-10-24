@@ -658,6 +658,9 @@ enum NotificationType {
   WAITLIST_INVITED
   /// Aviso a la organización (no a un equipo) de un cambio en equipos/pagos/inscripciones.
   ADMIN_ALERT
+  /// Cambio de estado de inscripción que no tiene un tipo más específico
+  /// (ej. override manual del admin, o vuelta a lista de espera por no pagar a tiempo).
+  STATUS_CHANGED
 }
 
 enum NotificationChannel {

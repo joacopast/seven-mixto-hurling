@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { slugify } from "@/lib/slug";
 import { writeAudit } from "@/lib/services/audit";
 import { notifyAdmin } from "@/lib/services/admin-alerts";
+import { enqueueNotification } from "@/lib/services/notification";
 import { normalizeDoc } from "@/lib/validation/registration";
 import { countryCode } from "@/lib/countries";
 import type { Prisma, RegistrationStatus } from "@prisma/client";
@@ -109,6 +110,13 @@ export async function adminCreateTeam(input: AdminCreateTeamInput, ctx: Ctx = {}
       teamId: team.id,
       teamName: team.name,
       dedupeKey: `admin-alert:team.admin.create:${team.id}`,
+    });
+    await enqueueNotification(tx, {
+      type: "STATUS_CHANGED",
+      recipientTeamId: team.id,
+      recipientUserId: user.id,
+      payload: { teamId: team.id, teamName: team.name, status: input.registrationStatus },
+      dedupeKey: `status-changed:${team.id}:${input.registrationStatus}:create`,
     });
 
     return team;

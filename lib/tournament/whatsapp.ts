@@ -32,3 +32,30 @@ export function buildWhatsAppLink(
   const text = renderWhatsAppMessage(template, vars);
   return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
 }
+
+export interface NextStepsMessageVars {
+  team: string;
+  portalUrl: string;
+}
+
+/**
+ * Mensaje de "próximos pasos" que el admin copia y pega en WhatsApp al
+ * confirmar el pago de un equipo — pensado para prevenir las preguntas
+ * básicas más comunes (cómo entro, dónde veo el plantel/grupo/horarios).
+ */
+export function buildNextStepsMessage({ team, portalUrl }: NextStepsMessageVars): string {
+  return [
+    `¡Hola! Te confirmamos que el pago de ${team} quedó acreditado y el equipo está inscripto en el Seven Mixto 🏑`,
+    "",
+    `Desde acá podés ver todo lo de tu equipo: ${portalUrl}`,
+    "",
+    "Para entrar, poné el mismo mail con el que se inscribieron: les va a llegar un link para ingresar, no hace falta contraseña.",
+    "",
+    "Desde el portal pueden:",
+    "• Ver y editar el plantel",
+    "• Ver el grupo, los horarios y la cancha de cada partido (cuando se publique el fixture)",
+    "• Seguir los resultados del torneo",
+    "",
+    "Cualquier duda, escribinos por acá.",
+  ].join("\n");
+}

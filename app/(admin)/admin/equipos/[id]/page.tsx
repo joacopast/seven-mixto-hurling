@@ -108,14 +108,14 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
         </Card>
       </div>
 
-      {team.registration &&
-        !["CONFIRMED", "PAYMENT_APPROVED", "CANCELLED"].includes(team.registrationStatus) && (
-          <ConfirmPaymentButton
-            registrationId={team.registration.id}
-            teamId={team.id}
-            owedPesos={Math.round(amountOwed / 100)}
-          />
-        )}
+      {team.registration && (
+        <ConfirmPaymentButton
+          registrationId={team.registration.id}
+          teamId={team.id}
+          owedPesos={Math.round(amountOwed / 100)}
+          registrationStatus={team.registrationStatus}
+        />
+      )}
 
       <Card>
         <h2 className="font-display text-lg font-semibold text-ink">Editar equipo</h2>

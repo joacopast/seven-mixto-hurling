@@ -167,6 +167,7 @@ export interface ManualConfirmResult {
   outcome: "CONFIRMED" | "DEPOSIT_RECORDED" | "WAITLISTED_OVERBOOK" | "NOOP";
   amountPaid?: number;
   amountOwed?: number;
+  teamName?: string;
 }
 
 /** Suma de los pagos ya aprobados de una inscripción. */
@@ -379,7 +380,12 @@ export async function confirmManualPayment(
       teamName: registration.team!.name,
       dedupeKey: `admin-alert:payment.manual.confirm:${payment.id}`,
     });
-    return { outcome: "CONFIRMED", amountPaid: registration.totalAmount, amountOwed: 0 };
+    return {
+      outcome: "CONFIRMED",
+      amountPaid: registration.totalAmount,
+      amountOwed: 0,
+      teamName: registration.team!.name,
+    };
   });
 }
 

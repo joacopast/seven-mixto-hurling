@@ -44,6 +44,12 @@ describe("admin-teams", () => {
 
     const audit = await testDb.auditLog.findFirst({ where: { action: "team.admin.create" } });
     expect(audit).not.toBeNull();
+
+    const statusNotif = await testDb.notification.findFirst({
+      where: { type: "STATUS_CHANGED", recipientTeamId: team.id },
+    });
+    expect(statusNotif).not.toBeNull();
+    expect(statusNotif!.recipientUserId).toBe(fresh.managerUserId);
   });
 
   it("edita datos del equipo y audita el diff", async () => {
@@ -232,6 +238,17 @@ describe("lista de espera", () => {
     expect(adminAlert).not.toBeNull();
   });
 
+  it("joinWaitlist avisa por mail al responsable que quedó en lista de espera", async () => {
+    const t = await seedTournament();
+    await joinWaitlist({ teamName: "Japón", contactName: "A", contactEmail: "e1@test.local", contactPhone: "1" });
+
+    const notif = await testDb.notification.findFirst({
+      where: { type: "STATUS_CHANGED", dedupeKey: { startsWith: "waitlist-joined:" } },
+    });
+    expect(notif).not.toBeNull();
+    expect((notif!.payload as { kind?: string }).kind).toBe("waitlist_joined");
+  });
+
   it("promoteWaitlistEntry rechaza si no hay cupos", async () => {
     const t = await fullTournamentWithWaitlist();
     const wl = await testDb.registration.findFirstOrThrow({ where: { tournamentId: t.id, status: "WAITLISTED" } });
@@ -278,5 +295,11 @@ describe("lista de espera", () => {
     // El primero volvió a WAITLISTED, el segundo quedó invitado.
     const waiting = await testDb.registration.count({ where: { tournamentId: t.id, status: "WAITLISTED" } });
     expect(waiting).toBe(1);
+
+    const expiredNotif = await testDb.notification.findFirst({
+      where: { type: "STATUS_CHANGED", dedupeKey: { startsWith: "waitlist-expired:" } },
+    });
+    expect(expiredNotif).not.toBeNull();
+    expect((expiredNotif!.payload as { kind?: string }).kind).toBe("waitlist_expired");
   });
 });

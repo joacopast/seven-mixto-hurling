@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { normalizePhone, renderWhatsAppMessage, buildWhatsAppLink } from "@/lib/tournament/whatsapp";
+import {
+  normalizePhone,
+  renderWhatsAppMessage,
+  buildWhatsAppLink,
+  buildNextStepsMessage,
+} from "@/lib/tournament/whatsapp";
 
 describe("normalizePhone", () => {
   it("deja solo dígitos", () => {
@@ -38,5 +43,14 @@ describe("buildWhatsAppLink", () => {
     expect(buildWhatsAppLink(null, "hola", vars)).toBeNull();
     expect(buildWhatsAppLink("", "hola", vars)).toBeNull();
     expect(buildWhatsAppLink(undefined, "hola", vars)).toBeNull();
+  });
+});
+
+describe("buildNextStepsMessage", () => {
+  it("incluye el nombre del equipo y el link del portal", () => {
+    const msg = buildNextStepsMessage({ team: "Uruguay", portalUrl: "https://app.test/mi-equipo" });
+    expect(msg).toContain("Uruguay");
+    expect(msg).toContain("https://app.test/mi-equipo");
+    expect(msg).toContain("plantel");
   });
 });

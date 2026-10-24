@@ -5,10 +5,13 @@ import { headers } from "next/headers";
 import { requireRole } from "@/lib/auth/guards";
 import { confirmManualPayment, PaymentError } from "@/lib/services/payment";
 import { formatArs } from "@/lib/tournament/pricing";
+import { buildNextStepsMessage } from "@/lib/tournament/whatsapp";
+import { APP_URL } from "@/lib/config";
 
 export interface ConfirmPaymentState {
   ok?: boolean;
   message?: string;
+  whatsappMessage?: string;
   error?: string;
 }
 
@@ -41,7 +44,17 @@ export async function confirmPaymentFromList(
     if (res.outcome === "DEPOSIT_RECORDED") {
       return { ok: true, message: `Seña registrada. Falta ${formatArs(res.amountOwed ?? 0)}.` };
     }
-    return { ok: true, message: res.outcome === "NOOP" ? "Ya estaba confirmado." : "Pago confirmado." };
+    if (res.outcome === "NOOP") {
+      return { ok: true, message: "Ya estaba confirmado." };
+    }
+    return {
+      ok: true,
+      message: "Pago confirmado.",
+      whatsappMessage: buildNextStepsMessage({
+        team: res.teamName ?? "tu equipo",
+        portalUrl: `${APP_URL}/mi-equipo`,
+      }),
+    };
   } catch (err) {
     if (err instanceof PaymentError) return { error: err.message };
     throw err;

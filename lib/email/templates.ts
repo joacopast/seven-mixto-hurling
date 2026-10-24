@@ -1,6 +1,7 @@
 import { APP_URL, SITE } from "@/lib/config";
 import { formatArs } from "@/lib/tournament/pricing";
-import type { NotificationType } from "@prisma/client";
+import { REGISTRATION_STATUS_LABEL } from "@/lib/tournament/status";
+import type { NotificationType, RegistrationStatus } from "@prisma/client";
 
 export interface RenderedEmail {
   subject: string;
@@ -121,6 +122,30 @@ export function renderNotification(type: NotificationType, ctx: Ctx): RenderedEm
       }
       const body = `<p>Se actualizaron resultados de <strong>${team}</strong>. Mirá la tabla y el fixture.</p>`;
       return { subject: `Resultados actualizados — ${team}`, html: shell("Resultados", body, portal), text: stripHtml(body) };
+    }
+    case "STATUS_CHANGED": {
+      const kind = (ctx.extra?.kind as string) ?? "";
+      if (kind === "waitlist_joined") {
+        const position = typeof ctx.extra?.position === "number" ? ctx.extra.position : undefined;
+        const body = `
+          <p>Anotamos a <strong>${team}</strong> en la lista de espera${position ? ` — posición <strong>${position}</strong>` : ""}.</p>
+          <p>Te avisamos por acá en cuanto se libere un cupo.</p>`;
+        return { subject: `En lista de espera — ${team}`, html: shell("Lista de espera", body, portal), text: stripHtml(body) };
+      }
+      if (kind === "waitlist_expired") {
+        const body = `
+          <p>Se venció el tiempo para pagar la inscripción de <strong>${team}</strong> y el cupo volvió a quedar libre.</p>
+          <p><strong>${team}</strong> vuelve al final de la lista de espera. Te avisamos de nuevo si se libera otro cupo.</p>`;
+        return { subject: `Se venció tu cupo — ${team}`, html: shell("Cupo liberado", body, portal), text: stripHtml(body) };
+      }
+      const status = ctx.extra?.status as RegistrationStatus | undefined;
+      const label = status ? REGISTRATION_STATUS_LABEL[status] : null;
+      const reason = typeof ctx.extra?.reason === "string" ? ctx.extra.reason : undefined;
+      const body = `
+        <p>El estado de la inscripción de <strong>${team}</strong> cambió${label ? ` a <strong>${label}</strong>` : ""}.</p>
+        ${reason ? `<p>${reason}</p>` : ""}
+        <p>Cualquier duda, revisá el portal o escribinos.</p>`;
+      return { subject: `Cambio de estado — ${team}`, html: shell("Cambio de estado", body, portal), text: stripHtml(body) };
     }
     case "ADMIN_ALERT": {
       const title = typeof ctx.extra?.title === "string" ? ctx.extra.title : "Cambio en el torneo";

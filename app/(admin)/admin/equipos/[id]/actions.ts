@@ -16,8 +16,11 @@ import {
   AdminTeamError,
 } from "@/lib/services/admin-teams";
 import { confirmManualPayment, PaymentError } from "@/lib/services/payment";
+import { enqueueNotification } from "@/lib/services/notification";
 import { formatArs } from "@/lib/tournament/pricing";
+import { buildNextStepsMessage } from "@/lib/tournament/whatsapp";
 import { isCountryName } from "@/lib/countries";
+import { APP_URL } from "@/lib/config";
 
 async function adminCtx() {
   const admin = await requireRole("ADMIN");
@@ -38,6 +41,7 @@ function revalidateTeam(teamId: string) {
 export interface ConfirmPaymentState {
   ok?: boolean;
   message?: string;
+  whatsappMessage?: string;
   error?: string;
 }
 
@@ -67,7 +71,14 @@ export async function confirmPayment(
         message: `Seña registrada. Todavía falta ${formatArs(res.amountOwed ?? 0)}.`,
       };
     }
-    return { ok: true, message: "Pago confirmado. El equipo quedó inscripto." };
+    return {
+      ok: true,
+      message: "Pago confirmado. El equipo quedó inscripto.",
+      whatsappMessage: buildNextStepsMessage({
+        team: res.teamName ?? "tu equipo",
+        portalUrl: `${APP_URL}/mi-equipo`,
+      }),
+    };
   } catch (err) {
     if (err instanceof PaymentError) return { error: err.message };
     throw err;
@@ -127,6 +138,7 @@ export async function changeRegistrationStatus(
   };
   const next = parsed.data.status;
   if (previous.registrationStatus === next) return { ok: true };
+  const now = new Date();
 
   await db.$transaction(async (tx) => {
     await tx.team.update({
@@ -158,6 +170,18 @@ export async function changeRegistrationStatus(
       entityId: team.registration?.id ?? team.id,
       previousValue: previous,
       newValue: { status: next, reason: parsed.data.reason ?? null },
+    });
+    await enqueueNotification(tx, {
+      type: "STATUS_CHANGED",
+      recipientTeamId: team.id,
+      recipientUserId: team.managerUserId,
+      payload: {
+        teamId: team.id,
+        teamName: team.name,
+        status: next,
+        reason: parsed.data.reason ?? null,
+      },
+      dedupeKey: `status-changed:${team.id}:${next}:${now.getTime()}`,
     });
   });
 

@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Field, Input, Select } from "@/components/ui";
+import { CopyTextarea } from "@/components/copy-textarea";
 import { COUNTRIES } from "@/lib/countries";
 import {
   updateTeam,
@@ -122,23 +123,56 @@ export function RemovePlayerButton({ playerId, teamId }: { playerId: string; tea
   );
 }
 
+const PAYABLE_STATUSES = new Set([
+  "PENDING_PAYMENT",
+  "PAYMENT_STARTED",
+  "DEPOSIT_PAID",
+  "PAYMENT_REJECTED",
+  "OBSERVED",
+  "WAITLISTED",
+]);
+
 export function ConfirmPaymentButton({
   registrationId,
   teamId,
   owedPesos,
+  registrationStatus,
 }: {
   registrationId: string;
   teamId: string;
   /** Lo que todavía falta pagar, en pesos (no centavos). */
   owedPesos: number;
+  registrationStatus: string;
 }) {
   const [note, setNote] = useState("");
   const [amount, setAmount] = useState(String(owedPesos));
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState<string | null>(null);
+  const [whatsappMessage, setWhatsappMessage] = useState<string | null>(null);
   const router = useRouter();
   const amountNum = Number(amount);
   const isDeposit = amountNum > 0 && amountNum < owedPesos;
+
+  // Una vez confirmado en esta sesión, seguimos mostrando el resultado (y el
+  // mensaje de WhatsApp) aunque el `router.refresh()` deje el estado fuera
+  // de PAYABLE_STATUSES — si no, el cuadro desaparece apenas se confirma.
+  if (!done && !PAYABLE_STATUSES.has(registrationStatus)) return null;
+
+  if (done) {
+    return (
+      <div className="flex flex-col gap-2 rounded-2xl border border-l-[3px] border-line border-l-ok bg-surface p-3">
+        <p className="text-sm font-semibold text-ok">{done}</p>
+        {whatsappMessage && (
+          <div className="mt-1 flex flex-col gap-1.5 border-t border-line-soft pt-3">
+            <p className="text-xs text-ink-faint">
+              Pegalo en el WhatsApp del equipo para que sepan cómo seguir:
+            </p>
+            <CopyTextarea value={whatsappMessage} />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-l-[3px] border-line border-l-ok bg-surface p-3">
@@ -181,13 +215,13 @@ export function ConfirmPaymentButton({
             if (res.error) alert(res.error);
             else {
               setDone(res.message ?? "Confirmado.");
+              setWhatsappMessage(res.whatsappMessage ?? null);
               router.refresh();
             }
           }}
         >
           {pending ? "Confirmando…" : isDeposit ? "Confirmar seña" : "Confirmar pago"}
         </Button>
-        {done && <span className="text-sm text-ok">{done}</span>}
       </div>
     </div>
   );
