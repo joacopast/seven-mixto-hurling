@@ -1,6 +1,48 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { getGroupsWithStandings, type GroupView } from "@/lib/tournament/groups-view";
+import { countryFlag } from "@/lib/countries";
+
+const ROSTER_VISIBLE_STATUSES = [
+  "GROUPS_PUBLISHED",
+  "GROUPS_IN_PROGRESS",
+  "CUPS_PUBLISHED",
+  "CUPS_IN_PROGRESS",
+  "FINISHED",
+];
+
+export interface PublicTeamRosterView {
+  id: string;
+  name: string;
+  flag: string;
+  players: { firstName: string; lastName: string }[];
+}
+
+/**
+ * Datos públicos (sin DNI/email/teléfono) de un equipo: solo para que otros
+ * participantes vean a quién se enfrentan una vez publicado el fixture.
+ */
+export async function getPublicTeamRoster(teamId: string): Promise<PublicTeamRosterView | null> {
+  const team = await db.team.findUnique({
+    where: { id: teamId },
+    include: {
+      tournament: { select: { status: true } },
+      players: {
+        select: { firstName: true, lastName: true },
+        orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      },
+    },
+  });
+  if (!team) return null;
+  if (!ROSTER_VISIBLE_STATUSES.includes(team.tournament.status)) return null;
+
+  return {
+    id: team.id,
+    name: team.name,
+    flag: countryFlag(team.name),
+    players: team.players,
+  };
+}
 
 export interface TeamMatchView {
   id: string;

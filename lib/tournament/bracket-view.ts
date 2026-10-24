@@ -35,9 +35,10 @@ export interface CupView {
   rounds: BracketRoundView[];
   championTeamId: string | null;
   championName: string | null;
+  runnerUpTeamId: string | null;
   runnerUpName: string | null;
   /** 3er puesto compartido entre los dos perdedores de semifinal. */
-  thirdPlaceNames: string[];
+  thirdPlace: { teamId: string; name: string }[];
 }
 
 export async function getCupsWithBrackets(tournamentId: string): Promise<CupView[]> {
@@ -110,8 +111,9 @@ export async function getCupsWithBrackets(tournamentId: string): Promise<CupView
       rounds,
       championTeamId: champ?.id ?? null,
       championName: champ?.name ?? null,
+      runnerUpTeamId: runner?.id ?? null,
       runnerUpName: runner?.name ?? null,
-      thirdPlaceNames: thirds.map((t) => t.name),
+      thirdPlace: thirds.map((t) => ({ teamId: t.id, name: t.name })),
     };
   });
 }

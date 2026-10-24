@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getActiveTournament, getCapacity } from "@/lib/tournament/queries";
 import { getGroupsWithStandings, getGroupFixture } from "@/lib/tournament/groups-view";
 import { getCupsWithBrackets } from "@/lib/tournament/bracket-view";
@@ -184,10 +185,17 @@ export default async function TorneoPage() {
                               {m.status === "WALKOVER" && <Badge tone="warn">W.O.</Badge>}
                             </div>
                             <div className="flex items-center justify-between gap-2">
-                              <span className={finished && m.walkoverTeamId === m.homeTeamId ? "font-semibold text-paper" : "text-ink"}>
-                                {m.homeTeamName}
-                              </span>
-                              <span className="font-mono font-semibold text-paper">
+                              {m.homeTeamId ? (
+                                <Link
+                                  href={`/equipos/${m.homeTeamId}`}
+                                  className={`truncate hover:underline ${finished && m.walkoverTeamId === m.homeTeamId ? "font-semibold text-paper" : "text-ink"}`}
+                                >
+                                  {m.homeTeamName}
+                                </Link>
+                              ) : (
+                                <span className="truncate text-ink">{m.homeTeamName}</span>
+                              )}
+                              <span className="shrink-0 font-mono font-semibold text-paper">
                                 {finished
                                   ? m.status === "WALKOVER"
                                     ? m.walkoverTeamId
@@ -198,9 +206,16 @@ export default async function TorneoPage() {
                                     : `${m.homeScore}-${m.awayScore}`
                                   : "vs"}
                               </span>
-                              <span className={`text-right ${finished && m.walkoverTeamId === m.awayTeamId ? "font-semibold text-paper" : "text-ink"}`}>
-                                {m.awayTeamName}
-                              </span>
+                              {m.awayTeamId ? (
+                                <Link
+                                  href={`/equipos/${m.awayTeamId}`}
+                                  className={`truncate text-right hover:underline ${finished && m.walkoverTeamId === m.awayTeamId ? "font-semibold text-paper" : "text-ink"}`}
+                                >
+                                  {m.awayTeamName}
+                                </Link>
+                              ) : (
+                                <span className="truncate text-right text-ink">{m.awayTeamName}</span>
+                              )}
                             </div>
                           </div>
                         );

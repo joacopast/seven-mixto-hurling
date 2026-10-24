@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { GroupView } from "@/lib/tournament/groups-view";
 
 /** Color de copa según la posición en el grupo (1→Oro, 2→Plata, 3→Bronce, 4→Madera). */
@@ -58,7 +59,9 @@ export function StandingsTable({
                     </span>
                   </td>
                   <td className="px-2 py-2 text-ink">
-                    <span className="font-medium">{row.teamName}</span>
+                    <Link href={`/equipos/${row.teamId}`} className="font-medium hover:underline">
+                      {row.teamName}
+                    </Link>
                     {showCups && cupIdx >= 0 && cupIdx < 4 && (
                       <span className="ml-2 font-mono text-[10px] text-ink-faint">
                         {CUP_LABEL[cupIdx]}

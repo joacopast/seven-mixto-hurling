@@ -331,6 +331,29 @@ se tocó** — sigue derivándose solo del `countryCode()` al crear/editar un eq
 el CSV/XLSX de equipos sigue teniendo la columna "Código" (criterio: eso es un dato de
 exportación/planilla, no "la web"; si Joaco también lo quiere sacar de ahí, avisar).
 
+Página pública de plantel por equipo, con bandera (2026-10-24): a pedido de Joaco, una
+vez publicado el fixture cualquier visitante puede clickear un equipo (en los grupos, el
+fixture de horarios, las llaves y el podio de `/torneo`) y ver su plantel — solo nombre y
+apellido, sin DNI/email/teléfono. Ruta nueva `app/(public)/equipos/[id]/page.tsx`, datos
+vía `getPublicTeamRoster` (`lib/tournament/team-view.ts`) — devuelve `null` (→ 404) si el
+equipo no existe o si el torneo todavía no llegó a `GROUPS_PUBLISHED`, para no filtrar
+planteles antes de tiempo. La bandera es un emoji derivado del código ISO alfa-3 que ya
+guarda `Team.shortName` (`countryFlag()` en `lib/countries.ts`, nueva dependencia
+`i18n-iso-countries` solo para el mapeo alfa-3→alfa-2 que pide el emoji). Se agregó el
+link `/equipos/{id}` en `standings-table.tsx`, en las tarjetas de partido de `/torneo` y
+en `bracket-view.tsx` (partidos de copa + podio — para esto último se sumó `teamId` a
+`runnerUpName`/`thirdPlaceNames`, que antes solo tenían el nombre). Reusa el mismo botón
+"Inscribirse"/branding — sin librerías de banderas con imágenes, todo con un solo emoji.
+
+Se agregaron 60 equipos random (países + plantel completo, confirmados/pagos) a
+**producción** (2026-10-24) a pedido de Joaco, para que el equipo pueda probar el sistema
+completo con datos reales de carga. Script `scripts/seed-add-teams.ts` (sin commitear,
+dev tool como los otros dos scripts de prueba de la sesión anterior): a diferencia de
+`seed-random-64.ts`, este NO vacía el torneo — lee los equipos ya existentes, evita
+repetir país y solo agrega. Se usó porque producción ya tenía 3 equipos reales cargados
+(Brasil, Argentina, Alemania) que no se podían tocar. Quedó el torneo en 63 equipos,
+dejando 1 cupo libre para llegar a 64 con una inscripción real.
+
 Pendiente / próximo: cargar alias/CBU/WhatsApp reales en `/admin/configuracion`,
 pulido visual final, más cobertura e2e (pago, admin), pasar a Vercel Pro antes del
 evento, **medir cuántos usuarios simultáneos soporta Vercel Hobby + Neon free antes del

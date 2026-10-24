@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { CupView, BracketMatchView } from "@/lib/tournament/bracket-view";
 
 const CUP_COLOR: Record<string, string> = {
@@ -39,9 +40,16 @@ function MatchCard({ m }: { m: BracketMatchView }) {
           isWinner ? "text-paper" : "text-ink-soft"
         }`}
       >
-        <span className={`truncate text-[13px] ${isWinner ? "font-semibold" : ""}`}>
-          {name ?? <span className="text-ink-faint">Por definir</span>}
-        </span>
+        {teamId && name ? (
+          <Link
+            href={`/equipos/${teamId}`}
+            className={`truncate text-[13px] hover:underline ${isWinner ? "font-semibold" : ""}`}
+          >
+            {name}
+          </Link>
+        ) : (
+          <span className="truncate text-[13px] text-ink-faint">Por definir</span>
+        )}
         <span className="font-mono text-[13px] tabular-nums">{score}</span>
       </div>
     );
@@ -80,25 +88,40 @@ export function CupPodium({ cup }: { cup: CupView }) {
       <ol className="flex flex-col gap-1.5 text-sm">
         <li className="flex items-center gap-2">
           <span className="w-5 flex-none text-center">🥇</span>
-          <span className="truncate text-paper">
-            {cup.championName ?? <span className="text-ink-faint">Por definir</span>}
-          </span>
+          {cup.championTeamId && cup.championName ? (
+            <Link href={`/equipos/${cup.championTeamId}`} className="truncate text-paper hover:underline">
+              {cup.championName}
+            </Link>
+          ) : (
+            <span className="truncate text-ink-faint">Por definir</span>
+          )}
         </li>
         <li className="flex items-center gap-2">
           <span className="w-5 flex-none text-center">🥈</span>
-          <span className="truncate text-ink-soft">
-            {cup.runnerUpName ?? <span className="text-ink-faint">Por definir</span>}
-          </span>
+          {cup.runnerUpTeamId && cup.runnerUpName ? (
+            <Link href={`/equipos/${cup.runnerUpTeamId}`} className="truncate text-ink-soft hover:underline">
+              {cup.runnerUpName}
+            </Link>
+          ) : (
+            <span className="truncate text-ink-faint">Por definir</span>
+          )}
         </li>
         <li className="flex items-center gap-2">
           <span className="w-5 flex-none text-center">🥉</span>
-          <span className="truncate text-ink-soft">
-            {cup.thirdPlaceNames.length > 0 ? (
-              cup.thirdPlaceNames.join(" y ")
-            ) : (
-              <span className="text-ink-faint">Por definir</span>
-            )}
-          </span>
+          {cup.thirdPlace.length > 0 ? (
+            <span className="truncate text-ink-soft">
+              {cup.thirdPlace.map((t, i) => (
+                <span key={t.teamId}>
+                  {i > 0 && " y "}
+                  <Link href={`/equipos/${t.teamId}`} className="hover:underline">
+                    {t.name}
+                  </Link>
+                </span>
+              ))}
+            </span>
+          ) : (
+            <span className="truncate text-ink-faint">Por definir</span>
+          )}
         </li>
       </ol>
     </div>

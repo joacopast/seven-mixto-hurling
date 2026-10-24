@@ -4,6 +4,7 @@
  * 193 estados miembro de la ONU + Ciudad del Vaticano + Palestina.
  * Nombres según el uso recomendado por la RAE/Fundéu (Catar, Baréin, etc.).
  */
+import * as isoCountries from "i18n-iso-countries";
 export interface Country {
   name: string;
   code: string;
@@ -220,4 +221,14 @@ export function isCountryName(name: string): boolean {
 /** Código ISO alfa-3 del país — se usa como `shortName` para tablas/llaves. */
 export function countryCode(name: string): string | null {
   return BY_NAME.get(name)?.code ?? null;
+}
+
+/** Bandera emoji del país (vía alfa-2 + indicadores regionales Unicode). */
+export function countryFlag(name: string): string {
+  const alpha3 = countryCode(name);
+  const alpha2 = alpha3 ? isoCountries.alpha3ToAlpha2(alpha3) : null;
+  if (!alpha2) return "🏳️";
+  return alpha2
+    .toUpperCase()
+    .replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
 }
