@@ -32,104 +32,109 @@ export function CupResultRow({ m }: { m: BracketMatchView }) {
 
   return (
     <tr>
-      <td className="px-3 py-2">
-        <form action={action} className="flex flex-wrap items-center gap-2">
+      <td className="px-3 py-3">
+        <form action={action} className="flex flex-col gap-2.5">
           <input type="hidden" name="matchId" value={m.matchId} />
           <input type="hidden" name="mode" value={mode} />
           {state.needsCascade && <input type="hidden" name="confirmCascade" value="on" />}
 
-          <span className="w-8 font-mono text-[11px] text-ink-faint">{m.fieldName?.replace("Cancha ", "C")}</span>
+          <span className="font-mono text-[11px] text-ink-faint">{m.fieldName?.replace("Cancha ", "C")}</span>
 
-          <span className="min-w-[7rem] text-right text-sm text-ink">{m.homeTeamName}</span>
+          <div className="flex items-center gap-2">
+            <span className="min-w-0 flex-1 truncate text-right text-sm text-ink">{m.homeTeamName}</span>
 
-          {mode === "score" ? (
-            <>
+            {mode === "score" ? (
+              <div className="flex flex-none items-center gap-1.5">
+                <input
+                  name="homeScore"
+                  type="number"
+                  min={0}
+                  defaultValue={m.homeScore ?? ""}
+                  onChange={(e) => {
+                    const away = (e.currentTarget.form?.elements.namedItem("awayScore") as HTMLInputElement)?.value;
+                    setTie(away !== "" && e.currentTarget.value === away);
+                  }}
+                  className="h-11 w-14 rounded-lg border border-line bg-surface-3 text-center text-base"
+                  aria-label={`Goles ${m.homeTeamName}`}
+                />
+                <span className="text-ink-faint">-</span>
+                <input
+                  name="awayScore"
+                  type="number"
+                  min={0}
+                  defaultValue={m.awayScore ?? ""}
+                  onChange={(e) => {
+                    const home = (e.currentTarget.form?.elements.namedItem("homeScore") as HTMLInputElement)?.value;
+                    setTie(home !== "" && e.currentTarget.value === home);
+                  }}
+                  className="h-11 w-14 rounded-lg border border-line bg-surface-3 text-center text-base"
+                  aria-label={`Goles ${m.awayTeamName}`}
+                />
+              </div>
+            ) : (
+              <select
+                name="walkover"
+                defaultValue={m.walkoverTeamId ?? m.homeTeamId ?? ""}
+                className="h-11 flex-none rounded-lg border border-line bg-surface-3 px-2 text-xs"
+              >
+                <option value={m.homeTeamId ?? ""}>Se presentó {m.homeTeamName}</option>
+                <option value={m.awayTeamId ?? ""}>Se presentó {m.awayTeamName}</option>
+              </select>
+            )}
+
+            <span className="min-w-0 flex-1 truncate text-sm text-ink">{m.awayTeamName}</span>
+          </div>
+
+          {mode === "score" && tie && (
+            <div className="flex items-center justify-center gap-1.5 text-[11px] text-ink-faint">
+              pen.
               <input
-                name="homeScore"
+                name="homeShootout"
                 type="number"
                 min={0}
-                defaultValue={m.homeScore ?? ""}
-                onChange={(e) => {
-                  const away = (e.currentTarget.form?.elements.namedItem("awayScore") as HTMLInputElement)?.value;
-                  setTie(away !== "" && e.currentTarget.value === away);
-                }}
-                className="h-8 w-12 rounded-lg border border-line bg-surface-3 text-center text-sm"
-                aria-label={`Goles ${m.homeTeamName}`}
+                defaultValue={m.homeShootout ?? ""}
+                className="h-10 w-12 rounded-lg border border-line bg-surface-3 text-center text-base"
+                aria-label="Penales local"
               />
-              <span className="text-ink-faint">-</span>
+              -
               <input
-                name="awayScore"
+                name="awayShootout"
                 type="number"
                 min={0}
-                defaultValue={m.awayScore ?? ""}
-                onChange={(e) => {
-                  const home = (e.currentTarget.form?.elements.namedItem("homeScore") as HTMLInputElement)?.value;
-                  setTie(home !== "" && e.currentTarget.value === home);
-                }}
-                className="h-8 w-12 rounded-lg border border-line bg-surface-3 text-center text-sm"
-                aria-label={`Goles ${m.awayTeamName}`}
+                defaultValue={m.awayShootout ?? ""}
+                className="h-10 w-12 rounded-lg border border-line bg-surface-3 text-center text-base"
+                aria-label="Penales visitante"
               />
-              {tie && (
-                <span className="flex items-center gap-1 text-[11px] text-ink-faint">
-                  pen.
-                  <input
-                    name="homeShootout"
-                    type="number"
-                    min={0}
-                    defaultValue={m.homeShootout ?? ""}
-                    className="h-8 w-10 rounded-lg border border-line bg-surface-3 text-center text-sm"
-                    aria-label="Penales local"
-                  />
-                  -
-                  <input
-                    name="awayShootout"
-                    type="number"
-                    min={0}
-                    defaultValue={m.awayShootout ?? ""}
-                    className="h-8 w-10 rounded-lg border border-line bg-surface-3 text-center text-sm"
-                    aria-label="Penales visitante"
-                  />
-                </span>
-              )}
-            </>
-          ) : (
-            <select
-              name="walkover"
-              defaultValue={m.walkoverTeamId ?? m.homeTeamId ?? ""}
-              className="h-8 rounded-lg border border-line bg-surface-3 px-2 text-xs"
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMode((x) => (x === "score" ? "walkover" : "score"))}
+              className="rounded-lg border border-line px-3 py-2 text-xs text-ink-faint hover:bg-surface-2"
             >
-              <option value={m.homeTeamId ?? ""}>Se presentó {m.homeTeamName}</option>
-              <option value={m.awayTeamId ?? ""}>Se presentó {m.awayTeamName}</option>
-            </select>
-          )}
+              {mode === "score" ? "Walkover" : "Goles"}
+            </button>
 
-          <span className="min-w-[7rem] text-sm text-ink">{m.awayTeamName}</span>
+            <button
+              type="submit"
+              disabled={pending}
+              className={`rounded-full px-4 py-2 text-xs font-semibold disabled:opacity-50 ${
+                state.needsCascade ? "bg-warn text-bg-deep" : "bg-paper text-bg-deep"
+              }`}
+            >
+              {pending ? "…" : state.needsCascade ? "Confirmar recálculo" : done ? "Actualizar" : "Guardar"}
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setMode((x) => (x === "score" ? "walkover" : "score"))}
-            className="rounded px-2 py-1 text-[11px] text-ink-faint hover:bg-surface-2"
-          >
-            {mode === "score" ? "walkover" : "goles"}
-          </button>
-
-          <button
-            type="submit"
-            disabled={pending}
-            className={`rounded-full px-3 py-1 text-xs font-semibold disabled:opacity-50 ${
-              state.needsCascade ? "bg-warn text-bg-deep" : "bg-paper text-bg-deep"
-            }`}
-          >
-            {pending ? "…" : state.needsCascade ? "Confirmar recálculo" : done ? "Actualizar" : "Guardar"}
-          </button>
-
-          {savedOk && <Badge tone="ok">guardado</Badge>}
-          {done && !savedOk && !state.needsCascade && (
-            <Badge tone="neutral">{m.status === "WALKOVER" ? "W.O." : "cargado"}</Badge>
-          )}
-          {state.error && state.matchId === m.matchId && (
-            <span className="max-w-xs text-xs text-danger">{state.error}</span>
-          )}
+            {savedOk && <Badge tone="ok">guardado</Badge>}
+            {done && !savedOk && !state.needsCascade && (
+              <Badge tone="neutral">{m.status === "WALKOVER" ? "W.O." : "cargado"}</Badge>
+            )}
+            {state.error && state.matchId === m.matchId && (
+              <span className="max-w-xs text-xs text-danger">{state.error}</span>
+            )}
+          </div>
         </form>
       </td>
     </tr>

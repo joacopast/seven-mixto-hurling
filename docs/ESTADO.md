@@ -387,6 +387,47 @@ esta sesión (ficha de equipo), y en `/admin/pagos` directamente no se refresca 
 hasta que el admin toca "Listo, actualizar lista" (para poder copiar el mensaje antes de
 que la fila desaparezca).
 
+Optimización mobile de toda la app, con foco en el panel de staff (2026-10-26): a pedido
+de Joaco, porque el uso real va a ser mayormente desde el celular. Auditoría previa
+(agente de exploración) identificó 4 problemas concretos — se corrigieron los 4:
+
+1. **Nav del panel sin manejo responsive** (`app/(admin)/admin/layout.tsx`): la barra de
+   7 links desbordaba en pantallas angostas. Se extrajo a `app/(admin)/admin/admin-nav.tsx`
+   (client component): fila horizontal normal desde `md`, menú hamburguesa (botón de 44px,
+   SVG inline, sin librería de íconos) debajo de `md` que se cierra solo al navegar; marca
+   el link activo en ambos modos.
+2. **Touch targets chicos**: `buttonSizes.sm` en `components/ui.tsx` pasó de `h-8` (32px)
+   a `h-9` (36px). Más importante: **todos los inputs/selects (`inputBase` en
+   `components/ui.tsx`) pasaron de `text-sm` fijo a `text-base sm:text-sm`** — en 14px,
+   iOS Safari hace zoom automático al enfocar un campo; en 16px no. Este cambio solo
+   (una línea) toca el 100% de los formularios de la app, inscripción pública incluida.
+3. **Carga de resultados de grupos y copas** (`result-row.tsx`, `cup-result-row.tsx`,
+   las pantallas que más se van a usar desde el celular, courtside): el form de cada
+   partido era un único `flex flex-wrap` que amontonaba cancha, equipos, inputs de goles,
+   botón walkover y botón guardar en una sola línea que rompía de forma impredecible. Se
+   reescribió a 3 líneas fijas (meta → equipos+goles → acciones), inputs de gol de
+   `h-8 w-12` a `h-11 w-14` con `text-base` (evita el zoom de iOS), botones de acción con
+   más padding. De paso se encontró y sacó el `min-w-[36rem]` de la tabla de copas
+   (`torneo/copas/page.tsx`) — forzaba scroll horizontal y con el form ya apilado
+   verticalmente estaba de más (en 390px de ancho literalmente cortaba el nombre del
+   equipo visitante fuera de la pantalla, sin ningún indicio visual de que había que
+   scrollear).
+4. **Confirmar pagos en `/admin/pagos`** (segunda pantalla de mayor uso): la fila de
+   "pendientes de confirmar" necesitaba scroll horizontal en la tabla para llegar a la
+   acción. Se separó en dos variantes que comparten el mismo estado/lógica vía un hook
+   (`usePendingPaymentConfirm` en `pending-row.tsx`): `PendingPaymentCard` (tarjeta
+   apilada, una sola columna, visible debajo de `md`) y `PendingPaymentRow` (la tabla de
+   siempre, visible desde `md`) — ambas montadas siempre, CSS decide cuál se ve, sin JS
+   de detección de viewport. La tabla de historial de pagos más abajo en la misma página
+   no se tocó (sigue con scroll horizontal intencional, aceptable para un log).
+
+Quedó sin tocar a propósito (ya usaban el patrón de scroll horizontal intencional —
+`overflow-x-auto` + `min-w-[Nrem]` — y la auditoría los marcó como aceptables, no rotos):
+el listado de `/admin/equipos`, el plantel en `/admin/equipos/[id]`, `/admin/espera`,
+`/admin/auditoria` y la tabla de historial de `/admin/pagos`. Si en algún momento se
+sienten incómodos desde el celular, el mismo patrón de tarjeta-en-mobile/tabla-en-desktop
+usado en pagos se puede repetir ahí.
+
 Pendiente / próximo: cargar alias/CBU/WhatsApp reales en `/admin/configuracion`,
 pulido visual final, más cobertura e2e (pago, admin), pasar a Vercel Pro antes del
 evento, **medir cuántos usuarios simultáneos soporta Vercel Hobby + Neon free antes del

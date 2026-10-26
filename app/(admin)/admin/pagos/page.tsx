@@ -6,7 +6,7 @@ import { normalizePhone } from "@/lib/tournament/whatsapp";
 import { REGISTRATION_STATUS_LABEL, REGISTRATION_STATUS_TONE } from "@/lib/tournament/status";
 import { Badge, Card } from "@/components/ui";
 import { mercadoPagoConfigured } from "@/lib/payments/mercadopago";
-import { PendingPaymentRow } from "./pending-row";
+import { PendingPaymentRow, PendingPaymentCard } from "./pending-row";
 import type { PaymentStatus } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -136,29 +136,17 @@ export default async function AdminPagosPage({
             Estos equipos todavía no transfirieron, pagaron solo una seña, o están esperando que
             confirmes el comprobante que mandaron por WhatsApp.
           </p>
-          <div className="overflow-x-auto rounded-card border border-line-soft">
-            <table className="w-full min-w-[48rem] text-sm">
-              <thead className="bg-surface-2 text-left font-mono text-[11px] uppercase tracking-wide text-ink-faint">
-                <tr>
-                  <th className="px-3 py-2">Equipo</th>
-                  <th className="px-3 py-2">Estado</th>
-                  <th className="px-3 py-2">Pagado</th>
-                  <th className="px-3 py-2">Falta</th>
-                  <th className="px-3 py-2">WhatsApp</th>
-                  <th className="px-3 py-2">Acción</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line-soft">
-                {pendingWithBalance.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-3 py-8 text-center text-ink-faint">
-                      No hay equipos esperando confirmación.
-                    </td>
-                  </tr>
-                )}
+          {pendingWithBalance.length === 0 ? (
+            <p className="rounded-card border border-dashed border-line-soft px-3 py-8 text-center text-ink-faint">
+              No hay equipos esperando confirmación.
+            </p>
+          ) : (
+            <>
+              {/* Mobile: tarjetas apiladas, sin scroll horizontal. */}
+              <div className="flex flex-col gap-3 md:hidden">
                 {pendingWithBalance.map(({ team: t, paid, owed }) =>
                   t.registration ? (
-                    <PendingPaymentRow
+                    <PendingPaymentCard
                       key={t.id}
                       registrationId={t.registration.id}
                       teamName={t.name}
@@ -180,9 +168,51 @@ export default async function AdminPagosPage({
                     />
                   ) : null,
                 )}
-              </tbody>
-            </table>
-          </div>
+              </div>
+
+              {/* Desktop/tablet: tabla. */}
+              <div className="hidden overflow-x-auto rounded-card border border-line-soft md:block">
+                <table className="w-full min-w-[48rem] text-sm">
+                  <thead className="bg-surface-2 text-left font-mono text-[11px] uppercase tracking-wide text-ink-faint">
+                    <tr>
+                      <th className="px-3 py-2">Equipo</th>
+                      <th className="px-3 py-2">Estado</th>
+                      <th className="px-3 py-2">Pagado</th>
+                      <th className="px-3 py-2">Falta</th>
+                      <th className="px-3 py-2">WhatsApp</th>
+                      <th className="px-3 py-2">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line-soft">
+                    {pendingWithBalance.map(({ team: t, paid, owed }) =>
+                      t.registration ? (
+                        <PendingPaymentRow
+                          key={t.id}
+                          registrationId={t.registration.id}
+                          teamName={t.name}
+                          statusBadge={
+                            t.registrationStatus === "DEPOSIT_PAID" ? (
+                              <Badge tone="warn">Seña pagada</Badge>
+                            ) : (
+                              <Badge tone={REGISTRATION_STATUS_TONE[t.registrationStatus]}>
+                                {REGISTRATION_STATUS_LABEL[t.registrationStatus]}
+                              </Badge>
+                            )
+                          }
+                          paidLabel={paid > 0 ? formatArs(paid) : "—"}
+                          owedLabel={formatArs(owed)}
+                          owedPesos={Math.round(owed / 100)}
+                          whatsappLink={
+                            t.contactPhone ? `https://wa.me/${normalizePhone(t.contactPhone)}` : null
+                          }
+                        />
+                      ) : null,
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </section>
       )}
 

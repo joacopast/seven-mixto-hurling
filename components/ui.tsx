@@ -18,7 +18,7 @@ const buttonVariants: Record<ButtonVariant, string> = {
 };
 
 const buttonSizes: Record<ButtonSize, string> = {
-  sm: "h-8 px-4 text-xs",
+  sm: "h-9 px-4 text-xs",
   md: "h-10 px-5 text-sm",
   lg: "h-12 px-7 text-sm",
 };
@@ -130,8 +130,10 @@ export function Field({
   );
 }
 
+// text-base (16px) en mobile evita el auto-zoom de iOS Safari al enfocar un campo;
+// sm:text-sm vuelve al tamaño compacto en desktop/tablet.
 const inputBase =
-  "h-10 w-full rounded-xl border border-line bg-surface-3 px-3 text-sm text-ink placeholder:text-ink-faint focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent disabled:opacity-50";
+  "h-10 w-full rounded-xl border border-line bg-surface-3 px-3 text-base text-ink placeholder:text-ink-faint focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent disabled:opacity-50 sm:text-sm";
 
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   function Input({ className, ...props }, ref) {

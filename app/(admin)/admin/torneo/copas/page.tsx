@@ -39,8 +39,8 @@ export default async function AdminCopasPage() {
         <section key={cup.id} className="flex flex-col gap-4">
           <BracketView cup={cup} />
 
-          <div className="overflow-x-auto rounded-card border border-line-soft">
-            <table className="w-full min-w-[36rem] text-sm">
+          <div className="overflow-hidden rounded-card border border-line-soft">
+            <table className="w-full text-sm">
               <tbody className="divide-y divide-line-soft">
                 {cup.rounds
                   .filter((r) => r.matches.length > 0)
