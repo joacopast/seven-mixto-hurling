@@ -459,3 +459,36 @@ implementado: agregar/sacar jugadores desde el portal con recálculo de pago cua
 plantel supera los 10 incluidos (el precio por jugador extra ya existe en
 `calculatePrice`; falta decidir la política de baja/reembolso parcial antes de tocar
 código).
+
+Mismo fix de overflow, pero en `/torneo` (pantalla pública), con una variante distinta
+(2026-10-26): Joaco pidió aplicar ahí los arreglos de nombres largos del panel de staff,
+pero con un criterio distinto a propósito — en el panel la prioridad es cargar resultados
+rápido, así que ahí se usa `truncate` (corta con "..."); en la vista pública lo que
+importa es que se vea el nombre completo del país (es la razón por la que se sacaron las
+abreviaciones ISO el 24/10), así que acá la solución es **achicar la letra y permitir que
+envuelva a 2-3 líneas en vez de cortar**. Tocados: `components/standings-table.tsx`
+(tabla de posiciones), `app/(public)/torneo/page.tsx` (tarjetas de horarios/resultados),
+`components/bracket-view.tsx` (`MatchCard`, `CupPodium`, header de `BracketView`) — todos
+pasaron de `truncate` a `min-w-0 flex-1` + texto más chico (`text-xs sm:text-sm` o
+`text-[12px]` según el lugar) + `leading-snug`, dejando que el nombre envuelva.
+
+Causa real del desborde, bien distinta en cada lugar (ver con cuidado si se vuelve a
+tocar esto):
+- **Tabla de posiciones**: mismo bug que en el panel de staff — `table-layout: auto`
+  (default de `<table>`) ignora el `overflow:hidden` del truncate y agranda la tabla para
+  darle lugar al texto sin cortar. Se agregó `table-fixed` + anchos fijos chicos en las
+  columnas numéricas (`w-7`/`w-8`/`w-10`), dejando la columna "Equipo" como la única
+  flexible (así el layout fijo le da todo el espacio que sobra).
+- **Tarjetas de fixture y bracket**: acá no hay `<table>` — es un bug de flexbox/grid
+  distinto: un hijo de `flex`/`grid` tiene `min-width: auto` por default, que lo bloquea
+  de achicarse más allá del ancho de su contenido sin cortar — **incluso si el contenido
+  tiene `truncate`**. El `min-w-0` que ya se le había puesto a los nombres (sesión de la
+  tarde) resolvía la mitad del problema; la otra mitad era que la tarjeta de cada copa
+  (`BracketView`, hija directa del grid `xl:grid-cols-2` en `/torneo`) tampoco tenía
+  `min-w-0` — así que el grid entero crecía a lo ancho de la copa con más rondas (hasta
+  810px en vez de los 360px de un celular) en vez de respetar el viewport y dejar que el
+  scroll horizontal *interno* (el de las rondas, que sigue siendo intencional) hiciera su
+  trabajo. Se agregó `min-w-0` a `BracketView`, `CupPodium` y a cada tarjeta de partido en
+  `/torneo`. Moraleja para la próxima vez que algo se salga de pantalla: revisar primero
+  si el contenedor directo (no solo el texto) tiene `min-w-0` — sin eso, ni `truncate` ni
+  `table-fixed` alcanzan.

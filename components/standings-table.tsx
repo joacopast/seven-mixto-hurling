@@ -20,25 +20,25 @@ export function StandingsTable({
   compact?: boolean;
 }) {
   return (
-    <div className="overflow-hidden rounded-card border border-line-soft bg-surface">
+    <div className="min-w-0 overflow-hidden rounded-card border border-line-soft bg-surface">
       <div className="flex items-center justify-between border-b border-line-soft px-4 py-2.5">
         <h3 className="font-display text-lg font-semibold text-paper">Grupo {group.name}</h3>
         <span className="font-mono text-[11px] text-ink-faint">{group.rows.length} equipos</span>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full table-fixed text-sm">
           <thead className="text-left font-mono text-[10px] uppercase tracking-wider text-ink-faint">
             <tr>
-              <th className="px-3 py-1.5 font-medium">#</th>
+              <th className="w-7 px-3 py-1.5 font-medium">#</th>
               <th className="px-2 py-1.5 font-medium">Equipo</th>
-              <th className="px-2 py-1.5 text-center font-medium">PJ</th>
-              {!compact && <th className="px-2 py-1.5 text-center font-medium">G</th>}
-              {!compact && <th className="px-2 py-1.5 text-center font-medium">E</th>}
-              {!compact && <th className="px-2 py-1.5 text-center font-medium">P</th>}
-              <th className="px-2 py-1.5 text-center font-medium">GF</th>
-              <th className="px-2 py-1.5 text-center font-medium">GC</th>
-              <th className="px-2 py-1.5 text-center font-medium">DG</th>
-              <th className="px-3 py-1.5 text-center font-medium">Pts</th>
+              <th className="w-8 px-2 py-1.5 text-center font-medium">PJ</th>
+              {!compact && <th className="w-7 px-2 py-1.5 text-center font-medium">G</th>}
+              {!compact && <th className="w-7 px-2 py-1.5 text-center font-medium">E</th>}
+              {!compact && <th className="w-7 px-2 py-1.5 text-center font-medium">P</th>}
+              <th className="w-8 px-2 py-1.5 text-center font-medium">GF</th>
+              <th className="w-8 px-2 py-1.5 text-center font-medium">GC</th>
+              <th className="w-8 px-2 py-1.5 text-center font-medium">DG</th>
+              <th className="w-10 px-3 py-1.5 text-center font-medium">Pts</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line-soft">
@@ -59,7 +59,10 @@ export function StandingsTable({
                     </span>
                   </td>
                   <td className="px-2 py-2 text-ink">
-                    <Link href={`/equipos/${row.teamId}`} className="font-medium hover:underline">
+                    <Link
+                      href={`/equipos/${row.teamId}`}
+                      className="text-xs font-medium leading-snug hover:underline sm:text-sm"
+                    >
                       {row.teamName}
                     </Link>
                     {showCups && cupIdx >= 0 && cupIdx < 4 && (

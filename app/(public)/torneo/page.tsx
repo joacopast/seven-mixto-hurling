@@ -172,7 +172,7 @@ export default async function TorneoPage() {
                         return (
                           <div
                             key={m.id}
-                            className={`rounded-2xl border px-3 py-2 text-sm ${
+                            className={`min-w-0 rounded-2xl border px-3 py-2 text-sm ${
                               finished
                                 ? "border-line-soft bg-surface"
                                 : "border-dashed border-line bg-transparent"
@@ -184,18 +184,20 @@ export default async function TorneoPage() {
                               </span>
                               {m.status === "WALKOVER" && <Badge tone="warn">W.O.</Badge>}
                             </div>
-                            <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-start justify-between gap-2">
                               {m.homeTeamId ? (
                                 <Link
                                   href={`/equipos/${m.homeTeamId}`}
-                                  className={`truncate hover:underline ${finished && m.walkoverTeamId === m.homeTeamId ? "font-semibold text-paper" : "text-ink"}`}
+                                  className={`min-w-0 flex-1 text-xs leading-snug hover:underline sm:text-sm ${finished && m.walkoverTeamId === m.homeTeamId ? "font-semibold text-paper" : "text-ink"}`}
                                 >
                                   {m.homeTeamName}
                                 </Link>
                               ) : (
-                                <span className="truncate text-ink">{m.homeTeamName}</span>
+                                <span className="min-w-0 flex-1 text-xs leading-snug text-ink sm:text-sm">
+                                  {m.homeTeamName}
+                                </span>
                               )}
-                              <span className="shrink-0 font-mono font-semibold text-paper">
+                              <span className="shrink-0 pt-0.5 font-mono font-semibold text-paper">
                                 {finished
                                   ? m.status === "WALKOVER"
                                     ? m.walkoverTeamId
@@ -209,12 +211,14 @@ export default async function TorneoPage() {
                               {m.awayTeamId ? (
                                 <Link
                                   href={`/equipos/${m.awayTeamId}`}
-                                  className={`truncate text-right hover:underline ${finished && m.walkoverTeamId === m.awayTeamId ? "font-semibold text-paper" : "text-ink"}`}
+                                  className={`min-w-0 flex-1 text-right text-xs leading-snug hover:underline sm:text-sm ${finished && m.walkoverTeamId === m.awayTeamId ? "font-semibold text-paper" : "text-ink"}`}
                                 >
                                   {m.awayTeamName}
                                 </Link>
                               ) : (
-                                <span className="truncate text-right text-ink">{m.awayTeamName}</span>
+                                <span className="min-w-0 flex-1 text-right text-xs leading-snug text-ink sm:text-sm">
+                                  {m.awayTeamName}
+                                </span>
                               )}
                             </div>
                           </div>

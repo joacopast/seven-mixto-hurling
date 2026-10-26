@@ -36,21 +36,21 @@ function MatchCard({ m }: { m: BracketMatchView }) {
     const isWinner = finished && m.winnerTeamId != null && m.winnerTeamId === teamId;
     return (
       <div
-        className={`flex items-center justify-between gap-2 px-2.5 py-1.5 ${
+        className={`flex items-start justify-between gap-2 px-2.5 py-1.5 ${
           isWinner ? "text-paper" : "text-ink-soft"
         }`}
       >
         {teamId && name ? (
           <Link
             href={`/equipos/${teamId}`}
-            className={`truncate text-[13px] hover:underline ${isWinner ? "font-semibold" : ""}`}
+            className={`min-w-0 flex-1 text-[12px] leading-snug hover:underline ${isWinner ? "font-semibold" : ""}`}
           >
             {name}
           </Link>
         ) : (
-          <span className="truncate text-[13px] text-ink-faint">Por definir</span>
+          <span className="min-w-0 flex-1 text-[12px] leading-snug text-ink-faint">Por definir</span>
         )}
-        <span className="font-mono text-[13px] tabular-nums">{score}</span>
+        <span className="shrink-0 pt-px font-mono text-[13px] tabular-nums">{score}</span>
       </div>
     );
   };
@@ -77,7 +77,7 @@ function MatchCard({ m }: { m: BracketMatchView }) {
 /** Podio de una copa: 🥇🥈🥉. Se usa tanto en el panel admin como en /torneo. */
 export function CupPodium({ cup }: { cup: CupView }) {
   return (
-    <div className="rounded-card border border-line-soft bg-bg-deep/40 p-4">
+    <div className="min-w-0 rounded-card border border-line-soft bg-bg-deep/40 p-4">
       <h3 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold text-paper">
         <span
           className="h-2.5 w-2.5 rounded-full"
@@ -86,30 +86,36 @@ export function CupPodium({ cup }: { cup: CupView }) {
         Copa {cup.name}
       </h3>
       <ol className="flex flex-col gap-1.5 text-sm">
-        <li className="flex items-center gap-2">
+        <li className="flex items-start gap-2">
           <span className="w-5 flex-none text-center">🥇</span>
           {cup.championTeamId && cup.championName ? (
-            <Link href={`/equipos/${cup.championTeamId}`} className="truncate text-paper hover:underline">
+            <Link
+              href={`/equipos/${cup.championTeamId}`}
+              className="min-w-0 flex-1 leading-snug text-paper hover:underline"
+            >
               {cup.championName}
             </Link>
           ) : (
-            <span className="truncate text-ink-faint">Por definir</span>
+            <span className="min-w-0 flex-1 leading-snug text-ink-faint">Por definir</span>
           )}
         </li>
-        <li className="flex items-center gap-2">
+        <li className="flex items-start gap-2">
           <span className="w-5 flex-none text-center">🥈</span>
           {cup.runnerUpTeamId && cup.runnerUpName ? (
-            <Link href={`/equipos/${cup.runnerUpTeamId}`} className="truncate text-ink-soft hover:underline">
+            <Link
+              href={`/equipos/${cup.runnerUpTeamId}`}
+              className="min-w-0 flex-1 leading-snug text-ink-soft hover:underline"
+            >
               {cup.runnerUpName}
             </Link>
           ) : (
-            <span className="truncate text-ink-faint">Por definir</span>
+            <span className="min-w-0 flex-1 leading-snug text-ink-faint">Por definir</span>
           )}
         </li>
-        <li className="flex items-center gap-2">
+        <li className="flex items-start gap-2">
           <span className="w-5 flex-none text-center">🥉</span>
           {cup.thirdPlace.length > 0 ? (
-            <span className="truncate text-ink-soft">
+            <span className="min-w-0 flex-1 leading-snug text-ink-soft">
               {cup.thirdPlace.map((t, i) => (
                 <span key={t.teamId}>
                   {i > 0 && " y "}
@@ -120,7 +126,7 @@ export function CupPodium({ cup }: { cup: CupView }) {
               ))}
             </span>
           ) : (
-            <span className="truncate text-ink-faint">Por definir</span>
+            <span className="min-w-0 flex-1 leading-snug text-ink-faint">Por definir</span>
           )}
         </li>
       </ol>
@@ -142,8 +148,8 @@ export function TournamentPodium({ cups }: { cups: CupView[] }) {
 export function BracketView({ cup }: { cup: CupView }) {
   const activeRounds = cup.rounds.filter((r) => r.matches.length > 0);
   return (
-    <div className="rounded-card border border-line-soft bg-bg-deep/40 p-4">
-      <div className="mb-3 flex items-center justify-between">
+    <div className="min-w-0 rounded-card border border-line-soft bg-bg-deep/40 p-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <h3 className="flex items-center gap-2 font-display text-xl font-semibold text-paper">
           <span
             className="h-2.5 w-2.5 rounded-full"
@@ -152,7 +158,7 @@ export function BracketView({ cup }: { cup: CupView }) {
           Copa {cup.name}
         </h3>
         {cup.championName && (
-          <span className="font-mono text-[11px] text-ink-faint">
+          <span className="min-w-0 font-mono text-[11px] text-ink-faint">
             🏆 {cup.championName}
           </span>
         )}
