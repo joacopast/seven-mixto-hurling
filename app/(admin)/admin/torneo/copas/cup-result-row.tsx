@@ -75,7 +75,7 @@ export function CupResultRow({ m }: { m: BracketMatchView }) {
               <select
                 name="walkover"
                 defaultValue={m.walkoverTeamId ?? m.homeTeamId ?? ""}
-                className="h-11 flex-none rounded-lg border border-line bg-surface-3 px-2 text-xs"
+                className="h-11 max-w-[40%] flex-none truncate rounded-lg border border-line bg-surface-3 px-2 text-xs"
               >
                 <option value={m.homeTeamId ?? ""}>Se presentó {m.homeTeamName}</option>
                 <option value={m.awayTeamId ?? ""}>Se presentó {m.awayTeamName}</option>

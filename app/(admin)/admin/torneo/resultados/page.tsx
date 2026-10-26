@@ -59,7 +59,7 @@ export default async function ResultadosPage() {
               )}
             </h2>
             <div className="overflow-hidden rounded-card border border-line-soft">
-              <table className="w-full text-sm">
+              <table className="w-full table-fixed text-sm">
                 <tbody className="divide-y divide-line-soft">
                   {matches.map((m) => (
                     <ResultRow key={m.id} match={m} />

@@ -55,7 +55,7 @@ export function ResultRow({ match }: { match: FixtureMatchView }) {
               <select
                 name="walkover"
                 defaultValue={match.walkoverTeamId ?? "NONE"}
-                className="h-11 flex-none rounded-lg border border-line bg-surface-3 px-2 text-xs"
+                className="h-11 max-w-[40%] flex-none truncate rounded-lg border border-line bg-surface-3 px-2 text-xs"
               >
                 <option value={match.homeTeamId ?? ""}>Se presentó {match.homeTeamName}</option>
                 <option value={match.awayTeamId ?? ""}>Se presentó {match.awayTeamName}</option>

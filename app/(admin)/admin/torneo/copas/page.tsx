@@ -40,7 +40,7 @@ export default async function AdminCopasPage() {
           <BracketView cup={cup} />
 
           <div className="overflow-hidden rounded-card border border-line-soft">
-            <table className="w-full text-sm">
+            <table className="w-full table-fixed text-sm">
               <tbody className="divide-y divide-line-soft">
                 {cup.rounds
                   .filter((r) => r.matches.length > 0)

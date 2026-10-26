@@ -428,6 +428,26 @@ el listado de `/admin/equipos`, el plantel en `/admin/equipos/[id]`, `/admin/esp
 sienten incómodos desde el celular, el mismo patrón de tarjeta-en-mobile/tabla-en-desktop
 usado en pagos se puede repetir ahí.
 
+Fix: nombres largos se salían de la pantalla en la carga de resultados (2026-10-26).
+Joaco reportó partidos "fuera de pantalla" en `/admin/torneo/resultados` y
+`/admin/torneo/copas` en mobile. Causa real (no era el mismo problema que el
+`min-w-[36rem]` sacado el 26/10 por la tarde): con `table-layout: auto` (default de
+`<table>`), el algoritmo de ancho de columnas calcula el "min-content" a partir del texto
+`white-space: nowrap` de los `<span className="truncate">` — ve que el texto completo sin
+cortar "necesita" ese ancho y expande la tabla para dar lugar, **ignorando por completo
+el `overflow:hidden` del truncate**. Con nombres cortos esto no se nota (el ancho natural
+igual entraba en la pantalla), pero con dos equipos de nombre largo en el mismo partido
+(ej. "República Centroafricana" vs "San Vicente y las Granadinas") la tabla se expandía
+muy por encima del viewport y, como el wrapper tiene `overflow-hidden`, el texto quedaba
+directamente invisible — ni se podía hacer scroll para verlo. Se agregó `table-fixed`
+(`table-layout: fixed`) a las dos tablas (`resultados/page.tsx`, `torneo/copas/page.tsx`)
+— con layout fijo el ancho de columna no depende del contenido, así que el truncate de
+adentro sí se respeta. De paso se blindó el `<select>` de walkover en ambos componentes
+(mismo problema en potencia: su ancho también depende de la opción más larga) con
+`max-w-[40%] truncate`. Verificado con un partido de prueba renombrado a dos países de
+nombre largo — sin el fix desbordaba ~160px fuera de un viewport de 360px; con el fix,
+0px de overflow.
+
 Pendiente / próximo: cargar alias/CBU/WhatsApp reales en `/admin/configuracion`,
 pulido visual final, más cobertura e2e (pago, admin), pasar a Vercel Pro antes del
 evento, **medir cuántos usuarios simultáneos soporta Vercel Hobby + Neon free antes del
