@@ -522,3 +522,16 @@ y la misma idea inline en `reschedule-round.tsx`) que muestra el valor elegido c
 `formatFechaHora` — siempre DD/MM/YYYY HH:MM sin importar el idioma/configuración del
 navegador. El picker nativo se mantiene (conviene para elegir fecha/hora cómodo), la
 leyenda es la que garantiza el formato pedido.
+
+`/torneo` más corta, con pestañas en vez de scroll infinito (2026-10-27): a pedido de
+Joaco. Se sacaron las 3 cajas de arriba (equipos confirmados / cupos disponibles / lista
+de espera) — quedó solo el título y el badge de fase. Las secciones Copas / Posiciones /
+Resultados, que antes eran un `<section>` tras otro (había que scrollear mucho para
+llegar a los resultados de los partidos), pasaron a pestañas con el nuevo componente
+`components/torneo-tabs.tsx` (`TorneoTabs`, cliente, `useState` + `hidden` — no
+desmonta el contenido al cambiar de pestaña, así no hay refetch ni parpadeo). La
+pestaña por default depende de la fase del torneo (`defaultTab` en
+`app/(public)/torneo/page.tsx`): `GROUPS_IN_PROGRESS` → arranca en Resultados (es lo
+que más se mira en vivo durante la fase de grupos); con copas publicadas/en juego o
+torneo finalizado → arranca en Copas; si no, Posiciones. El podio de "Resultados
+finales" (torneo FINISHED) se mantuvo fuera de las pestañas, siempre visible arriba.
