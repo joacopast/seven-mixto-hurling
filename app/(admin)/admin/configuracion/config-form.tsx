@@ -1,8 +1,43 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button, Card, Field, Input, Select } from "@/components/ui";
+import { formatFechaHora } from "@/lib/datetime";
 import { saveConfig, type ConfigState } from "./actions";
+
+/**
+ * <input type="datetime-local"> muestra el valor con el formato del
+ * navegador/SO (puede salir en inglés, 12hs, MM/DD/YYYY…), fuera de nuestro
+ * control. Le agregamos una leyenda abajo con el valor en DD/MM/YYYY HH:MM,
+ * siempre igual sin importar el idioma del navegador.
+ */
+function DateTimeField({
+  id,
+  name,
+  defaultValue,
+}: {
+  id: string;
+  name: string;
+  defaultValue: string;
+}) {
+  const [value, setValue] = useState(defaultValue);
+  const parsed = value ? new Date(value) : null;
+  const valid = parsed && !isNaN(parsed.getTime());
+  return (
+    <div className="flex flex-col gap-1">
+      <Input
+        id={id}
+        name={name}
+        type="datetime-local"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      />
+      <span className="font-mono text-[11px] text-ink-faint">
+        {valid ? formatFechaHora(parsed) : "—"}
+      </span>
+    </div>
+  );
+}
 
 export interface ConfigValues {
   name: string;
@@ -91,10 +126,10 @@ export function ConfigForm({ values, structureLocked }: { values: ConfigValues; 
           <Input id="venueName" name="venueName" defaultValue={values.venueName} />
         </Field>
         <Field label="Inicio" htmlFor="startDate">
-          <Input id="startDate" name="startDate" type="datetime-local" defaultValue={values.startDate} />
+          <DateTimeField id="startDate" name="startDate" defaultValue={values.startDate} />
         </Field>
         <Field label="Fin" htmlFor="endDate">
-          <Input id="endDate" name="endDate" type="datetime-local" defaultValue={values.endDate} />
+          <DateTimeField id="endDate" name="endDate" defaultValue={values.endDate} />
         </Field>
       </Section>
 
@@ -236,7 +271,7 @@ export function ConfigForm({ values, structureLocked }: { values: ConfigValues; 
           <Input id="extraPlayerPrice" name="extraPlayerPrice" type="number" defaultValue={values.extraPlayerPricePesos} />
         </Field>
         <Field label="Cambio de precio" htmlFor="priceChangeAt" error={err("priceChangeAt")}>
-          <Input id="priceChangeAt" name="priceChangeAt" type="datetime-local" defaultValue={values.priceChangeAt} />
+          <DateTimeField id="priceChangeAt" name="priceChangeAt" defaultValue={values.priceChangeAt} />
         </Field>
         <Field
           label="Recargo adicional (%)"
@@ -289,16 +324,16 @@ export function ConfigForm({ values, structureLocked }: { values: ConfigValues; 
 
       <Section title="Fechas">
         <Field label="Inscripción abre" htmlFor="registrationOpensAt">
-          <Input id="registrationOpensAt" name="registrationOpensAt" type="datetime-local" defaultValue={values.registrationOpensAt} />
+          <DateTimeField id="registrationOpensAt" name="registrationOpensAt" defaultValue={values.registrationOpensAt} />
         </Field>
         <Field label="Inscripción cierra" htmlFor="registrationClosesAt">
-          <Input id="registrationClosesAt" name="registrationClosesAt" type="datetime-local" defaultValue={values.registrationClosesAt} />
+          <DateTimeField id="registrationClosesAt" name="registrationClosesAt" defaultValue={values.registrationClosesAt} />
         </Field>
         <Field label="Cierre de edición de equipo" htmlFor="teamEditLockAt">
-          <Input id="teamEditLockAt" name="teamEditLockAt" type="datetime-local" defaultValue={values.teamEditLockAt} />
+          <DateTimeField id="teamEditLockAt" name="teamEditLockAt" defaultValue={values.teamEditLockAt} />
         </Field>
         <Field label="Cierre de edición de plantel" htmlFor="rosterLockAt">
-          <Input id="rosterLockAt" name="rosterLockAt" type="datetime-local" defaultValue={values.rosterLockAt} />
+          <DateTimeField id="rosterLockAt" name="rosterLockAt" defaultValue={values.rosterLockAt} />
         </Field>
         <Field label="Ventana de pago (lista de espera, h)" htmlFor="waitlistPaymentWindowHours">
           <Input id="waitlistPaymentWindowHours" name="waitlistPaymentWindowHours" type="number" defaultValue={values.waitlistPaymentWindowHours} />

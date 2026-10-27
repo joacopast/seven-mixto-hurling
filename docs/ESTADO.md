@@ -507,3 +507,18 @@ espera, horarios de partidos en todas las vistas — admin, `/mi-equipo`, `/torn
 export de equipos .xlsx, emails). Único cambio no mecánico: la fecha de cambio de precio
 en la landing (`app/(public)/page.tsx`) pasó de prosa ("24 de octubre") a "24/10/2026",
 por el pedido explícito de "todas las fechas".
+
+Faltaban los `<input type="datetime-local">` de `/admin/configuracion` (2026-10-27):
+Joaco reportó que seguían en otro formato. Son los únicos inputs nativos de fecha/hora
+de la app (inicio/fin de torneo, cambio de precio, apertura/cierre de inscripción,
+cierre de edición de plantel — 7 campos en `config-form.tsx` — más el de "Reprogramar"
+horario de partido en `/admin/torneo/resultados`). El formato que muestra un
+`datetime-local` lo decide el navegador/SO, no nuestro código — no hay forma de forzarlo
+a DD/MM/YYYY 24hs vía CSS/JS (por eso en el screenshot de prueba salía en inglés, 12hs,
+con puntos en vez de barras: el entorno de test no tiene locale es-AR, e incluso con
+es-AR el navegador real de cada staff puede estar en otro idioma). Solución: se agregó
+una leyenda de solo lectura debajo de cada campo (`DateTimeField` en `config-form.tsx`,
+y la misma idea inline en `reschedule-round.tsx`) que muestra el valor elegido con
+`formatFechaHora` — siempre DD/MM/YYYY HH:MM sin importar el idioma/configuración del
+navegador. El picker nativo se mantiene (conviene para elegir fecha/hora cómodo), la
+leyenda es la que garantiza el formato pedido.

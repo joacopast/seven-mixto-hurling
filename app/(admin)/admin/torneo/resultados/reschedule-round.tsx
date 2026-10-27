@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Button, Input } from "@/components/ui";
+import { formatFechaHora } from "@/lib/datetime";
 import { rescheduleRoundAction, type RescheduleState } from "./actions";
 
 /** Date → valor para <input type="datetime-local"> (hora local). */
@@ -14,7 +15,10 @@ const initialState: RescheduleState = {};
 
 export function RescheduleRoundButton({ roundId, startsAt }: { roundId: string; startsAt: Date }) {
   const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(() => toLocalInput(startsAt));
   const [state, formAction, pending] = useActionState(rescheduleRoundAction, initialState);
+  const parsed = value ? new Date(value) : null;
+  const valid = parsed && !isNaN(parsed.getTime());
 
   if (!editing) {
     return (
@@ -31,12 +35,18 @@ export function RescheduleRoundButton({ roundId, startsAt }: { roundId: string; 
   return (
     <form action={formAction} className="inline-flex flex-wrap items-center gap-2">
       <input type="hidden" name="roundId" value={roundId} />
-      <Input
-        type="datetime-local"
-        name="startsAt"
-        defaultValue={toLocalInput(startsAt)}
-        className="h-8 w-48 text-xs"
-      />
+      <div className="flex flex-col gap-0.5">
+        <Input
+          type="datetime-local"
+          name="startsAt"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="h-8 w-48 text-xs"
+        />
+        <span className="font-mono text-[10px] text-ink-faint">
+          {valid ? formatFechaHora(parsed) : "—"}
+        </span>
+      </div>
       <Button type="submit" size="sm" disabled={pending}>
         {pending ? "…" : "Guardar"}
       </Button>
