@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { formatArs } from "@/lib/tournament/pricing";
+import { formatFechaHora } from "@/lib/datetime";
 import { ageOn } from "@/lib/tournament/roster";
 import { REGISTRATION_STATUS_LABEL, REGISTRATION_STATUS_TONE } from "@/lib/tournament/status";
 import { Badge, Card } from "@/components/ui";
@@ -58,7 +59,7 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
         <div>
           <h1 className="font-display text-3xl font-semibold text-ink">{team.name}</h1>
           <p className="mt-1 font-mono text-xs text-ink-faint">
-            {team.slug} · alta {team.createdAt.toLocaleString("es-AR")}
+            {team.slug} · alta {formatFechaHora(team.createdAt)}
           </p>
         </div>
         <Badge tone={REGISTRATION_STATUS_TONE[team.registrationStatus]}>
@@ -89,7 +90,7 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
             <Item label="Jugadores cotizados" value={String(team.registration?.playerCountQuoted ?? 0)} />
             <Item
               label="Cotizado"
-              value={team.registration?.quotedAt?.toLocaleString("es-AR") ?? "—"}
+              value={team.registration?.quotedAt ? formatFechaHora(team.registration.quotedAt) : "—"}
             />
           </dl>
           {team.registration && team.registration.payments.length > 0 && (
@@ -98,7 +99,7 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
                 <li key={p.id} className="flex justify-between gap-2">
                   <span>
                     {p.provider === "MANUAL_TRANSFER" ? "Transferencia" : "Mercado Pago"} ·{" "}
-                    {p.approvedAt?.toLocaleString("es-AR") ?? p.createdAt.toLocaleString("es-AR")}
+                    {formatFechaHora(p.approvedAt ?? p.createdAt)}
                   </span>
                   <span className="font-mono">{formatArs(p.amount)}</span>
                 </li>
@@ -213,7 +214,7 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
           {audit.map((log) => (
             <li key={log.id} className="rounded-lg border border-line bg-surface px-3 py-2">
               <span className="font-mono text-xs text-ink-faint">
-                {log.createdAt.toLocaleString("es-AR")} ·{" "}
+                {formatFechaHora(log.createdAt)} ·{" "}
                 {log.user?.email ?? "sistema"}
               </span>
               <span className="ml-2 text-ink-soft">{log.action}</span>

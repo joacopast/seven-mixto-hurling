@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { getActiveTournament } from "@/lib/tournament/queries";
 import { formatArs } from "@/lib/tournament/pricing";
+import { formatFecha } from "@/lib/datetime";
 import { REGISTRATION_STATUS_LABEL, REGISTRATION_STATUS_TONE } from "@/lib/tournament/status";
 import { Badge, Input } from "@/components/ui";
 import type { Prisma } from "@prisma/client";
@@ -113,7 +114,7 @@ export default async function AdminTeamsPage({
                   </Badge>
                 </td>
                 <td className="px-3 py-2 font-mono text-xs text-ink-faint">
-                  {t.createdAt.toLocaleDateString("es-AR")}
+                  {formatFecha(t.createdAt)}
                 </td>
               </tr>
             ))}

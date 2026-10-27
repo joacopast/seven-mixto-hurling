@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth/guards";
 import { getActiveTournament } from "@/lib/tournament/queries";
 import { toXlsx } from "@/lib/xlsx";
 import { REGISTRATION_STATUS_LABEL } from "@/lib/tournament/status";
+import { formatFechaHora } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 
@@ -66,7 +67,7 @@ export async function GET(req: NextRequest) {
         t.registration ? Math.round(t.registration.totalAmount / 100) : "",
         Math.round(paid / 100),
         Math.round(owed / 100),
-        t.createdAt.toLocaleString("es-AR"),
+        formatFechaHora(t.createdAt),
       ];
     }),
   );

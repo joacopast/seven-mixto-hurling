@@ -6,6 +6,7 @@ import { enqueueNotification } from "@/lib/services/notification";
 import { notifyAdmin } from "@/lib/services/admin-alerts";
 import { getActiveTournament, OCCUPYING_STATUSES } from "@/lib/tournament/queries";
 import { countryCode } from "@/lib/countries";
+import { formatFechaHora } from "@/lib/datetime";
 
 export class WaitlistError extends Error {
   constructor(
@@ -179,7 +180,7 @@ export async function promoteWaitlistEntry(registrationId: string, ctx: Ctx = {}
     });
     await notifyAdmin(tx, {
       title: `Cupo liberado — invitamos a ${registration.team.name}`,
-      lines: [`Tiene hasta ${expiresAt.toLocaleString("es-AR")} para pagar.`],
+      lines: [`Tiene hasta ${formatFechaHora(expiresAt)} para pagar.`],
       teamId: registration.teamId,
       teamName: registration.team.name,
       dedupeKey: `admin-alert:waitlist.promote:${registrationId}:${now.getTime()}`,

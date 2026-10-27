@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { getActiveTournament } from "@/lib/tournament/queries";
 import { formatArs } from "@/lib/tournament/pricing";
+import { formatFechaHora } from "@/lib/datetime";
 import { normalizePhone } from "@/lib/tournament/whatsapp";
 import { REGISTRATION_STATUS_LABEL, REGISTRATION_STATUS_TONE } from "@/lib/tournament/status";
 import { Badge, Card } from "@/components/ui";
@@ -279,7 +280,7 @@ export default async function AdminPagosPage({
                   {p.mpPaymentId ?? "—"}
                 </td>
                 <td className="px-3 py-2 font-mono text-xs text-ink-faint">
-                  {p.createdAt.toLocaleString("es-AR")}
+                  {formatFechaHora(p.createdAt)}
                 </td>
               </tr>
             ))}
@@ -316,7 +317,7 @@ export default async function AdminPagosPage({
                   {e.topic} · {e.resourceId}
                 </span>
                 <span className="font-mono text-xs text-ink-faint">
-                  {e.receivedAt.toLocaleString("es-AR")}
+                  {formatFechaHora(e.receivedAt)}
                 </span>
                 {e.error && <span className="text-xs text-danger">{e.error}</span>}
               </li>

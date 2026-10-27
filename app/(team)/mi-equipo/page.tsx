@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { getActiveTournament } from "@/lib/tournament/queries";
 import { formatArs } from "@/lib/tournament/pricing";
 import { ageOn } from "@/lib/tournament/roster";
+import { formatHora } from "@/lib/datetime";
 import {
   REGISTRATION_STATUS_LABEL,
   REGISTRATION_STATUS_TONE,
@@ -165,7 +166,7 @@ export default async function MiEquipoPage({
                     <div className="font-mono text-[11px] text-ink-faint">
                       {m.label}
                       {m.startsAt
-                        ? ` · ${m.startsAt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`
+                        ? ` · ${formatHora(m.startsAt)}`
                         : ""}
                       {m.fieldName ? ` · ${m.fieldName}` : ""}
                     </div>

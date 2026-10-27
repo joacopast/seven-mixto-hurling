@@ -1,6 +1,7 @@
 import { APP_URL, SITE } from "@/lib/config";
 import { formatArs } from "@/lib/tournament/pricing";
 import { REGISTRATION_STATUS_LABEL } from "@/lib/tournament/status";
+import { formatHora, formatFechaHora } from "@/lib/datetime";
 import type { NotificationType, RegistrationStatus } from "@prisma/client";
 
 export interface RenderedEmail {
@@ -86,7 +87,7 @@ export function renderNotification(type: NotificationType, ctx: Ctx): RenderedEm
     case "WAITLIST_INVITED": {
       const body = `
         <p>¡Se liberó un cupo! <strong>${team}</strong> pasó de la lista de espera y ya podés pagar la inscripción.</p>
-        ${ctx.expiresAt ? `<p>Tenés tiempo hasta <strong>${new Date(ctx.expiresAt).toLocaleString("es-AR")}</strong>. Si no se acredita el pago, el cupo pasa al siguiente.</p>` : ""}`;
+        ${ctx.expiresAt ? `<p>Tenés tiempo hasta <strong>${formatFechaHora(new Date(ctx.expiresAt))}</strong>. Si no se acredita el pago, el cupo pasa al siguiente.</p>` : ""}`;
       return { subject: `Se liberó un cupo — ${team}`, html: shell("Cupo disponible", body, portal), text: stripHtml(body) };
     }
     case "FIXTURE_PUBLISHED": {
@@ -94,12 +95,12 @@ export function renderNotification(type: NotificationType, ctx: Ctx): RenderedEm
       return { subject: "El fixture ya está publicado", html: shell("Fixture publicado", body, portal), text: stripHtml(body) };
     }
     case "MATCH_UPCOMING": {
-      const when = ctx.startsAt ? new Date(ctx.startsAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }) : "";
+      const when = ctx.startsAt ? formatHora(new Date(ctx.startsAt)) : "";
       const body = `<p>Próximo partido de <strong>${team}</strong>${ctx.matchLabel ? `: ${ctx.matchLabel}` : ""}${when ? ` a las <strong>${when}</strong>` : ""}${ctx.fieldName ? ` en ${ctx.fieldName}` : ""}.</p>`;
       return { subject: `Próximo partido — ${team}`, html: shell("Próximo partido", body, portal), text: stripHtml(body) };
     }
     case "TIME_CHANGED": {
-      const body = `<p>Cambió el horario de un partido de <strong>${team}</strong>${ctx.startsAt ? `: ahora es a las <strong>${new Date(ctx.startsAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}</strong>` : ""}. Revisá el fixture.</p>`;
+      const body = `<p>Cambió el horario de un partido de <strong>${team}</strong>${ctx.startsAt ? `: ahora es a las <strong>${formatHora(new Date(ctx.startsAt))}</strong>` : ""}. Revisá el fixture.</p>`;
       return { subject: `Cambio de horario — ${team}`, html: shell("Cambio de horario", body, portal), text: stripHtml(body) };
     }
     case "FIELD_CHANGED": {

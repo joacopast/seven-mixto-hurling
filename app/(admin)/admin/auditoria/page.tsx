@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { getActiveTournament } from "@/lib/tournament/queries";
 import { Badge } from "@/components/ui";
+import { formatFechaHora } from "@/lib/datetime";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -130,7 +131,7 @@ export default async function AuditPage({
             {logs.map((l) => (
               <tr key={l.id}>
                 <td className="px-3 py-2 font-mono text-xs text-ink-faint">
-                  {l.createdAt.toLocaleString("es-AR")}
+                  {formatFechaHora(l.createdAt)}
                 </td>
                 <td className="px-3 py-2 text-xs text-ink-soft">{l.user?.email ?? "sistema"}</td>
                 <td className="px-3 py-2">

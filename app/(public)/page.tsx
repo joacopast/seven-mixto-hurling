@@ -4,6 +4,7 @@ import { ButtonLink, Card, Badge, Crest } from "@/components/ui";
 import { SITE } from "@/lib/config";
 import { getActiveTournament, getCapacity } from "@/lib/tournament/queries";
 import { calculatePrice, formatArs } from "@/lib/tournament/pricing";
+import { formatFecha } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 
@@ -66,10 +67,7 @@ export default async function HomePage() {
       ? (config.faq as { q: string; a: string }[])
       : FAQ_FALLBACK;
 
-  const priceChangeLabel = config.priceChangeAt.toLocaleDateString("es-AR", {
-    day: "numeric",
-    month: "long",
-  });
+  const priceChangeLabel = formatFecha(config.priceChangeAt);
 
   const jsonLd = {
     "@context": "https://schema.org",

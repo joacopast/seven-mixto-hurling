@@ -6,6 +6,7 @@ import { getCupsWithBrackets } from "@/lib/tournament/bracket-view";
 import { Card, Badge } from "@/components/ui";
 import { StandingsTable } from "@/components/standings-table";
 import { BracketView, TournamentPodium } from "@/components/bracket-view";
+import { formatHora } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 
@@ -160,10 +161,7 @@ export default async function TorneoPage() {
                     <h3 className="mb-2 flex items-baseline gap-2 font-display text-lg font-semibold text-paper">
                       {matches[0]!.tandaLabel}
                       <span className="font-sans text-xs font-normal text-ink-faint">
-                        {matches[0]!.startsAt.toLocaleTimeString("es-AR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {formatHora(matches[0]!.startsAt)}
                       </span>
                     </h3>
                     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

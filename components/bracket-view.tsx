@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { CupView, BracketMatchView } from "@/lib/tournament/bracket-view";
+import { formatHora } from "@/lib/datetime";
 
 const CUP_COLOR: Record<string, string> = {
   ORO: "var(--cup-oro)",
@@ -66,7 +67,7 @@ function MatchCard({ m }: { m: BracketMatchView }) {
       {side(m.awayTeamId, m.awayTeamName, s.away)}
       {m.startsAt && (
         <div className="border-t border-line-soft px-2.5 py-1 font-mono text-[10px] text-ink-faint">
-          {m.startsAt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+          {formatHora(m.startsAt)}
           {m.fieldName ? ` · ${m.fieldName.replace("Cancha ", "C")}` : ""}
         </div>
       )}

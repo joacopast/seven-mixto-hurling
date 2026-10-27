@@ -492,3 +492,18 @@ tocar esto):
   `/torneo`. Moraleja para la próxima vez que algo se salga de pantalla: revisar primero
   si el contenedor directo (no solo el texto) tiene `min-w-0` — sin eso, ni `truncate` ni
   `table-fixed` alcanzan.
+
+Fechas DD/MM/YYYY y horas 24hs en toda la app (2026-10-27): a pedido de Joaco. Causa:
+`Date.toLocaleTimeString("es-AR", {...})` sin `hour12: false` cae en 12hs igual — y
+`Date.toLocaleString("es-AR")` sin ninguna opción es peor todavía, muestra la hora en
+12hs **sin aclarar a. m./p. m.** (ej. "23:59" salía como "11:59:00", ambiguo). La fecha
+sola (`toLocaleDateString`) ya salía bien en DD/MM/YYYY por default con "es-AR", así que
+ese formato no cambió — el problema real era solo la hora. Se centralizó todo en
+`lib/datetime.ts` (`formatFecha`, `formatHora`, `formatFechaHora`, con tests en
+`tests/unit/datetime.test.ts`) y se reemplazaron los ~20 usos sueltos de
+`toLocaleDateString`/`toLocaleTimeString`/`toLocaleString` en `app/`, `lib/` y
+`components/` (fechas de alta, cotización, pagos, auditoría, vencimientos de lista de
+espera, horarios de partidos en todas las vistas — admin, `/mi-equipo`, `/torneo`,
+export de equipos .xlsx, emails). Único cambio no mecánico: la fecha de cambio de precio
+en la landing (`app/(public)/page.tsx`) pasó de prosa ("24 de octubre") a "24/10/2026",
+por el pedido explícito de "todas las fechas".

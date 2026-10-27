@@ -3,6 +3,7 @@ import { getActiveTournament, getCapacity } from "@/lib/tournament/queries";
 import { getWaitlist } from "@/lib/services/waitlist";
 import { Badge, Card } from "@/components/ui";
 import { ActionButton } from "@/components/action-button";
+import { formatFechaHora } from "@/lib/datetime";
 import { promoteEntry, runAutoPromote } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -54,7 +55,7 @@ export default async function EsperaPage() {
                       <span className="ml-2 text-xs text-ink-faint">{r.contactEmail}</span>
                     </td>
                     <td className="px-3 py-2 text-xs text-ink-soft">
-                      Vence {r.expiresAt?.toLocaleString("es-AR") ?? "—"}
+                      Vence {r.expiresAt ? formatFechaHora(r.expiresAt) : "—"}
                     </td>
                     <td className="px-3 py-2">
                       <Badge tone={r.status === "CONFIRMED" ? "ok" : "warn"}>{r.status}</Badge>

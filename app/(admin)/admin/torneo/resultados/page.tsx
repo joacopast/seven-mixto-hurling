@@ -3,6 +3,7 @@ import { getActiveTournament } from "@/lib/tournament/queries";
 import { getGroupFixture } from "@/lib/tournament/groups-view";
 import { ResultRow } from "./result-row";
 import { RescheduleRoundButton } from "./reschedule-round";
+import { formatHora } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Resultados", robots: { index: false } };
@@ -52,7 +53,7 @@ export default async function ResultadosPage() {
             <h2 className="mb-2 flex flex-wrap items-center gap-2 font-display text-lg font-semibold text-paper">
               {matches[0]!.tandaLabel}
               <span className="font-sans text-xs font-normal text-ink-faint">
-                {matches[0]!.startsAt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+                {formatHora(matches[0]!.startsAt)}
               </span>
               {matches[0]!.roundId && (
                 <RescheduleRoundButton roundId={matches[0]!.roundId} startsAt={matches[0]!.startsAt} />
