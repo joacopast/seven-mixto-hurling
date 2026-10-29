@@ -550,3 +550,26 @@ los tamaños en los 3 lugares donde se usa (`components/site-chrome.tsx` header 
 footer, `app/(public)/page.tsx` hero) para fijar el alto y dejar el ancho automático
 en vez de forzar un box cuadrado. Pendiente resuelto de `docs/arquitectura.html` /
 este archivo: ya no falta el logo oficial, solo sigue pendiente la mascota (zorro).
+
+Envío inmediato de emails + crons espaciados (2026-10-29): Neon avisó 80% del cupo free
+(80,4 de 100 CU-hora/mes). Causa: el ping de cron-job.org a `/api/cron/notifications`
+cada 5 min coincide con el auto-suspend de Neon free (5 min de inactividad, no se puede
+cambiar) → la base nunca se dormía (~6 CU-h/día a 0,25 CU, 24/7 desde el 14/10). Al
+llegar a 100 Neon suspende la base hasta el próximo período y se cae toda la app.
+Cambio de código: `enqueueNotification` (`lib/services/notification.ts`) ahora llama a
+`dispatchNotificationsSoon()` (`lib/services/notification-dispatch.ts`), que agenda
+`dispatchQueuedNotifications` con `after()` de `next/server` — el email sale apenas se
+responde el request, sin esperar al cron (antes salían SOLO por el cron). Fuera de un
+request (tests, scripts, seed) `after` tira y se ignora: queda para el cron. Una sola
+corrida por instancia (si encolan más mientras corre, repite; también repite mientras
+el lote venga lleno). Para que cron + requests en paralelo no manden un email dos
+veces, cada fila se reclama con `updateMany` condicional QUEUED → SENT antes de enviar
+(`sentAt` se completa recién al enviar; SENT con `sentAt` null = reclamada y el envío
+no terminó). Sin cambio de schema. Test nuevo:
+`tests/integration/notification-dispatch.test.ts` (sin el reclamo, el test de
+concurrencia manda 10 emails para 5 notificaciones). Suite completa: 184 verdes.
+Pendiente manual en cron-job.org: `notifications` y `waitlist` cada 1 hora **en el
+mismo minuto** (comparten una sola despertada de la base, ~6 min/h ≈ 18 CU-h/mes),
+`reconcile-payments` se puede desactivar (con MP apagado no toca la base). El día del
+evento volver `notifications` a cada 5–15 min (avisa partidos que arrancan en 20–45
+min, cada 15 alcanza).

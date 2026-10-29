@@ -1,5 +1,6 @@
 import "server-only";
 import type { NotificationType, Prisma, PrismaClient } from "@prisma/client";
+import { dispatchNotificationsSoon } from "@/lib/services/notification-dispatch";
 
 type Tx = Prisma.TransactionClient | PrismaClient;
 
@@ -15,9 +16,11 @@ export interface NotificationIntent {
 }
 
 /**
- * Encola una notificación (estado QUEUED). El envío efectivo por email y las
- * integraciones futuras (WhatsApp, push) se implementan en la Fase 6 sobre
- * esta cola. Debe llamarse dentro de la transacción de la mutación que la origina.
+ * Encola una notificación (estado QUEUED). Debe llamarse dentro de la transacción
+ * de la mutación que la origina. El envío sale apenas termina el request
+ * (`dispatchNotificationsSoon`, vía `after`); si la transacción se revierte, ese
+ * despacho no encuentra nada nuevo. El cron `/api/cron/notifications` queda como
+ * red de seguridad para lo que no haya salido.
  */
 export async function enqueueNotification(tx: Tx, intent: NotificationIntent): Promise<void> {
   if (intent.dedupeKey) {
@@ -36,4 +39,5 @@ export async function enqueueNotification(tx: Tx, intent: NotificationIntent): P
       dedupeKey: intent.dedupeKey ?? null,
     },
   });
+  dispatchNotificationsSoon();
 }
