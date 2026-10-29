@@ -97,7 +97,7 @@ export default async function HomePage() {
           }}
         />
         <div className="relative mx-auto max-w-4xl px-4 pb-16 pt-16 text-center sm:px-6 sm:pb-24 sm:pt-24">
-          <Crest className="mx-auto h-14 w-14 text-paper/90" />
+          <Crest className="mx-auto h-16 w-auto drop-shadow-lg sm:h-20" />
           <p className="eyebrow mt-5">Seven Mixto · {tournament.edition}</p>
           <h1 className="mx-auto mt-3 max-w-3xl font-display text-4xl font-semibold uppercase leading-[1.05] tracking-tight text-paper sm:text-6xl">
             Seven Mixto Hurling CLub

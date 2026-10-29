@@ -6,7 +6,7 @@ import { Crest } from "@/components/ui";
 function Wordmark() {
   return (
     <Link href="/" className="flex flex-none items-center gap-2 text-paper">
-      <Crest className="h-7 w-7 sm:h-8 sm:w-8" />
+      <Crest className="h-7 w-auto sm:h-8" />
       <span className="whitespace-nowrap font-display text-base font-semibold uppercase tracking-[0.12em] leading-none sm:text-lg sm:tracking-[0.14em]">
         Seven Mixto
       </span>
@@ -62,7 +62,7 @@ export function SiteFooter() {
       <div className="mx-auto max-w-6xl px-4 py-10 text-sm text-ink-faint sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2.5 text-ink-soft">
-            <Crest className="h-6 w-6" />
+            <Crest className="h-6 w-auto" />
             <span className="font-display uppercase tracking-[0.14em]">Seven Mixto</span>
           </div>
           <div className="flex gap-5">

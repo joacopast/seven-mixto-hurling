@@ -122,8 +122,8 @@ píldoras negras (`bg-pill`) para destacar precios. Botón primario = crema sobr
 Tokens en `app/globals.css`; utilidades semánticas en `tailwind.config.ts` (`bg-surface`,
 `text-ink`, `border-line`, `text-pop-soft`, …).
 
-Pendiente: el logo oficial del año (copa + laurel, lo diseñan aparte). Por ahora se usa
-un escudo SVG en línea (`<Crest/>` en `components/ui.tsx`) que evoca el logo. Falta también
+Logo oficial (trofeo dorado con trébol) ya integrado: `public/logo-seven.png`, servido
+por `<Crest/>` en `components/ui.tsx` (header, footer y hero del home). Falta todavía
 la mascota (zorro) — no tenemos el asset.
 
 Nota: al tocar `tailwind.config.ts`, reiniciar `next dev` con `rm -rf .next` (cachea utilidades).

@@ -535,3 +535,18 @@ pestaña por default depende de la fase del torneo (`defaultTab` en
 que más se mira en vivo durante la fase de grupos); con copas publicadas/en juego o
 torneo finalizado → arranca en Copas; si no, Posiciones. El podio de "Resultados
 finales" (torneo FINISHED) se mantuvo fuera de las pestañas, siempre visible arriba.
+
+Logo oficial del torneo (2026-10-28): Joaco pasó el logo definitivo (copa dorada con
+trébol + banda "SEVEN MIXTO HURLING", `logo_Seven.jpeg` en la raíz del repo, sin
+trackear — es un posteo cuadrado de Instagram con fondo de colores, no un asset
+aislado). Se recortó el trofeo con segmentación por IA (rembg/isnet) y una limpieza
+adicional a mano (filtro de color para sacar restos grises del fondo sin agujerear
+las sombras oscuras de la textura dorada, quedarse con el componente conexo más
+grande, recorte final de una sombra translúcida que quedaba bajo la base) hasta un
+PNG con fondo transparente, optimizado a ~120KB: `public/logo-seven.png`. `Crest` en
+`components/ui.tsx` pasó de ser un SVG dibujado a mano (trofeo + laureles, con
+`currentColor`) a renderizar esa imagen. Como el trofeo no es cuadrado, se ajustaron
+los tamaños en los 3 lugares donde se usa (`components/site-chrome.tsx` header y
+footer, `app/(public)/page.tsx` hero) para fijar el alto y dejar el ancho automático
+en vez de forzar un box cuadrado. Pendiente resuelto de `docs/arquitectura.html` /
+este archivo: ya no falta el logo oficial, solo sigue pendiente la mascota (zorro).

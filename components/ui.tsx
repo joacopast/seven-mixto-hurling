@@ -176,31 +176,8 @@ export function Callout({
 
 /* ---------------- Marca ---------------- */
 
-/** Copa + laurel en línea, evocando el logo del torneo. */
-export function Crest({ className = "h-8 w-8" }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 48 48"
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      {/* copa */}
-      <path d="M17 9h14v7a7 7 0 0 1-14 0V9Z" />
-      <path d="M17 11c-3 0-5 1-5 4s2 4 4 4" />
-      <path d="M31 11c3 0 5 1 5 4s-2 4-4 4" />
-      <path d="M24 23v6" />
-      <path d="M20 29h8l-1 4h-6l-1-4Z" />
-      <path d="M18 33h12v3H18z" />
-      {/* laurel */}
-      <path d="M14 13c-4 2-6 7-5 13 4 0 7-3 8-7" />
-      <path d="M34 13c4 2 6 7 5 13-4 0-7-3-8-7" />
-      <path d="M12 19c-1.6.4-2.8 1.6-3 3.4M15 24c-1.6.4-2.8 1.6-3 3.4" />
-      <path d="M36 19c1.6.4 2.8 1.6 3 3.4M33 24c1.6.4 2.8 1.6 3 3.4" />
-    </svg>
-  );
+/** Trofeo del torneo (logo oficial), en /public/logo-seven.png. */
+export function Crest({ className = "h-8 w-auto" }: { className?: string }) {
+  // eslint-disable-next-line @next/next/no-img-element -- ícono chico, no necesita next/image
+  return <img src="/logo-seven.png" alt="" aria-hidden className={className} />;
 }
