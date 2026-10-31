@@ -573,3 +573,35 @@ mismo minuto** (comparten una sola despertada de la base, ~6 min/h ≈ 18 CU-h/m
 `reconcile-payments` se puede desactivar (con MP apagado no toca la base). El día del
 evento volver `notifications` a cada 5–15 min (avisa partidos que arrancan en 20–45
 min, cada 15 alcanza).
+
+Limpieza de la base antes de abrir inscripciones de verdad (2026-10-31): Joaco avisó
+que el martes abren inscripciones reales y pidió limpiar toda la base productiva (que
+tenía datos de prueba — llegó a "Copas en juego") y correr el E2E completo antes de
+eso. Se armó `scripts/clean-pre-launch.ts`: borra equipos, jugadores, inscripciones,
+pagos, grupos, copas, llaves, partidos, notificaciones, auditoría, webhooks de MP y
+usuarios TEAM_MANAGER (con sus sesiones) — **conserva** el `Tournament`, su
+`TournamentConfig` (fechas/precios/alias-CBU reales que ya se cargaron a mano en
+`/admin/configuracion`), las 6 canchas y los usuarios ADMIN de staff; deja el torneo
+en `REGISTRATION_OPEN`. Corre dentro de una transacción, por default en dry-run (solo
+cuenta filas), y solo borra con `--execute` + `CONFIRM=yes`. Se probó primero contra
+la base de dev (64 equipos/828 jugadores de prueba borrados sin error, segunda corrida
+en cero) — confirmado el orden de borrado contra las FK sin `onDelete: Cascade` del
+schema (`Match`/`BracketMatch`/`MatchSlot` antes que `Team`/`Group`/`Cup`/`Round`).
+
+**Pendiente ejecutar contra producción** — el bloqueo de "Credential Materialization"
+de Claude Code en modo auto impide traer la connection string de Neon o tocar la DB de
+prod desde acá (igual que pasó con la migración de `STATUS_CHANGED`). Joaco tiene que
+correr, con la `DATABASE_URL`/`DIRECT_URL` de producción:
+```
+DATABASE_URL=... DIRECT_URL=... npx tsx scripts/clean-pre-launch.ts              # dry-run, revisar los números
+DATABASE_URL=... DIRECT_URL=... CONFIRM=yes npx tsx scripts/clean-pre-launch.ts --execute
+```
+
+De paso, correr el E2E completo encontró 2 tests de `tests/e2e/public.spec.ts`
+desactualizados (no relacionados a la limpieza, texto viejo de antes de cambios ya
+hechos): el de `/torneo` todavía esperaba "equipos confirmados" (se sacó esa sección
+al convertir la página a pestañas) y el del wizard todavía llenaba un campo de texto
+"Nombre del equipo" y esperaba "entre 7 y 20 jugadores" (desde que el torneo es
+formato mundial se elige un país de un `<select>`, y el texto del plantel pasó a
+"entre 7 y 20 personas" para aclarar que cuenta gente que no juega al hockey). Quedó
+arreglado. Suite completa verde: 184 unit/integration + 5 e2e.

@@ -19,7 +19,7 @@ test.describe("sitio público", () => {
   test("torneo carga con el estado del torneo", async ({ page }) => {
     await page.goto("/torneo");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(page.getByText(/equipos confirmados/i).first()).toBeVisible();
+    await expect(page.getByText(/inscripciones abiertas/i).first()).toBeVisible();
   });
 
   test("áreas privadas redirigen al login correspondiente", async ({ page }) => {
@@ -34,11 +34,11 @@ test.describe("wizard de inscripción", () => {
   test("avanza por los primeros pasos con validación", async ({ page }) => {
     await page.goto("/inscripcion");
 
-    // Paso 1 — equipo
+    // Paso 1 — equipo (torneo formato mundial: se elige un país, no se tipea un nombre)
     await expect(page.getByRole("heading", { name: "Datos del equipo" })).toBeVisible();
     const continuar = page.getByRole("button", { name: "Continuar" });
     await expect(continuar).toBeDisabled();
-    await page.getByLabel("Nombre del equipo").fill("Los Testers");
+    await page.getByLabel("País").selectOption("Vaticano");
     await expect(continuar).toBeEnabled();
     await continuar.click();
 
@@ -51,6 +51,6 @@ test.describe("wizard de inscripción", () => {
 
     // Paso 3 — jugadores
     await expect(page.getByRole("heading", { name: "Jugadores" })).toBeVisible();
-    await expect(page.getByText(/entre 7 y 20 jugadores/i)).toBeVisible();
+    await expect(page.getByText(/entre 7 y 20 personas/i)).toBeVisible();
   });
 });
