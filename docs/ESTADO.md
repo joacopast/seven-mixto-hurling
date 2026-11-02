@@ -664,3 +664,14 @@ pedidos de Joaco, enviados juntos.
 
 Probado en dev con capturas en desktop y mobile. Suite completa verde: 188 tests
 (184 + 4 nuevos de `instagram.test.ts`). **Enviado a producción (2026-11-02).**
+
+Simplificar el cartel de reglas del plantel en la inscripción (2026-11-02): Joaco pidió
+sacar del cartel informativo del paso "Jugadores" (`app/(public)/inscripcion/wizard.tsx`)
+la explicación de la regla de cancha (7 en cancha, máx. 3 hombres) y la mención de
+tildar/destildar "Juega" — ese texto había quedado desactualizado desde que el campo se
+unificó en "¿Juega hockey?" (ver entrada del 2026-10-16). Ahora el cartel dice solo
+cantidad de personas permitidas y edad mínima: "Plantel: entre {min} y {max} personas.
+Edad mínima: {N} años." — ambos valores siguen saliendo de `TournamentConfig`
+(`minPlayers`/`maxPlayers`/`minPlayerAge`), nada hardcodeado. Sin cambios de validación
+ni de datos. Probado en dev navegando el wizard hasta el paso de jugadores. Suite
+completa verde: 188 tests. **Enviado a producción (2026-11-02).**

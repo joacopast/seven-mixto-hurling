@@ -402,11 +402,8 @@ function PlayersStep({
       </div>
 
       <Callout tone="info">
-        Plantel: entre {config.minPlayers} y {config.maxPlayers} personas (jugadores + no
-        jugadores). En cancha se juega de a {config.playersOnField}, con un máximo de{" "}
-        {config.maxMenOnField} hombres — esa cuenta es solo entre quienes <strong>juegan</strong>.
-        Si alguien acompaña al equipo pero no va a jugar, destildá &ldquo;Juega&rdquo;: igual paga
-        y disfruta del evento, pero no cuenta para completar la cancha.
+        Plantel: entre {config.minPlayers} y {config.maxPlayers} personas. Edad mínima:{" "}
+        {config.minPlayerAge} años.
       </Callout>
 
       {draft.players.length > 0 && (
