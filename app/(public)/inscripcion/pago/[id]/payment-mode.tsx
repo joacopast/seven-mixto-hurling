@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, ButtonLink } from "@/components/ui";
+import { Button, Card, ButtonLink } from "@/components/ui";
 import { formatArs } from "@/lib/tournament/pricing";
 import { buildWhatsAppLink } from "@/lib/tournament/whatsapp";
 
@@ -22,9 +22,11 @@ export function PaymentModeCard({
   const [senaPesos, setSenaPesos] = useState("");
 
   const totalPesos = Math.round(totalAmount / 100);
+  const senaMinPesos = Math.ceil(totalPesos * 0.5);
   const senaValue = Number(senaPesos);
-  const senaValid =
-    senaPesos.trim() !== "" && Number.isFinite(senaValue) && senaValue > 0 && senaValue < totalPesos;
+  const senaTyped = senaPesos.trim() !== "" && Number.isFinite(senaValue);
+  const senaValid = senaTyped && senaValue >= senaMinPesos && senaValue < totalPesos;
+  const senaBelowMin = senaTyped && senaValue < senaMinPesos;
 
   const amountForMessage =
     mode === "total"
@@ -37,6 +39,8 @@ export function PaymentModeCard({
     team: teamName,
     amount: amountForMessage,
   });
+
+  const sendBlocked = mode === "sena" && senaBelowMin;
 
   return (
     <>
@@ -80,28 +84,44 @@ export function PaymentModeCard({
         ) : (
           <div className="mt-4">
             <p className="text-sm text-ink-soft">
-              No hace falta un monto fijo: transferí lo que puedas ahora (menos que el total) para
-              reservar tu lugar, y completá el resto más adelante. Tu inscripción queda en{" "}
+              Transferí al menos el <strong className="text-paper">50%</strong> (
+              {formatArs(senaMinPesos * 100)}) para reservar tu lugar, y completá el resto más
+              adelante. Tu inscripción queda en{" "}
               <strong className="text-paper">seña recibida</strong> hasta que termines de pagar.
             </p>
             <label className="mt-3 block text-xs text-ink-faint">
               ¿Cuánto vas a transferir? (opcional, para avisarle a la organización)
               <input
                 type="number"
-                min={1}
-                max={Math.max(1, totalPesos - 1)}
+                min={senaMinPesos}
+                max={Math.max(senaMinPesos, totalPesos - 1)}
                 value={senaPesos}
                 onChange={(e) => setSenaPesos(e.target.value)}
-                placeholder={`menos de ${totalPesos.toLocaleString("es-AR")}`}
+                placeholder={`mínimo ${senaMinPesos.toLocaleString("es-AR")}`}
                 className="mt-1 h-11 w-full rounded-lg border border-line bg-surface-3 px-3 text-sm text-ink"
               />
             </label>
+            {senaBelowMin && (
+              <p className="mt-1.5 text-xs text-danger">
+                El mínimo para reservar el lugar es {formatArs(senaMinPesos * 100)} (50%).
+              </p>
+            )}
           </div>
         )}
       </Card>
 
       <div className="mt-4">
-        {whatsappLink ? (
+        {sendBlocked ? (
+          <>
+            <Button size="lg" className="w-full" disabled>
+              Enviar comprobante por WhatsApp
+            </Button>
+            <p className="mt-2 text-center text-xs text-danger">
+              Subí el monto a {formatArs(senaMinPesos * 100)} o más para poder enviar el
+              comprobante.
+            </p>
+          </>
+        ) : whatsappLink ? (
           <ButtonLink href={whatsappLink} target="_blank" size="lg" className="w-full">
             Enviar comprobante por WhatsApp
           </ButtonLink>

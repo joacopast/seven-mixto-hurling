@@ -689,3 +689,22 @@ que dice la home coincida con lo que el sistema cobra de verdad; si no, un equip
 inscriba el 16, 17, 18 o 19/11 va a ver "hasta el 20/11" pero igual se le va a cobrar el
 precio tardío. No se tocó código para esto — queda pendiente de que Joaco lo cambie a
 mano en el panel.
+
+Seña mínima del 50% en la página pública de pago (2026-11-02): Joaco pidió que, al
+elegir "Pagar una seña" en `/inscripcion/pago/[id]`, el monto ya no pueda ser
+cualquier valor — tiene que ser al menos el 50% del total. Cambio acotado a
+`payment-mode.tsx` (client component, el input sigue siendo solo informativo: arma el
+mensaje de WhatsApp, no se guarda ni se valida en el backend — decisión explícita de
+Joaco al preguntarle el alcance, para no tocar `confirmManualPayment`, que el admin
+sigue usando para confirmar cualquier monto real recibido, sin piso). `senaMinPesos =
+Math.ceil(totalPesos * 0.5)`; el texto explicativo ahora dice "Transferí al menos el
+50% (${monto}) para reservar tu lugar" en vez de "transferí lo que puedas"; el input
+tiene `min={senaMinPesos}` y, si tipean menos, aparece un error en rojo debajo ("El
+mínimo para reservar el lugar es $X (50%)"). A pedido de Joaco en un segundo pase, si el
+monto tipeado está por debajo del mínimo el botón "Enviar comprobante por WhatsApp"
+queda **deshabilitado** (`<Button disabled>` en vez de `ButtonLink`, con un texto en
+rojo debajo explicando cuánto falta) — así el gate es real, no solo un aviso. Si el
+campo queda vacío (no es obligatorio tipear nada) el botón sigue habilitado igual que
+antes, el mensaje de WhatsApp dice "seña a confirmar" sin monto. Probado en dev con
+capturas: input vacío, monto por debajo del 50% (botón deshabilitado + aviso) y monto
+válido (botón habilitado de nuevo). Suite completa verde: 188 tests.
