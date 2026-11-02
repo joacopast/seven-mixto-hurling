@@ -26,7 +26,10 @@ export class PaymentError extends Error {
       | "NOT_PAYABLE"
       | "ALREADY_PAID"
       | "INVALID_AMOUNT"
-      | "AMOUNT_TOO_HIGH",
+      | "AMOUNT_TOO_HIGH"
+      | "PAYMENT_NOT_FOUND"
+      | "NOT_VOIDABLE"
+      | "NOT_LATEST",
   ) {
     super(message);
     this.name = "PaymentError";
@@ -386,6 +389,101 @@ export async function confirmManualPayment(
       amountOwed: 0,
       teamName: registration.team!.name,
     };
+  });
+}
+
+/* ============================================================
+ *  Anular un pago manual mal cargado (error de tipeo del admin)
+ * ============================================================ */
+
+export interface VoidPaymentResult {
+  newStatus: "PENDING_PAYMENT" | "DEPOSIT_PAID";
+  amountPaid: number;
+}
+
+/**
+ * Deshace el ÚLTIMO pago manual aprobado de una inscripción (típicamente:
+ * el admin tipeó mal el monto al confirmar una seña o el total). No borra el
+ * `Payment` — lo pasa a `CANCELLED` para no perder el historial/auditoría — y
+ * recalcula `Registration`/`Team` a `PENDING_PAYMENT` (si no queda ningún pago
+ * aprobado) o `DEPOSIT_PAID` (si queda algún pago previo menor al total).
+ * Después de anular, el admin vuelve a confirmar con `confirmManualPayment`
+ * y el monto correcto, como de costumbre.
+ *
+ * Acotado a propósito: solo pagos `MANUAL_TRANSFER` (los de Mercado Pago se
+ * reconcilian por webhook, no se tocan acá), solo el pago más reciente
+ * (evita desordenar un historial con varios pagos), y no sobre una
+ * inscripción `WAITLISTED`/`CANCELLED` (casos raros que requieren mirar a
+ * mano en vez de revertir automático).
+ */
+export async function voidManualPayment(
+  paymentId: string,
+  ctx: { userId?: string | null; ip?: string | null } = {},
+): Promise<VoidPaymentResult> {
+  const payment = await db.payment.findUnique({
+    where: { id: paymentId },
+    include: { registration: { include: { team: true } } },
+  });
+  if (!payment || !payment.registration || !payment.registration.team) {
+    throw new PaymentError("Pago no encontrado.", "PAYMENT_NOT_FOUND");
+  }
+  if (payment.provider !== "MANUAL_TRANSFER") {
+    throw new PaymentError("Solo se pueden anular pagos por transferencia manual.", "NOT_VOIDABLE");
+  }
+  if (payment.status !== "APPROVED") {
+    throw new PaymentError("Este pago ya no está aprobado.", "NOT_VOIDABLE");
+  }
+
+  const registration = payment.registration;
+  if (!["PENDING_PAYMENT", "PAYMENT_STARTED", "PAYMENT_REJECTED", "DEPOSIT_PAID", "CONFIRMED"].includes(
+    registration.status,
+  )) {
+    throw new PaymentError(
+      "Esta inscripción está en un estado que no se puede revertir automáticamente.",
+      "NOT_VOIDABLE",
+    );
+  }
+
+  const latest = await db.payment.findFirst({
+    where: { registrationId: registration.id, status: "APPROVED" },
+    orderBy: { approvedAt: "desc" },
+  });
+  if (latest?.id !== paymentId) {
+    throw new PaymentError("Solo se puede anular el pago más reciente de la inscripción.", "NOT_LATEST");
+  }
+
+  return db.$transaction(async (tx) => {
+    await tx.payment.update({ where: { id: paymentId }, data: { status: "CANCELLED" } });
+
+    const remaining = await tx.payment.aggregate({
+      where: { registrationId: registration.id, status: "APPROVED" },
+      _sum: { amount: true },
+    });
+    const paidNow = remaining._sum.amount ?? 0;
+    const newStatus = paidNow > 0 ? "DEPOSIT_PAID" : "PENDING_PAYMENT";
+    const newPaymentCache = paidNow > 0 ? "PENDING" : "NONE";
+
+    await tx.registration.update({
+      where: { id: registration.id },
+      data: { status: newStatus, confirmedAt: null },
+    });
+    await tx.team.update({
+      where: { id: registration.teamId },
+      data: { registrationStatus: newStatus, paymentStatus: newPaymentCache },
+    });
+
+    await writeAudit(tx, {
+      tournamentId: registration.tournamentId,
+      userId: ctx.userId,
+      action: "payment.manual.void",
+      entity: "Payment",
+      entityId: paymentId,
+      previousValue: { status: "APPROVED", amount: payment.amount, registrationStatus: registration.status },
+      newValue: { status: "CANCELLED", registrationStatus: newStatus, paidNow },
+      ip: ctx.ip ?? null,
+    });
+
+    return { newStatus, amountPaid: paidNow };
   });
 }
 

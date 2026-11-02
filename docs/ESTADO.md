@@ -708,3 +708,31 @@ campo queda vacío (no es obligatorio tipear nada) el botón sigue habilitado ig
 antes, el mensaje de WhatsApp dice "seña a confirmar" sin monto. Probado en dev con
 capturas: input vacío, monto por debajo del 50% (botón deshabilitado + aviso) y monto
 válido (botón habilitado de nuevo). Suite completa verde: 188 tests.
+
+Anular un pago manual mal cargado (2026-11-02): Joaco le puso mal el monto a la seña de
+un equipo y preguntó si se podía corregir — no estaba contemplado: no había forma de
+borrar/editar un pago manual ya confirmado, y volver a confirmar con otro monto lo
+*sumaba* arriba del mal cargado en vez de reemplazarlo. Se agregó
+`voidManualPayment(paymentId, ctx)` en `lib/services/payment.ts`: no borra el
+`Payment` — lo pasa a `CANCELLED` (`PaymentStatus` ya tenía ese valor, no hizo falta
+migración) para no perder el historial/auditoría — y recalcula `Registration`/`Team` a
+`PENDING_PAYMENT` (si no queda ningún pago aprobado) o `DEPOSIT_PAID` (si queda una
+seña previa menor al total). Acotado a propósito: solo pagos `MANUAL_TRANSFER` (los de
+Mercado Pago se reconcilian por webhook, no se tocan acá — `PaymentError
+NOT_VOIDABLE`), solo el pago más reciente de la inscripción (`PaymentError NOT_LATEST`
+si se intenta anular uno viejo con otro pago encima, para no desordenar un historial de
+varios pagos), y no sobre inscripciones `WAITLISTED`/`CANCELLED` (casos raros que
+quedan para resolver a mano). Después de anular, el admin vuelve a confirmar con el
+monto correcto usando el flujo de siempre (`confirmManualPayment`). UI: botón "Anular"
+(`VoidPaymentButton` en `team-editor.tsx`) al lado de cada pago `APPROVED
+MANUAL_TRANSFER` en la lista de pagos de `/admin/equipos/[id]` — con `confirm()` antes
+de anular y un `alert()` con el resultado; los pagos anulados quedan tachados en la
+lista en vez de desaparecer. No se tocó `/admin/pagos` (la corrección es por equipo,
+desde la ficha). Sin cambios de schema. Probado en dev con Playwright end-to-end: cargar
+una seña con monto mal ($50.000 en vez de $150.000 sobre un total de $275.000) → anular
+→ verificar que vuelve a "Pendiente de pago" con el pago tachado → cargar el monto
+correcto → verificar "Seña pagada" con $150.000 pagados y $125.000 pendientes. 6 tests
+de integración nuevos en `tests/integration/manual-payment.test.ts` (anular seña,
+anular confirmación completa, anular dejando una seña previa visible, bloquear anular
+un pago viejo si hay otro encima, bloquear anular un pago de Mercado Pago). Suite
+completa verde: 193 tests (188 + 5 nuevos).

@@ -11,6 +11,7 @@ import {
   removePlayer,
   deleteTeam,
   confirmPayment,
+  voidPayment,
   type TeamEditState,
   type PlayerActionState,
 } from "./actions";
@@ -224,6 +225,41 @@ export function ConfirmPaymentButton({
         </Button>
       </div>
     </div>
+  );
+}
+
+export function VoidPaymentButton({ paymentId, teamId }: { paymentId: string; teamId: string }) {
+  const [pending, setPending] = useState(false);
+  const [done, setDone] = useState(false);
+  const router = useRouter();
+
+  if (done) return <span className="text-[11px] text-ink-faint">Anulado</span>;
+
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      onClick={async () => {
+        if (
+          !confirm(
+            "¿Anular este pago? Se marca como cancelado (no se borra) y la inscripción vuelve al estado anterior — después cargás de nuevo el monto correcto.",
+          )
+        )
+          return;
+        setPending(true);
+        const res = await voidPayment(paymentId, teamId);
+        setPending(false);
+        if (res.error) alert(res.error);
+        else {
+          setDone(true);
+          alert(res.message);
+          router.refresh();
+        }
+      }}
+      className="text-[11px] text-danger underline decoration-dotted hover:text-danger disabled:opacity-50"
+    >
+      {pending ? "Anulando…" : "Anular"}
+    </button>
   );
 }
 

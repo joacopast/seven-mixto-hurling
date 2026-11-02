@@ -13,6 +13,7 @@ import {
   RemovePlayerButton,
   DeleteTeamButton,
   ConfirmPaymentButton,
+  VoidPaymentButton,
 } from "./team-editor";
 
 export const dynamic = "force-dynamic";
@@ -96,12 +97,21 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
           {team.registration && team.registration.payments.length > 0 && (
             <ul className="mt-3 space-y-1 border-t border-line pt-3 text-xs text-ink-soft">
               {team.registration.payments.map((p) => (
-                <li key={p.id} className="flex justify-between gap-2">
-                  <span>
+                <li key={p.id} className="flex items-center justify-between gap-2">
+                  <span className={p.status === "CANCELLED" ? "line-through text-ink-faint" : ""}>
                     {p.provider === "MANUAL_TRANSFER" ? "Transferencia" : "Mercado Pago"} ·{" "}
                     {formatFechaHora(p.approvedAt ?? p.createdAt)}
                   </span>
-                  <span className="font-mono">{formatArs(p.amount)}</span>
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={`font-mono ${p.status === "CANCELLED" ? "line-through text-ink-faint" : ""}`}
+                    >
+                      {formatArs(p.amount)}
+                    </span>
+                    {p.status === "APPROVED" && p.provider === "MANUAL_TRANSFER" && (
+                      <VoidPaymentButton paymentId={p.id} teamId={team.id} />
+                    )}
+                  </span>
                 </li>
               ))}
             </ul>

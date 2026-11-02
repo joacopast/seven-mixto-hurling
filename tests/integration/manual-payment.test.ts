@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { testDb, resetDb, seedTournament } from "../helpers/db";
 import { createRegistration } from "@/lib/services/registration";
 import { adminCreateTeam } from "@/lib/services/admin-teams";
-import { confirmManualPayment, PaymentError } from "@/lib/services/payment";
+import { confirmManualPayment, voidManualPayment, PaymentError } from "@/lib/services/payment";
 
 function buildRegInput(over: { name?: string; email?: string } = {}) {
   return {
@@ -207,5 +207,112 @@ describe("confirmManualPayment — seña (pago parcial)", () => {
     await expect(confirmManualPayment(reg.registrationId, { amount: 0 })).rejects.toMatchObject({
       code: "INVALID_AMOUNT",
     });
+  });
+});
+
+describe("voidManualPayment — corregir un pago mal cargado", () => {
+  it("anula una seña mal tipeada: vuelve a PENDING_PAYMENT y permite recargar bien", async () => {
+    await seedTournament();
+    const reg = await createRegistration(buildRegInput());
+    const total = (await testDb.registration.findUniqueOrThrow({ where: { id: reg.registrationId } }))
+      .totalAmount;
+
+    const wrong = await confirmManualPayment(reg.registrationId, { amount: 50_000, note: "mal tipeado" });
+    expect(wrong.outcome).toBe("DEPOSIT_RECORDED");
+    const wrongPayment = await testDb.payment.findFirstOrThrow({
+      where: { registrationId: reg.registrationId, status: "APPROVED" },
+    });
+
+    const voided = await voidManualPayment(wrongPayment.id);
+    expect(voided.newStatus).toBe("PENDING_PAYMENT");
+    expect(voided.amountPaid).toBe(0);
+
+    const team = await testDb.team.findUniqueOrThrow({
+      where: { id: reg.teamId },
+      include: { registration: { include: { payments: true } } },
+    });
+    expect(team.registrationStatus).toBe("PENDING_PAYMENT");
+    expect(team.paymentStatus).toBe("NONE");
+    expect(team.registration!.status).toBe("PENDING_PAYMENT");
+    const cancelled = team.registration!.payments.find((p) => p.id === wrongPayment.id)!;
+    expect(cancelled.status).toBe("CANCELLED");
+    expect(cancelled.amount).toBe(50_000); // el monto mal cargado queda en el historial, no se borra
+
+    const audit = await testDb.auditLog.findFirst({ where: { action: "payment.manual.void" } });
+    expect(audit).not.toBeNull();
+
+    // Ahora se puede cargar de nuevo con el monto correcto.
+    const correct = await confirmManualPayment(reg.registrationId, { amount: total });
+    expect(correct.outcome).toBe("CONFIRMED");
+    const finalTeam = await testDb.team.findUniqueOrThrow({ where: { id: reg.teamId } });
+    expect(finalTeam.registrationStatus).toBe("CONFIRMED");
+  });
+
+  it("anula una confirmación completa mal tipeada: vuelve a PENDING_PAYMENT (no queda CONFIRMED)", async () => {
+    await seedTournament();
+    const reg = await createRegistration(buildRegInput());
+    await confirmManualPayment(reg.registrationId);
+    const payment = await testDb.payment.findFirstOrThrow({ where: { registrationId: reg.registrationId } });
+
+    const voided = await voidManualPayment(payment.id);
+    expect(voided.newStatus).toBe("PENDING_PAYMENT");
+
+    const team = await testDb.team.findUniqueOrThrow({
+      where: { id: reg.teamId },
+      include: { registration: true },
+    });
+    expect(team.registrationStatus).toBe("PENDING_PAYMENT");
+    expect(team.registration!.confirmedAt).toBeNull();
+  });
+
+  it("si queda un pago previo (seña anterior), vuelve a DEPOSIT_PAID en vez de PENDING_PAYMENT", async () => {
+    await seedTournament();
+    const reg = await createRegistration(buildRegInput());
+    const total = (await testDb.registration.findUniqueOrThrow({ where: { id: reg.registrationId } }))
+      .totalAmount;
+
+    await confirmManualPayment(reg.registrationId, { amount: Math.round(total / 3) });
+    const wrongSecond = await confirmManualPayment(reg.registrationId, { amount: 1 });
+    expect(wrongSecond.outcome).toBe("DEPOSIT_RECORDED");
+    const lastPayment = await testDb.payment.findFirstOrThrow({
+      where: { registrationId: reg.registrationId, status: "APPROVED" },
+      orderBy: { approvedAt: "desc" },
+    });
+
+    const voided = await voidManualPayment(lastPayment.id);
+    expect(voided.newStatus).toBe("DEPOSIT_PAID");
+    expect(voided.amountPaid).toBe(Math.round(total / 3));
+
+    const team = await testDb.team.findUniqueOrThrow({ where: { id: reg.teamId } });
+    expect(team.registrationStatus).toBe("DEPOSIT_PAID");
+    expect(team.paymentStatus).toBe("PENDING");
+  });
+
+  it("solo deja anular el pago más reciente, no uno viejo si ya hay otro encima", async () => {
+    await seedTournament();
+    const reg = await createRegistration(buildRegInput());
+    const total = (await testDb.registration.findUniqueOrThrow({ where: { id: reg.registrationId } }))
+      .totalAmount;
+
+    await confirmManualPayment(reg.registrationId, { amount: Math.round(total / 3) });
+    const firstPayment = await testDb.payment.findFirstOrThrow({ where: { registrationId: reg.registrationId } });
+    await confirmManualPayment(reg.registrationId, { amount: Math.round(total / 3) });
+
+    await expect(voidManualPayment(firstPayment.id)).rejects.toMatchObject({ code: "NOT_LATEST" });
+  });
+
+  it("no deja anular un pago de Mercado Pago", async () => {
+    await seedTournament();
+    const reg = await createRegistration(buildRegInput());
+    const payment = await testDb.payment.create({
+      data: {
+        registrationId: reg.registrationId,
+        provider: "MERCADOPAGO",
+        status: "APPROVED",
+        amount: 1000,
+        mpPaymentId: "mp-123",
+      },
+    });
+    await expect(voidManualPayment(payment.id)).rejects.toMatchObject({ code: "NOT_VOIDABLE" });
   });
 });

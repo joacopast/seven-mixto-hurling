@@ -15,7 +15,7 @@ import {
   adminDeleteTeam,
   AdminTeamError,
 } from "@/lib/services/admin-teams";
-import { confirmManualPayment, PaymentError } from "@/lib/services/payment";
+import { confirmManualPayment, voidManualPayment, PaymentError } from "@/lib/services/payment";
 import { enqueueNotification } from "@/lib/services/notification";
 import { formatArs } from "@/lib/tournament/pricing";
 import { buildNextStepsMessage } from "@/lib/tournament/whatsapp";
@@ -78,6 +78,32 @@ export async function confirmPayment(
         team: res.teamName ?? "tu equipo",
         portalUrl: `${APP_URL}/mi-equipo`,
       }),
+    };
+  } catch (err) {
+    if (err instanceof PaymentError) return { error: err.message };
+    throw err;
+  }
+}
+
+/* ---------------- Anular pago (corregir un monto mal cargado) ---------------- */
+
+export interface VoidPaymentState {
+  ok?: boolean;
+  message?: string;
+  error?: string;
+}
+
+export async function voidPayment(paymentId: string, teamId: string): Promise<VoidPaymentState> {
+  const ctx = await adminCtx();
+  try {
+    const res = await voidManualPayment(paymentId, ctx);
+    revalidateTeam(teamId);
+    return {
+      ok: true,
+      message:
+        res.newStatus === "DEPOSIT_PAID"
+          ? `Pago anulado. Queda una seña previa de ${formatArs(res.amountPaid)} — ahora podés cargar el monto correcto.`
+          : "Pago anulado. La inscripción volvió a pendiente de pago — ahora podés cargar el monto correcto.",
     };
   } catch (err) {
     if (err instanceof PaymentError) return { error: err.message };
