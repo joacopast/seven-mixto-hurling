@@ -675,3 +675,17 @@ Edad mínima: {N} años." — ambos valores siguen saliendo de `TournamentConfig
 (`minPlayers`/`maxPlayers`/`minPlayerAge`), nada hardcodeado. Sin cambios de validación
 ni de datos. Probado en dev navegando el wizard hasta el paso de jugadores. Suite
 completa verde: 188 tests. **Enviado a producción (2026-11-02).**
+
+Fecha de corte de precio temprano 15/11 → 20/11 en el home (2026-11-02): Joaco cambió a
+mano uno de los tres "15/11" hardcodeados en `app/(public)/page.tsx` (el de la tarjeta
+de precio temprano) a "20/11"; se sincronizaron los otros dos que quedaron
+desactualizados (el badge "Hasta el .../Post ..." y la tarjeta de precio tardío) para
+que los tres digan lo mismo. **Importante:** estos tres textos están hardcodeados en el
+JSX — no salen de `TournamentConfig.priceChangeAt` (ese valor solo alimenta el párrafo
+de abajo, `priceChangeLabel`, y el cálculo real del precio en `calculatePrice`). En dev
+`priceChangeAt` seguía en 15/11/2026 al momento de este cambio — **Joaco tiene que
+actualizar la fecha real en `/admin/configuración` de producción al 20/11** para que lo
+que dice la home coincida con lo que el sistema cobra de verdad; si no, un equipo que se
+inscriba el 16, 17, 18 o 19/11 va a ver "hasta el 20/11" pero igual se le va a cobrar el
+precio tardío. No se tocó código para esto — queda pendiente de que Joaco lo cambie a
+mano en el panel.

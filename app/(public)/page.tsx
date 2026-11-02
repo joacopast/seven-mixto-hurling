@@ -187,20 +187,20 @@ export default async function HomePage() {
               <div className="flex items-center justify-between">
                 <span className="eyebrow">Precio de referencia</span>
                 <Badge tone={exampleQuote.tier === "EARLY" ? "ok" : "warn"}>
-                  {exampleQuote.tier === "EARLY" ? "Hasta el 15/11" : "Post 15/11"}
+                  {exampleQuote.tier === "EARLY" ? "Hasta el 20/11" : "Post 20/11"}
                 </Badge>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl bg-pill p-4 text-center">
-                  <p className="text-[11px] uppercase tracking-wider text-ink-faint">Hasta 15/11</p>
+                  <p className="text-[11px] uppercase tracking-wider text-ink-faint">Hasta 20/11</p>
                   <p className="mt-1 font-display text-2xl font-semibold text-paper">
                     {formatArs(config.earlyPrice)}
                   </p>
                   <p className="text-[11px] text-ink-faint">x equipo · 10 jugadores</p>
                 </div>
                 <div className="rounded-2xl bg-pill p-4 text-center">
-                  <p className="text-[11px] uppercase tracking-wider text-ink-faint">Post 15/11</p>
+                  <p className="text-[11px] uppercase tracking-wider text-ink-faint">Post 20/11</p>
                   <p className="mt-1 font-display text-2xl font-semibold text-paper">
                     {formatArs(config.latePrice)}
                   </p>
