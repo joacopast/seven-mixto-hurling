@@ -28,8 +28,7 @@ export class PaymentError extends Error {
       | "INVALID_AMOUNT"
       | "AMOUNT_TOO_HIGH"
       | "PAYMENT_NOT_FOUND"
-      | "NOT_VOIDABLE"
-      | "NOT_LATEST",
+      | "NOT_VOIDABLE",
   ) {
     super(message);
     this.name = "PaymentError";
@@ -402,19 +401,19 @@ export interface VoidPaymentResult {
 }
 
 /**
- * Deshace el ÚLTIMO pago manual aprobado de una inscripción (típicamente:
+ * Deshace cualquier pago manual aprobado de una inscripción (típicamente:
  * el admin tipeó mal el monto al confirmar una seña o el total). No borra el
  * `Payment` — lo pasa a `CANCELLED` para no perder el historial/auditoría — y
- * recalcula `Registration`/`Team` a `PENDING_PAYMENT` (si no queda ningún pago
- * aprobado) o `DEPOSIT_PAID` (si queda algún pago previo menor al total).
- * Después de anular, el admin vuelve a confirmar con `confirmManualPayment`
- * y el monto correcto, como de costumbre.
+ * recalcula `Registration`/`Team` sumando lo que quede aprobado: `PENDING_PAYMENT`
+ * si no queda nada, `DEPOSIT_PAID` si queda algo por debajo del total (nunca
+ * puede quedar en `CONFIRMED`, porque anular siempre resta). Después de
+ * anular, el admin vuelve a confirmar con `confirmManualPayment` y el monto
+ * correcto, como de costumbre.
  *
  * Acotado a propósito: solo pagos `MANUAL_TRANSFER` (los de Mercado Pago se
- * reconcilian por webhook, no se tocan acá), solo el pago más reciente
- * (evita desordenar un historial con varios pagos), y no sobre una
- * inscripción `WAITLISTED`/`CANCELLED` (casos raros que requieren mirar a
- * mano en vez de revertir automático).
+ * reconcilian por webhook, no se tocan acá) y no sobre una inscripción
+ * `WAITLISTED`/`CANCELLED` (casos raros que requieren mirar a mano en vez de
+ * revertir automático).
  */
 export async function voidManualPayment(
   paymentId: string,
@@ -442,14 +441,6 @@ export async function voidManualPayment(
       "Esta inscripción está en un estado que no se puede revertir automáticamente.",
       "NOT_VOIDABLE",
     );
-  }
-
-  const latest = await db.payment.findFirst({
-    where: { registrationId: registration.id, status: "APPROVED" },
-    orderBy: { approvedAt: "desc" },
-  });
-  if (latest?.id !== paymentId) {
-    throw new PaymentError("Solo se puede anular el pago más reciente de la inscripción.", "NOT_LATEST");
   }
 
   return db.$transaction(async (tx) => {

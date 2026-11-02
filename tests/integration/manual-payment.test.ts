@@ -288,17 +288,29 @@ describe("voidManualPayment — corregir un pago mal cargado", () => {
     expect(team.paymentStatus).toBe("PENDING");
   });
 
-  it("solo deja anular el pago más reciente, no uno viejo si ya hay otro encima", async () => {
+  it("deja anular un pago viejo aunque haya otro pago encima, no solo el último", async () => {
     await seedTournament();
     const reg = await createRegistration(buildRegInput());
     const total = (await testDb.registration.findUniqueOrThrow({ where: { id: reg.registrationId } }))
       .totalAmount;
+    const firstAmount = Math.round(total / 3);
+    const secondAmount = Math.round(total / 4);
 
-    await confirmManualPayment(reg.registrationId, { amount: Math.round(total / 3) });
+    await confirmManualPayment(reg.registrationId, { amount: firstAmount });
     const firstPayment = await testDb.payment.findFirstOrThrow({ where: { registrationId: reg.registrationId } });
-    await confirmManualPayment(reg.registrationId, { amount: Math.round(total / 3) });
+    await confirmManualPayment(reg.registrationId, { amount: secondAmount });
 
-    await expect(voidManualPayment(firstPayment.id)).rejects.toMatchObject({ code: "NOT_LATEST" });
+    const voided = await voidManualPayment(firstPayment.id);
+    expect(voided.newStatus).toBe("DEPOSIT_PAID");
+    expect(voided.amountPaid).toBe(secondAmount); // solo queda el segundo pago aprobado
+
+    const team = await testDb.team.findUniqueOrThrow({
+      where: { id: reg.teamId },
+      include: { registration: { include: { payments: true } } },
+    });
+    expect(team.registrationStatus).toBe("DEPOSIT_PAID");
+    const firstCancelled = team.registration!.payments.find((p) => p.id === firstPayment.id)!;
+    expect(firstCancelled.status).toBe("CANCELLED");
   });
 
   it("no deja anular un pago de Mercado Pago", async () => {

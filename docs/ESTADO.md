@@ -716,14 +716,17 @@ borrar/editar un pago manual ya confirmado, y volver a confirmar con otro monto 
 `voidManualPayment(paymentId, ctx)` en `lib/services/payment.ts`: no borra el
 `Payment` — lo pasa a `CANCELLED` (`PaymentStatus` ya tenía ese valor, no hizo falta
 migración) para no perder el historial/auditoría — y recalcula `Registration`/`Team` a
-`PENDING_PAYMENT` (si no queda ningún pago aprobado) o `DEPOSIT_PAID` (si queda una
-seña previa menor al total). Acotado a propósito: solo pagos `MANUAL_TRANSFER` (los de
-Mercado Pago se reconcilian por webhook, no se tocan acá — `PaymentError
-NOT_VOIDABLE`), solo el pago más reciente de la inscripción (`PaymentError NOT_LATEST`
-si se intenta anular uno viejo con otro pago encima, para no desordenar un historial de
-varios pagos), y no sobre inscripciones `WAITLISTED`/`CANCELLED` (casos raros que
-quedan para resolver a mano). Después de anular, el admin vuelve a confirmar con el
-monto correcto usando el flujo de siempre (`confirmManualPayment`). UI: botón "Anular"
+`PENDING_PAYMENT` (si no queda ningún pago aprobado) o `DEPOSIT_PAID` (si queda algo
+por debajo del total — nunca puede volver a quedar `CONFIRMED`, porque anular siempre
+resta). Acotado a propósito: solo pagos `MANUAL_TRANSFER` (los de Mercado Pago se
+reconcilian por webhook, no se tocan acá — `PaymentError NOT_VOIDABLE`) y no sobre
+inscripciones `WAITLISTED`/`CANCELLED` (casos raros que quedan para resolver a mano).
+**Se puede anular cualquier pago aprobado, no solo el más reciente** — a pedido
+explícito de Joaco en un segundo pase (la primera versión solo dejaba anular el último,
+`PaymentError NOT_LATEST`; se sacó esa restricción porque el recálculo ya sumaba
+correctamente el resto de los pagos aprobados sin importar el orden, así que no hacía
+falta la limitación). Después de anular, el admin vuelve a confirmar con el monto
+correcto usando el flujo de siempre (`confirmManualPayment`). UI: botón "Anular"
 (`VoidPaymentButton` en `team-editor.tsx`) al lado de cada pago `APPROVED
 MANUAL_TRANSFER` en la lista de pagos de `/admin/equipos/[id]` — con `confirm()` antes
 de anular y un `alert()` con el resultado; los pagos anulados quedan tachados en la
@@ -731,8 +734,8 @@ lista en vez de desaparecer. No se tocó `/admin/pagos` (la corrección es por e
 desde la ficha). Sin cambios de schema. Probado en dev con Playwright end-to-end: cargar
 una seña con monto mal ($50.000 en vez de $150.000 sobre un total de $275.000) → anular
 → verificar que vuelve a "Pendiente de pago" con el pago tachado → cargar el monto
-correcto → verificar "Seña pagada" con $150.000 pagados y $125.000 pendientes. 6 tests
-de integración nuevos en `tests/integration/manual-payment.test.ts` (anular seña,
-anular confirmación completa, anular dejando una seña previa visible, bloquear anular
-un pago viejo si hay otro encima, bloquear anular un pago de Mercado Pago). Suite
-completa verde: 193 tests (188 + 5 nuevos).
+correcto → verificar "Seña pagada" con $150.000 pagados y $125.000 pendientes. 5 tests
+de integración en `tests/integration/manual-payment.test.ts` (anular seña, anular
+confirmación completa, anular dejando una seña previa visible, anular un pago viejo
+aunque haya otro encima, bloquear anular un pago de Mercado Pago). Suite completa
+verde: 193 tests.
