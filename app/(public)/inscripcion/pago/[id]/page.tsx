@@ -11,6 +11,7 @@ import { Badge, Card, ButtonLink } from "@/components/ui";
 import { PayButton } from "./pay-button";
 import { StatusPoller } from "./status-poller";
 import { CopyField } from "./copy-field";
+import { PaymentModeCard } from "./payment-mode";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Pago de la inscripción", robots: { index: false } };
@@ -149,30 +150,44 @@ export default async function PagoPage({
                     </p>
                   )}
                 </div>
-                <p className="mt-3 text-xs text-ink-faint">
-                  Transferí exactamente <strong>{amountLabel}</strong> y mandanos el comprobante.
-                  Tu inscripción queda <strong>confirmada</strong> cuando lo verifiquemos — te
-                  avisamos por email.
-                </p>
-              </Card>
-
-              <div className="mt-4">
-                {whatsappLink ? (
-                  <ButtonLink
-                    href={whatsappLink}
-                    target="_blank"
-                    size="lg"
-                    className="w-full"
-                  >
-                    Enviar comprobante por WhatsApp
-                  </ButtonLink>
-                ) : (
-                  <p className="rounded-2xl border border-line border-l-[3px] border-l-warn bg-surface p-4 text-sm text-ink-soft">
-                    La organización todavía no cargó un WhatsApp de contacto. Escribinos por las
-                    redes para mandarte el comprobante.
+                {amountPaid > 0 && (
+                  <p className="mt-3 text-xs text-ink-faint">
+                    Transferí exactamente <strong>{amountLabel}</strong> para completar tu
+                    inscripción y mandanos el comprobante. Queda <strong>confirmada</strong>{" "}
+                    cuando lo verifiquemos.
                   </p>
                 )}
-              </div>
+              </Card>
+
+              {amountPaid === 0 ? (
+                <PaymentModeCard
+                  teamName={registration.team.name}
+                  totalAmount={registration.totalAmount}
+                  whatsappPhone={config.whatsappPhone}
+                  whatsappTemplate={
+                    config.whatsappMessageTemplate ??
+                    "Hola! Te paso el comprobante de la inscripción de {team} (${amount})."
+                  }
+                />
+              ) : (
+                <div className="mt-4">
+                  {whatsappLink ? (
+                    <ButtonLink
+                      href={whatsappLink}
+                      target="_blank"
+                      size="lg"
+                      className="w-full"
+                    >
+                      Enviar comprobante por WhatsApp
+                    </ButtonLink>
+                  ) : (
+                    <p className="rounded-2xl border border-line border-l-[3px] border-l-warn bg-surface p-4 text-sm text-ink-soft">
+                      La organización todavía no cargó un WhatsApp de contacto. Escribinos por las
+                      redes para mandarte el comprobante.
+                    </p>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             <Card className="mt-4">

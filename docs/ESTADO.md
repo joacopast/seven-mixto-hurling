@@ -620,3 +620,23 @@ porque la tarjeta es angosta (176px); en el resto se sacó la abreviación porqu
 espacio de sobra y se lee mejor completo. Sin cambios de lógica ni de datos. Probado
 con capturas en mobile (390px) contra datos de prueba (64 equipos) en las 4 zonas, y
 dev quedó restaurado a la base limpia después. Suite completa sigue verde (184 tests).
+
+Opción de seña en el momento de pagar (2026-11-02): Joaco pidió que, al llegar a
+`/inscripcion/pago/[id]`, el equipo pueda elegir entre pagar el total o pagar una seña
+para reservar el lugar — sin que la seña sea un monto fijo (ni porcentaje ni valor
+predefinido). El backend ya soportaba pagos parciales desde antes
+(`confirmManualPayment` con `opts.amount`, estado `DEPOSIT_PAID`): el admin confirma a
+mano cualquier monto ≤ lo que falta según el comprobante de WhatsApp. Lo que faltaba
+era que el equipo supiera que esa opción existe al momento de transferir. Se agregó
+`app/(public)/inscripcion/pago/[id]/payment-mode.tsx` (client component): un toggle
+"Pagar el total" / "Pagar una seña" que solo se muestra cuando todavía no se pagó nada
+(`amountPaid === 0`) — si ya hay una seña cargada, se salta directo al mensaje de
+"falta pagar X" de siempre, sin volver a preguntar. En modo seña se explica que pueden
+transferir lo que puedan (menos que el total) y hay un campo opcional para que tipeen
+cuánto van a mandar; ese valor no se guarda ni se valida en ningún lado — solo
+precarga el monto en el mensaje de WhatsApp (`buildWhatsAppLink`) para que el admin lo
+tenga de referencia al revisar el comprobante real. Sin cambios de schema ni de
+`lib/services/payment.ts`. Probado en dev con un equipo sin pagos (ve el toggle, el
+link de WhatsApp arma bien el monto tipeado) y otro con seña ya cargada (ve
+directamente "Falta pagar", sin toggle). Suite completa verde: 184 tests. **Enviado a
+producción (2026-11-02).**
