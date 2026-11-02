@@ -23,6 +23,13 @@ const INCLUSIONS_FALLBACK = [
   "Parrilla",
 ];
 
+const SPONSORS = [
+  { name: "Ayerdi Aguas", file: "ayerdi-aguas.png" },
+  { name: "Gallus", file: "gallus.jpeg" },
+  { name: "Mahoo", file: "mahoo.jpg" },
+  { name: "Oggi Farma", file: "oggi-farma.png" },
+];
+
 const FAQ_FALLBACK = [
   {
     q: "¿Cuántos jugadores puedo anotar?",
@@ -251,6 +258,30 @@ export default async function HomePage() {
             </li>
           ))}
         </ol>
+      </section>
+
+      {/* Sponsors */}
+      <section className="border-t border-line-soft bg-surface">
+        <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6">
+          <h2 className="text-center font-display text-2xl font-semibold uppercase tracking-tight text-paper sm:text-3xl">
+            Nos acompañan
+          </h2>
+          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {SPONSORS.map((sponsor) => (
+              <div
+                key={sponsor.name}
+                className="flex h-24 items-center justify-center rounded-card bg-paper p-4"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- logo chico, no necesita next/image */}
+                <img
+                  src={`/sponsors/${sponsor.file}`}
+                  alt={sponsor.name}
+                  className="h-full w-full object-contain"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* FAQ */}

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { SITE } from "@/lib/config";
 import { getSessionUser } from "@/lib/auth/guards";
+import { getActiveTournament } from "@/lib/tournament/queries";
+import { instagramHandle } from "@/lib/instagram";
 import { Crest } from "@/components/ui";
 
 function Wordmark() {
@@ -56,7 +58,11 @@ export async function SiteHeader() {
   );
 }
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const tournament = await getActiveTournament();
+  const social = (tournament.config!.socialLinks as { instagram?: string } | null) ?? {};
+  const instagram = social.instagram;
+
   return (
     <footer className="border-t border-line-soft bg-bg-deep">
       <div className="mx-auto max-w-6xl px-4 py-10 text-sm text-ink-faint sm:px-6">
@@ -71,6 +77,23 @@ export function SiteFooter() {
             <Link href="/ingresar" className="hover:text-ink">Ingresar</Link>
           </div>
         </div>
+
+        {instagram && (
+          <div className="mt-6 flex items-center gap-2 border-t border-line-soft pt-4">
+            <span className="font-mono text-[11px] uppercase tracking-wider text-ink-faint">
+              Contacto
+            </span>
+            <Link
+              href={instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-ink-soft hover:text-ink"
+            >
+              {instagramHandle(instagram) ?? "Instagram"}
+            </Link>
+          </div>
+        )}
+
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-ink-faint">{SITE.tagline}</p>
           <Link href="/staff" className="font-mono text-[11px] text-ink-faint/70 hover:text-ink-faint">

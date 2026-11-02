@@ -640,3 +640,27 @@ tenga de referencia al revisar el comprobante real. Sin cambios de schema ni de
 link de WhatsApp arma bien el monto tipeado) y otro con seña ya cargada (ve
 directamente "Falta pagar", sin toggle). Suite completa verde: 184 tests. **Enviado a
 producción (2026-11-02).**
+
+Contacto (Instagram) en el footer + sección de sponsors en el home (2026-11-02): dos
+pedidos de Joaco, enviados juntos.
+
+- **Contacto.** `TournamentConfig.socialLinks` ya traía el link de Instagram cargado
+  desde el seed (`{ instagram: "https://www.instagram.com/sevenmixtohurling/" }"`) pero
+  no se mostraba en ningún lado del sitio público. `SiteFooter` (`components/site-chrome.tsx`)
+  pasó a `async` y agrega un bloque "Contacto" con el handle (`lib/instagram.ts` →
+  `instagramHandle(url)`, función pura con test, extrae `@sevenmixtohurling` de la URL)
+  linkeando al Instagram real. Sin cambios de schema — el dato ya existía, solo faltaba
+  renderizarlo.
+- **Sponsors.** Sección nueva "Nos acompañan" en el home (`app/(public)/page.tsx`),
+  entre "La inscripción, paso a paso" y "Preguntas frecuentes": grid de tarjetas color
+  crema (`bg-paper`, para que los logos con fondo blanco/opaco se integren prolijo
+  sobre el verde) con el logo de cada sponsor, 4 columnas en desktop y 2 en mobile.
+  Lista hardcodeada en `SPONSORS` (nombre + archivo) — no hay campo en
+  `TournamentConfig` para esto, no hizo falta porque son pocos y fijos para esta
+  edición. Los archivos de los sponsors (Ayerdi Aguas, Gallus, Mahoo, Oggi Farma) están
+  en `public/sponsors/` (nombres normalizados a kebab-case, sin trackear antes porque
+  Joaco los dejó directo en la carpeta). Si se suma/saca un sponsor en el futuro, hay
+  que tocar el array `SPONSORS` y la carpeta a mano.
+
+Probado en dev con capturas en desktop y mobile. Suite completa verde: 188 tests
+(184 + 4 nuevos de `instagram.test.ts`). **Enviado a producción (2026-11-02).**
