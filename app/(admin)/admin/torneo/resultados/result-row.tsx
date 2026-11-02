@@ -21,9 +21,9 @@ export function ResultRow({ match }: { match: FixtureMatchView }) {
           <input type="hidden" name="matchId" value={match.id} />
           <input type="hidden" name="mode" value={mode} />
 
-          <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] text-ink-faint">
-            <span>{match.fieldName?.replace("Cancha ", "C")}</span>
-            {match.groupName && <span>Gr.{match.groupName}</span>}
+          <div className="flex flex-wrap items-center gap-2 font-mono">
+            <span className="text-sm font-semibold text-paper">{match.fieldName}</span>
+            {match.groupName && <span className="text-[11px] text-ink-faint">Gr.{match.groupName}</span>}
           </div>
 
           <div className="flex items-center gap-2">

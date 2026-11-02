@@ -66,7 +66,7 @@ function MatchCard({ m }: { m: BracketMatchView }) {
       <div className="h-px bg-line-soft" />
       {side(m.awayTeamId, m.awayTeamName, s.away)}
       {m.startsAt && (
-        <div className="border-t border-line-soft px-2.5 py-1 font-mono text-[10px] text-ink-faint">
+        <div className="border-t border-line-soft px-2.5 py-1 font-mono text-[12px] font-semibold text-ink-soft">
           {formatHora(m.startsAt)}
           {m.fieldName ? ` · ${m.fieldName.replace("Cancha ", "C")}` : ""}
         </div>

@@ -147,7 +147,7 @@ export default async function TorneoPage() {
                           <div key={tanda}>
                             <h3 className="mb-2 flex items-baseline gap-2 font-display text-lg font-semibold text-paper">
                               {matches[0]!.tandaLabel}
-                              <span className="font-sans text-xs font-normal text-ink-faint">
+                              <span className="font-mono text-base font-semibold text-pop-soft">
                                 {formatHora(matches[0]!.startsAt)}
                               </span>
                             </h3>
@@ -163,9 +163,10 @@ export default async function TorneoPage() {
                                         : "border-dashed border-line bg-transparent"
                                     }`}
                                   >
-                                    <div className="mb-1 flex items-center justify-between font-mono text-[10px] text-ink-faint">
+                                    <div className="mb-1.5 flex items-center justify-between gap-2 font-mono">
                                       <span>
-                                        Gr.{m.groupName} · {m.fieldName}
+                                        <span className="text-[11px] text-ink-faint">Gr.{m.groupName} · </span>
+                                        <span className="text-sm font-semibold text-paper">{m.fieldName}</span>
                                       </span>
                                       {m.status === "WALKOVER" && <Badge tone="warn">W.O.</Badge>}
                                     </div>

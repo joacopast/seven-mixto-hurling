@@ -163,12 +163,14 @@ export default async function MiEquipoPage({
                   }`}
                 >
                   <div className="min-w-0">
-                    <div className="font-mono text-[11px] text-ink-faint">
-                      {m.label}
-                      {m.startsAt
-                        ? ` · ${formatHora(m.startsAt)}`
-                        : ""}
-                      {m.fieldName ? ` · ${m.fieldName}` : ""}
+                    <div className="flex flex-wrap items-baseline gap-x-1.5 font-mono">
+                      <span className="text-[11px] text-ink-faint">{m.label}</span>
+                      {m.startsAt && (
+                        <span className="text-sm font-semibold text-pop-soft">{formatHora(m.startsAt)}</span>
+                      )}
+                      {m.fieldName && (
+                        <span className="text-sm font-semibold text-paper">· {m.fieldName}</span>
+                      )}
                     </div>
                     <div className="text-sm text-ink">
                       vs <span className="font-medium">{m.opponentName ?? "por definir"}</span>

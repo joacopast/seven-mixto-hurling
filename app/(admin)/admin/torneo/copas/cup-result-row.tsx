@@ -22,7 +22,7 @@ export function CupResultRow({ m }: { m: BracketMatchView }) {
     return (
       <tr>
         <td className="px-3 py-2 text-sm text-ink-faint">
-          <span className="mr-2 w-8 font-mono text-[11px]">{m.fieldName?.replace("Cancha ", "C")}</span>
+          <span className="mr-2 font-mono text-sm font-semibold text-ink-soft">{m.fieldName}</span>
           {m.homeTeamName ?? "Por definir"} <span className="mx-1">vs</span>{" "}
           {m.awayTeamName ?? "Por definir"}
         </td>
@@ -38,7 +38,7 @@ export function CupResultRow({ m }: { m: BracketMatchView }) {
           <input type="hidden" name="mode" value={mode} />
           {state.needsCascade && <input type="hidden" name="confirmCascade" value="on" />}
 
-          <span className="font-mono text-[11px] text-ink-faint">{m.fieldName?.replace("Cancha ", "C")}</span>
+          <span className="font-mono text-sm font-semibold text-paper">{m.fieldName}</span>
 
           <div className="flex items-center gap-2">
             <span className="min-w-0 flex-1 truncate text-right text-sm text-ink">{m.homeTeamName}</span>

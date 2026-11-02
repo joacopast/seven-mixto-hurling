@@ -588,14 +588,16 @@ la base de dev (64 equipos/828 jugadores de prueba borrados sin error, segunda c
 en cero) — confirmado el orden de borrado contra las FK sin `onDelete: Cascade` del
 schema (`Match`/`BracketMatch`/`MatchSlot` antes que `Team`/`Group`/`Cup`/`Round`).
 
-**Pendiente ejecutar contra producción** — el bloqueo de "Credential Materialization"
-de Claude Code en modo auto impide traer la connection string de Neon o tocar la DB de
-prod desde acá (igual que pasó con la migración de `STATUS_CHANGED`). Joaco tiene que
-correr, con la `DATABASE_URL`/`DIRECT_URL` de producción:
-```
-DATABASE_URL=... DIRECT_URL=... npx tsx scripts/clean-pre-launch.ts              # dry-run, revisar los números
-DATABASE_URL=... DIRECT_URL=... CONFIRM=yes npx tsx scripts/clean-pre-launch.ts --execute
-```
+El bloqueo de "Credential Materialization" de Claude Code en modo auto impide traer la
+connection string de Neon o tocar la DB de prod desde acá (igual que pasó con la
+migración de `STATUS_CHANGED`), así que lo corrió Joaco a mano con la
+`DATABASE_URL` del pooler de producción. En la primera corrida con `--execute` la
+transacción (17 deletes secuenciales) superó el timeout default de Prisma de 5000ms
+contra la latencia real de Neon — se arregló pasando `{ timeout: 60_000, maxWait:
+10_000 }` como segunda opción de `db.$transaction`. Se confirmó que no hubo borrado
+parcial (un dry-run posterior mostró los mismos números) antes de reintentar.
+**Ejecutado contra producción (2026-10-31): base limpia, torneo en
+`REGISTRATION_OPEN`, config/canchas/admins intactos.**
 
 De paso, correr el E2E completo encontró 2 tests de `tests/e2e/public.spec.ts`
 desactualizados (no relacionados a la limpieza, texto viejo de antes de cambios ya
@@ -605,3 +607,16 @@ al convertir la página a pestañas) y el del wizard todavía llenaba un campo d
 formato mundial se elige un país de un `<select>`, y el texto del plantel pasó a
 "entre 7 y 20 personas" para aclarar que cuenta gente que no juega al hockey). Quedó
 arreglado. Suite completa verde: 184 unit/integration + 5 e2e.
+
+Hora y cancha más grandes en los partidos (2026-11-02): Joaco pidió agrandar la hora y
+la cancha de cada partido en toda la app para que se distingan mejor de un vistazo.
+Se subió tamaño y peso (bold) y se separó del resto del texto con color: hora en
+naranja (`text-pop-soft`), cancha en crema (`text-paper`/`text-ink-soft`), dejando el
+label de grupo/ronda chico y tenue al lado. Tocado en las 4 zonas donde más se busca
+este dato: `/torneo` público (pestañas Resultados y Copas), `/admin/torneo/resultados`,
+`/admin/torneo/copas` y `/mi-equipo` ("Mis partidos"). En `components/bracket-view.tsx`
+(cuadro de copas, se usa en ambos lados) se mantuvo la abreviación "Cancha X" → "CX"
+porque la tarjeta es angosta (176px); en el resto se sacó la abreviación porque ya hay
+espacio de sobra y se lee mejor completo. Sin cambios de lógica ni de datos. Probado
+con capturas en mobile (390px) contra datos de prueba (64 equipos) en las 4 zonas, y
+dev quedó restaurado a la base limpia después. Suite completa sigue verde (184 tests).

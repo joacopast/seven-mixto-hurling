@@ -52,7 +52,7 @@ export default async function ResultadosPage() {
           <section key={tanda}>
             <h2 className="mb-2 flex flex-wrap items-center gap-2 font-display text-lg font-semibold text-paper">
               {matches[0]!.tandaLabel}
-              <span className="font-sans text-xs font-normal text-ink-faint">
+              <span className="font-mono text-base font-semibold text-pop-soft">
                 {formatHora(matches[0]!.startsAt)}
               </span>
               {matches[0]!.roundId && (
