@@ -749,3 +749,22 @@ rechazaría al reintentar guardar ese equipo. Sin más referencias a "Irlanda" e
 resto del código. Typecheck limpio, 103 tests unitarios verdes (no se pudo correr la
 suite de integración en esta sesión porque Postgres local/Docker estaba apagado — no
 hacía falta, este cambio no toca ningún servicio ni la DB).
+
+Lista de equipos confirmados, con plantel visible, en el home y en /torneo
+(2026-11-03): antes de que se publique el fixture no había forma de ver quién ya
+estaba anotado. Se agregó `getConfirmedTeams(tournamentId)` en
+`lib/tournament/team-view.ts` (equipos con `registrationStatus` en
+`CONFIRMED_STATUSES` — el mismo criterio que ya usa el contador "X/64 confirmados" —
+devuelve `{id, name, flag}` vía `countryFlag()`). Se amplió `getPublicTeamRoster()`
+(hasta ahora solo visible con el fixture publicado, para que los rivales se vean
+entre sí) para que también muestre el plantel de un equipo puntual si *ese equipo*
+ya está confirmado, aunque el torneo global siga en inscripción — sigue sin exponer
+DNI/email/teléfono, solo nombre y apellido, igual que siempre. En el home
+(`app/(public)/page.tsx`) se agregaron, debajo del contador de equipos confirmados,
+pills de bandera + nombre por cada equipo, linkeando a `/equipos/[id]` (la misma
+página pública que ya usaba el fixture). En `/torneo` (`app/(public)/torneo/page.tsx`)
+se agregó la misma lista bajo el cartel "El fixture todavía no está publicado" — una
+vez que se publican los grupos, esa sección desaparece porque los equipos ya aparecen
+en posiciones/resultados. Sin cambios de schema ni de servicios de escritura. Probado
+en dev con equipos de prueba creados y borrados a mano en la DB local (no afectó datos
+reales). Typecheck limpio, suite completa verde: 193 tests.

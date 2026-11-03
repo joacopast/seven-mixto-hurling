@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getActiveTournament } from "@/lib/tournament/queries";
+import { getConfirmedTeams } from "@/lib/tournament/team-view";
 import { getGroupsWithStandings, getGroupFixture } from "@/lib/tournament/groups-view";
 import { getCupsWithBrackets } from "@/lib/tournament/bracket-view";
 import { Badge } from "@/components/ui";
@@ -35,10 +36,11 @@ export default async function TorneoPage() {
   const showGroups = GROUPS_VISIBLE.includes(tournament.status);
   const showCups = CUPS_VISIBLE.includes(tournament.status);
 
-  const [groups, fixture, cups] = await Promise.all([
+  const [groups, fixture, cups, confirmedTeams] = await Promise.all([
     showGroups ? getGroupsWithStandings(tournament.id) : Promise.resolve([]),
     showGroups ? getGroupFixture(tournament.id) : Promise.resolve([]),
     showCups ? getCupsWithBrackets(tournament.id) : Promise.resolve([]),
+    showGroups ? Promise.resolve([]) : getConfirmedTeams(tournament.id),
   ]);
 
   const byTanda = new Map<number, typeof fixture>();
@@ -74,7 +76,31 @@ export default async function TorneoPage() {
             grupos, las posiciones, los horarios, los resultados y las llaves de las cuatro copas.
           </p>
         </div>
-      ) : (
+      ) : null}
+
+      {!showGroups && confirmedTeams.length > 0 && (
+        <section className="mt-8">
+          <h2 className="font-display text-xl font-semibold uppercase tracking-tight text-paper">
+            Equipos confirmados ({confirmedTeams.length})
+          </h2>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {confirmedTeams.map((team) => (
+              <Link
+                key={team.id}
+                href={`/equipos/${team.id}`}
+                className="flex items-center gap-1.5 rounded-full border border-line-soft bg-surface px-3 py-1.5 text-sm text-ink transition-colors hover:border-pop/50 hover:text-paper"
+              >
+                <span className="text-base leading-none" aria-hidden>
+                  {team.flag}
+                </span>
+                {team.name}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {showGroups && (
         <>
           {tournament.status === "FINISHED" && cups.length > 0 && (
             <section className="mt-8">

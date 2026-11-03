@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ButtonLink, Card, Badge, Crest } from "@/components/ui";
 import { SITE } from "@/lib/config";
 import { getActiveTournament, getCapacity } from "@/lib/tournament/queries";
+import { getConfirmedTeams } from "@/lib/tournament/team-view";
 import { calculatePrice, formatArs } from "@/lib/tournament/pricing";
 import { formatFecha } from "@/lib/datetime";
 
@@ -52,7 +53,10 @@ const FAQ_FALLBACK = [
 export default async function HomePage() {
   const tournament = await getActiveTournament();
   const config = tournament.config!;
-  const capacity = await getCapacity();
+  const [capacity, confirmedTeams] = await Promise.all([
+    getCapacity(),
+    getConfirmedTeams(tournament.id),
+  ]);
 
   const now = new Date();
   const exampleQuote = calculatePrice(
@@ -135,6 +139,23 @@ export default async function HomePage() {
               </span>
             )}
           </div>
+
+          {confirmedTeams.length > 0 && (
+            <div className="mt-8 flex flex-wrap justify-center gap-2">
+              {confirmedTeams.map((team) => (
+                <Link
+                  key={team.id}
+                  href={`/equipos/${team.id}`}
+                  className="flex items-center gap-1.5 rounded-full border border-line-soft bg-surface px-3 py-1.5 text-sm text-ink transition-colors hover:border-pop/50 hover:text-paper"
+                >
+                  <span className="text-base leading-none" aria-hidden>
+                    {team.flag}
+                  </span>
+                  {team.name}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
