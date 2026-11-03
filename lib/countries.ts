@@ -95,7 +95,6 @@ const RAW_COUNTRIES: Country[] = [
   { name: "Indonesia", code: "IDN" },
   { name: "Irak", code: "IRQ" },
   { name: "Irán", code: "IRN" },
-  { name: "Irlanda", code: "IRL" },
   { name: "Islandia", code: "ISL" },
   { name: "Islas Marshall", code: "MHL" },
   { name: "Islas Salomón", code: "SLB" },

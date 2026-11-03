@@ -739,3 +739,13 @@ de integración en `tests/integration/manual-payment.test.ts` (anular seña, anu
 confirmación completa, anular dejando una seña previa visible, anular un pago viejo
 aunque haya otro encima, bloquear anular un pago de Mercado Pago). Suite completa
 verde: 193 tests.
+
+Se sacó Irlanda de la lista de países (2026-11-03): Joaco la borró a mano de
+`lib/countries.ts` (`RAW_COUNTRIES`). Quedan 194 países en vez de 195. Confirmado con
+Joaco que ningún equipo se había inscripto todavía como Irlanda, así que no hay
+impacto en datos existentes — si lo hubiera habido, el `<select>` de país (wizard,
+alta/edición admin) ya no mostraría esa opción y la validación (`isCountryName`) la
+rechazaría al reintentar guardar ese equipo. Sin más referencias a "Irlanda" en el
+resto del código. Typecheck limpio, 103 tests unitarios verdes (no se pudo correr la
+suite de integración en esta sesión porque Postgres local/Docker estaba apagado — no
+hacía falta, este cambio no toca ningún servicio ni la DB).
