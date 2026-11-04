@@ -6,6 +6,7 @@ import {
   adminAddPlayer,
   adminRemovePlayer,
   adminDeleteTeam,
+  updatePlayer,
   AdminTeamError,
 } from "@/lib/services/admin-teams";
 import { updateTournamentConfig, ConfigError } from "@/lib/services/config";
@@ -113,6 +114,131 @@ describe("admin-teams", () => {
     expect(players).toHaveLength(1);
     await adminRemovePlayer(players[0]!.id);
     expect(await testDb.player.count({ where: { teamId: team!.id } })).toBe(0);
+  });
+
+  it("agregar un jugador extra (>10) recalcula lo que debe el equipo y, si ya estaba todo pagado, lo pasa a seña pagada", async () => {
+    const t = await seedTournament(); // basePlayers 10, earlyPrice 275.000, extraPlayerPrice 27.500
+    const [team] = await seedConfirmedTeams(t.id, 1, { playersPerTeam: 10 });
+    const totalAmount = 275_000_00;
+    await testDb.registration.update({
+      where: { teamId: team!.id },
+      data: { totalAmount, baseAmount: totalAmount, playerCountQuoted: 10, priceTier: "EARLY", quotedAt: new Date() },
+    });
+    const registration = await testDb.registration.findUniqueOrThrow({ where: { teamId: team!.id } });
+    await testDb.payment.create({
+      data: {
+        registrationId: registration.id,
+        provider: "MANUAL_TRANSFER",
+        status: "APPROVED",
+        amount: totalAmount,
+        currency: "ARS",
+        approvedAt: new Date(),
+      },
+    });
+
+    await adminAddPlayer(team!.id, {
+      firstName: "Extra", lastName: "P", docType: "DNI", docNumber: "11.111.111", birthDate: "1995-01-01", gender: "F",
+    });
+
+    const fresh = await testDb.registration.findUniqueOrThrow({ where: { teamId: team!.id } });
+    expect(fresh.playerCountQuoted).toBe(11);
+    expect(fresh.priceTier).toBe("EARLY"); // la tarifa queda congelada, no se recalcula por fecha
+    expect(fresh.totalAmount).toBe(totalAmount + 27_500_00);
+    expect(fresh.status).toBe("DEPOSIT_PAID"); // ya no le alcanza lo pagado con el nuevo total
+
+    const freshTeam = await testDb.team.findUniqueOrThrow({ where: { id: team!.id } });
+    expect(freshTeam.registrationStatus).toBe("DEPOSIT_PAID");
+
+    const requoteAudit = await testDb.auditLog.findFirst({ where: { action: "registration.requote" } });
+    expect(requoteAudit).not.toBeNull();
+    const statusAudit = await testDb.auditLog.findFirst({ where: { action: "registration.requote.status" } });
+    expect(statusAudit).not.toBeNull();
+  });
+
+  it("sacar al jugador extra de nuevo vuelve a confirmar el equipo si lo pagado ya alcanza", async () => {
+    const t = await seedTournament();
+    const [team] = await seedConfirmedTeams(t.id, 1, { playersPerTeam: 10 });
+    const totalAmount = 275_000_00;
+    await testDb.registration.update({
+      where: { teamId: team!.id },
+      data: { totalAmount, baseAmount: totalAmount, playerCountQuoted: 10, priceTier: "EARLY", quotedAt: new Date() },
+    });
+    const registration = await testDb.registration.findUniqueOrThrow({ where: { teamId: team!.id } });
+    await testDb.payment.create({
+      data: {
+        registrationId: registration.id,
+        provider: "MANUAL_TRANSFER",
+        status: "APPROVED",
+        amount: totalAmount,
+        currency: "ARS",
+        approvedAt: new Date(),
+      },
+    });
+    await adminAddPlayer(team!.id, {
+      firstName: "Extra", lastName: "P", docType: "DNI", docNumber: "11.111.111", birthDate: "1995-01-01", gender: "F",
+    });
+    expect((await testDb.registration.findUniqueOrThrow({ where: { teamId: team!.id } })).status).toBe(
+      "DEPOSIT_PAID",
+    );
+
+    const extra = await testDb.player.findFirstOrThrow({ where: { teamId: team!.id, docNumber: "11111111" } });
+    await adminRemovePlayer(extra.id);
+
+    const fresh = await testDb.registration.findUniqueOrThrow({ where: { teamId: team!.id } });
+    expect(fresh.playerCountQuoted).toBe(10);
+    expect(fresh.totalAmount).toBe(totalAmount);
+    expect(fresh.status).toBe("CONFIRMED");
+    const freshTeam = await testDb.team.findUniqueOrThrow({ where: { id: team!.id } });
+    expect(freshTeam.registrationStatus).toBe("CONFIRMED");
+  });
+
+  it("un equipo cargado a mano como CONFIRMED sin ningún pago no baja de estado al agregarle jugadores, aunque se cotice de verdad", async () => {
+    const t = await seedTournament();
+    const team = await adminCreateTeam({
+      tournamentId: t.id,
+      name: "Bélgica",
+      contactName: "Org",
+      contactEmail: "bel@test.local",
+      contactPhone: "1",
+      registrationStatus: "CONFIRMED",
+    });
+
+    await adminAddPlayer(team.id, {
+      firstName: "A", lastName: "B", docType: "DNI", docNumber: "1", birthDate: "1995-01-01", gender: "F",
+    });
+
+    const freshTeam = await testDb.team.findUniqueOrThrow({ where: { id: team.id } });
+    expect(freshTeam.registrationStatus).toBe("CONFIRMED"); // no lo baja: no hay plata aprobada que reconciliar
+    const reg = await testDb.registration.findUniqueOrThrow({ where: { teamId: team.id } });
+    expect(reg.totalAmount).toBeGreaterThan(0); // pero sí queda cotizado de verdad, no en 0
+    expect(reg.playerCountQuoted).toBe(1);
+  });
+
+  it("editar un jugador (no agregar/sacar) no toca el precio de la inscripción", async () => {
+    const t = await seedTournament();
+    const [team] = await seedConfirmedTeams(t.id, 1, { playersPerTeam: 10 });
+    await testDb.registration.update({
+      where: { teamId: team!.id },
+      data: { totalAmount: 275_000_00, playerCountQuoted: 10, priceTier: "EARLY", quotedAt: new Date() },
+    });
+    const player = await testDb.player.findFirstOrThrow({ where: { teamId: team!.id } });
+
+    await updatePlayer(player.id, {
+      firstName: "Corregido",
+      lastName: player.lastName,
+      docType: "DNI",
+      docNumber: player.docNumber,
+      birthDate: "1995-01-01",
+      gender: "F",
+    });
+
+    const fresh = await testDb.registration.findUniqueOrThrow({ where: { teamId: team!.id } });
+    expect(fresh.totalAmount).toBe(275_000_00);
+    expect(fresh.playerCountQuoted).toBe(10);
+    const freshPlayer = await testDb.player.findUniqueOrThrow({ where: { id: player.id } });
+    expect(freshPlayer.firstName).toBe("Corregido");
+    const audit = await testDb.auditLog.findFirst({ where: { action: "player.update" } });
+    expect(audit).not.toBeNull();
   });
 
   it("no permite eliminar un equipo con partidos; sí uno sin partidos", async () => {

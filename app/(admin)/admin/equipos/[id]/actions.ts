@@ -13,6 +13,7 @@ import {
   adminAddPlayer,
   adminRemovePlayer,
   adminDeleteTeam,
+  updatePlayer,
   AdminTeamError,
 } from "@/lib/services/admin-teams";
 import { confirmManualPayment, voidManualPayment, PaymentError } from "@/lib/services/payment";
@@ -310,6 +311,49 @@ export async function addPlayer(_prev: PlayerActionState, formData: FormData): P
       ctx,
     );
     revalidateTeam(d.teamId);
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof AdminTeamError) return { error: err.message };
+    throw err;
+  }
+}
+
+export interface EditPlayerState {
+  ok?: boolean;
+  error?: string;
+}
+
+export async function updatePlayerAction(
+  playerId: string,
+  teamId: string,
+  _prev: EditPlayerState,
+  formData: FormData,
+): Promise<EditPlayerState> {
+  const ctx = await adminCtx();
+  const parsed = playerSchema.omit({ teamId: true }).safeParse({
+    ...Object.fromEntries(formData.entries()),
+    attendsParty: formData.get("attendsParty") === "on",
+  });
+  if (!parsed.success) return { error: "Revisá los datos del jugador." };
+  const d = parsed.data;
+  try {
+    await updatePlayer(
+      playerId,
+      {
+        firstName: d.firstName,
+        lastName: d.lastName,
+        docType: d.docType,
+        docNumber: d.docNumber,
+        birthDate: d.birthDate,
+        gender: d.gender,
+        shirtNumber: d.shirtNumber === "" || d.shirtNumber === undefined ? null : d.shirtNumber,
+        dietaryRestriction: d.dietaryRestriction || undefined,
+        attendsParty: d.attendsParty,
+        playsHockey: d.playsHockey,
+      },
+      ctx,
+    );
+    revalidateTeam(teamId);
     return { ok: true };
   } catch (err) {
     if (err instanceof AdminTeamError) return { error: err.message };

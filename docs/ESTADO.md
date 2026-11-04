@@ -768,3 +768,44 @@ vez que se publican los grupos, esa sección desaparece porque los equipos ya ap
 en posiciones/resultados. Sin cambios de schema ni de servicios de escritura. Probado
 en dev con equipos de prueba creados y borrados a mano en la DB local (no afectó datos
 reales). Typecheck limpio, suite completa verde: 193 tests.
+
+Recotizar al agregar/sacar jugadores extra + botón para que el staff edite
+jugadores (2026-11-04): Joaco encontró un bug — "Jugadores cotizados" y
+"Plantel (N)" podían mostrar números distintos en `/admin/equipos/[id]`,
+porque `adminAddPlayer`/`adminRemovePlayer` nunca tocaban
+`Registration.totalAmount`/`playerCountQuoted`: agregar un jugador extra
+(>10) no sumaba `extraPlayerPrice` a lo que el equipo debía. Se agregó
+`requoteRegistrationForPlayerCount(tx, teamId, ctx)` en
+`lib/services/registration.ts`, llamada desde `adminAddPlayer`/
+`adminRemovePlayer` (`lib/services/admin-teams.ts`) dentro de la misma
+transacción: recalcula `totalAmount`/`playerCountQuoted` según el plantel
+real. Si la inscripción ya tenía tarifa asignada (`quotedAt` seteado), la
+deja **congelada** — para eso se extrajo `quoteForTier(config, tier,
+playerCount)` en `lib/tournament/pricing.ts` (misma fórmula de
+`calculatePrice`, pero con la tarifa fija en vez de resuelta por fecha), así
+agregar/sacar un jugador no mueve a un equipo de EARLY a LATE por casualidad
+de la fecha en que se edita el plantel; si nunca se había cotizado (equipo
+cargado a mano por el admin sin pasar por el wizard), cotiza por primera vez
+con la tarifa vigente hoy. Si el total cambia y el equipo ya estaba pagando
+(`CONFIRMED`/`PAYMENT_APPROVED`/`DEPOSIT_PAID`) **y tiene algún pago
+aprobado de verdad**, recalcula también el estado contra lo ya aprobado:
+agregar jugadores puede devolver un equipo confirmado a "Seña pagada" (con
+el saldo nuevo visible y el botón "Confirmar pago" reapareciendo); sacar
+jugadores puede volver a confirmarlo si la seña ya alcanza. Si no hay ningún
+pago aprobado detrás (equipo cargado a mano como cortesía, `CONFIRMED` sin
+transferencia real) no le toca el estado — solo lo deja cotizado de verdad,
+para no deshacer ese tipo de alta manual. Además se agregó un botón
+"Editar" por jugador en `/admin/equipos/[id]`
+(`app/(admin)/admin/equipos/[id]/player-row.tsx`, nuevo — mismo patrón que
+`PlayerRow` del portal `/mi-equipo`) que abre un formulario inline y llama a
+`updatePlayer` (ya existía, lo usaba el portal del equipo) — corrige
+nombre/documento/fecha de nacimiento/etc. sin tocar el precio ni el
+`rosterLockAt` (el staff puede arreglar un error en cualquier momento). 5
+tests de integración nuevos en `tests/integration/admin.test.ts` (agregar
+extra con pago → seña pagada con tarifa congelada; sacar el extra → vuelve a
+confirmado; alta manual sin pago no se degrada; editar no toca el precio).
+Probado también en el navegador con un equipo de 10 jugadores pagado
+$275.000: agregar un 11º → $302.500 total, "Falta $27.500", tarifa EARLY
+intacta, pasa a "Seña pagada"; sacarlo vuelve a $275.000 confirmado. Sin
+cambios de schema. Typecheck limpio, build de producción OK, suite completa
+verde: 197 tests.

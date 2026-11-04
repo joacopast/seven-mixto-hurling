@@ -6,6 +6,7 @@ import { notifyAdmin } from "@/lib/services/admin-alerts";
 import { enqueueNotification } from "@/lib/services/notification";
 import { normalizeDoc } from "@/lib/validation/registration";
 import { countryCode } from "@/lib/countries";
+import { requoteRegistrationForPlayerCount } from "@/lib/services/registration";
 import type { Prisma, RegistrationStatus } from "@prisma/client";
 
 export class AdminTeamError extends Error {
@@ -272,6 +273,7 @@ export async function adminAddPlayer(teamId: string, input: AdminPlayerInput, ct
       teamName: team.name,
       dedupeKey: `admin-alert:player.admin.add:${player.id}`,
     });
+    await requoteRegistrationForPlayerCount(tx, teamId, ctx);
   });
 }
 
@@ -381,6 +383,7 @@ export async function adminRemovePlayer(playerId: string, ctx: Ctx = {}) {
       teamName: player.team.name,
       dedupeKey: `admin-alert:player.admin.remove:${playerId}`,
     });
+    await requoteRegistrationForPlayerCount(tx, player.teamId, ctx);
   });
 }
 

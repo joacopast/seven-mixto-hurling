@@ -10,11 +10,11 @@ import { StatusChanger } from "./status-changer";
 import {
   TeamEditForm,
   AddPlayerForm,
-  RemovePlayerButton,
   DeleteTeamButton,
   ConfirmPaymentButton,
   VoidPaymentButton,
 } from "./team-editor";
+import { AdminPlayerRow } from "./player-row";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Equipo", robots: { index: false } };
@@ -179,35 +179,24 @@ export default async function AdminTeamDetail({ params }: { params: Promise<{ id
             </thead>
             <tbody className="divide-y divide-line">
               {team.players.map((p) => (
-                <tr key={p.id}>
-                  <td className="px-3 py-2 text-ink">
-                    {p.firstName} {p.lastName}
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs text-ink-soft">
-                    {p.docType} {p.docNumber}
-                  </td>
-                  <td className="px-3 py-2 font-mono text-ink-soft">{ageOn(p.birthDate, ageReference)}</td>
-                  <td className="px-3 py-2 text-ink-soft">{p.gender}</td>
-                  <td className="px-3 py-2 font-mono text-ink-soft">{p.shirtNumber ?? "—"}</td>
-                  <td className="px-3 py-2">
-                    {p.playsHockey ? (
-                      <Badge tone="ok">Jugador</Badge>
-                    ) : (
-                      <Badge tone="neutral">No jugador</Badge>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-xs text-ink-soft">{p.dietaryRestriction ?? "—"}</td>
-                  <td className="px-3 py-2">
-                    {p.attendsParty ? (
-                      <Badge tone="ok">Sí</Badge>
-                    ) : (
-                      <Badge tone="neutral">No</Badge>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <RemovePlayerButton playerId={p.id} teamId={team.id} />
-                  </td>
-                </tr>
+                <AdminPlayerRow
+                  key={p.id}
+                  teamId={team.id}
+                  player={{
+                    id: p.id,
+                    firstName: p.firstName,
+                    lastName: p.lastName,
+                    docType: p.docType,
+                    docNumber: p.docNumber,
+                    birthDate: p.birthDate.toISOString().slice(0, 10),
+                    gender: p.gender,
+                    shirtNumber: p.shirtNumber,
+                    dietaryRestriction: p.dietaryRestriction,
+                    attendsParty: p.attendsParty,
+                    playsHockey: p.playsHockey,
+                    age: ageOn(p.birthDate, ageReference),
+                  }}
+                />
               ))}
             </tbody>
           </table>

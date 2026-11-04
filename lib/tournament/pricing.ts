@@ -87,12 +87,25 @@ export function calculatePrice(
   now: Date = new Date(),
 ): PriceQuote {
   assertConfig(config);
+  const tier = resolveTier(config.priceChangeAt, now);
+  return quoteForTier(config, tier, playerCount);
+}
+
+/**
+ * Igual que `calculatePrice`, pero con la tarifa (EARLY/LATE) fijada de
+ * antemano en vez de resolverla por fecha. La usa el backend para recotizar
+ * una inscripción que ya tenía tarifa asignada (p.ej. al agregar o sacar un
+ * jugador) sin que el cambio de plantel la mueva de tarifa por casualidad de
+ * la fecha en la que se edita — la tarifa se definió una sola vez, cuando se
+ * cotizó por primera vez.
+ */
+export function quoteForTier(config: PricingConfig, tier: PriceTier, playerCount: number): PriceQuote {
+  assertConfig(config);
 
   if (!Number.isInteger(playerCount) || playerCount < 0) {
     throw new Error("playerCount debe ser un entero >= 0");
   }
 
-  const tier = resolveTier(config.priceChangeAt, now);
   const baseAmount = tier === "EARLY" ? config.earlyPrice : config.latePrice;
 
   const includedPlayers = config.basePlayers;

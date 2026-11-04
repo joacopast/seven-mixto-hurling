@@ -5,11 +5,12 @@ import { countryCode } from "@/lib/countries";
 import { writeAudit } from "@/lib/services/audit";
 import { enqueueNotification } from "@/lib/services/notification";
 import { notifyAdmin } from "@/lib/services/admin-alerts";
-import { calculatePrice, formatArs, type PriceQuote } from "@/lib/tournament/pricing";
+import { calculatePrice, quoteForTier, formatArs, type PriceQuote } from "@/lib/tournament/pricing";
 import { validateRoster, type RosterPlayerInput } from "@/lib/tournament/roster";
 import { getActiveTournament } from "@/lib/tournament/queries";
 import { OCCUPYING_STATUSES } from "@/lib/tournament/queries";
 import type { RegistrationSubmitInput } from "@/lib/validation/registration";
+import type { Prisma } from "@prisma/client";
 
 export class RegistrationError extends Error {
   constructor(
@@ -233,4 +234,131 @@ export async function createRegistration(
     managerEmail: result.email,
     quote,
   };
+}
+
+/** Estados en los que lo que debe el equipo depende de lo ya aprobado. */
+const BALANCE_DEPENDENT_STATUSES = new Set(["CONFIRMED", "PAYMENT_APPROVED", "DEPOSIT_PAID"]);
+
+/**
+ * Recalcula el precio de la inscripción de un equipo según su plantel
+ * *actual* — hay que llamarla cada vez que un jugador se agrega o se saca
+ * (`adminAddPlayer`/`adminRemovePlayer`), para que `Registration.totalAmount`
+ * y `playerCountQuoted` siempre reflejen la cantidad real de jugadores en vez
+ * de quedar congelados en la cotización original. Si la inscripción ya tenía
+ * tarifa asignada, la mantiene fija (agregar o sacar un jugador no tiene que
+ * mover a un equipo de tarifa temprana a tardía por casualidad de la fecha en
+ * que se edita el plantel) — recalcula con la tarifa vigente hoy solo la
+ * primera vez que se cotiza (equipo cargado a mano por el admin, sin pasar
+ * por el wizard). Si el total cambia y el equipo ya estaba pagando
+ * (`CONFIRMED`/`PAYMENT_APPROVED`/`DEPOSIT_PAID`), recalcula también el
+ * estado según lo que ya tiene aprobado: agregar jugadores puede hacer que un
+ * equipo confirmado pase a deber un saldo; sacar jugadores puede hacer que
+ * una seña ya cubra el nuevo total.
+ */
+export async function requoteRegistrationForPlayerCount(
+  tx: Prisma.TransactionClient,
+  teamId: string,
+  ctx: { userId?: string | null; ip?: string | null } = {},
+): Promise<void> {
+  const team = await tx.team.findUnique({
+    where: { id: teamId },
+    include: { registration: true, tournament: { include: { config: true } } },
+  });
+  const registration = team?.registration;
+  const config = team?.tournament.config;
+  if (!team || !registration || !config) return;
+
+  const playerCount = await tx.player.count({ where: { teamId } });
+  const now = new Date();
+  const pricingConfig = {
+    basePlayers: config.basePlayers,
+    earlyPrice: config.earlyPrice,
+    latePrice: config.latePrice,
+    extraPlayerPrice: config.extraPlayerPrice,
+    priceChangeAt: config.priceChangeAt,
+    paymentSurchargeBp: config.paymentSurchargeBp,
+  };
+
+  const quote = registration.quotedAt
+    ? quoteForTier(pricingConfig, registration.priceTier, playerCount)
+    : calculatePrice(pricingConfig, playerCount, now);
+
+  if (quote.totalAmount === registration.totalAmount && playerCount === registration.playerCountQuoted) {
+    return;
+  }
+
+  await tx.registration.update({
+    where: { id: registration.id },
+    data: {
+      playerCountQuoted: playerCount,
+      priceTier: quote.tier,
+      baseAmount: quote.baseAmount,
+      extraPlayersAmount: quote.extraPlayersAmount,
+      surchargeAmount: quote.surchargeAmount,
+      totalAmount: quote.totalAmount,
+      quotedAt: registration.quotedAt ?? now,
+    },
+  });
+  await writeAudit(tx, {
+    tournamentId: team.tournamentId,
+    userId: ctx.userId,
+    action: "registration.requote",
+    entity: "Registration",
+    entityId: registration.id,
+    previousValue: { playerCount: registration.playerCountQuoted, totalAmount: registration.totalAmount },
+    newValue: { playerCount, totalAmount: quote.totalAmount },
+    ip: ctx.ip ?? null,
+  });
+
+  if (!BALANCE_DEPENDENT_STATUSES.has(registration.status)) return;
+
+  const paidAgg = await tx.payment.aggregate({
+    where: { registrationId: registration.id, status: "APPROVED" },
+    _sum: { amount: true },
+  });
+  const paid = paidAgg._sum.amount ?? 0;
+  // Si no hay ningún pago aprobado detrás, no es un desbalance real de plata
+  // — es un equipo que el admin marcó CONFIRMED a mano (invitado, de cortesía)
+  // sin pasar por un pago; no lo tocamos. Solo reconciliamos cuando sí hay
+  // plata aprobada de por medio.
+  if (paid <= 0) return;
+  const newStatus = paid >= quote.totalAmount ? "CONFIRMED" : "DEPOSIT_PAID";
+  if (newStatus === registration.status) return;
+
+  await tx.registration.update({
+    where: { id: registration.id },
+    data: {
+      status: newStatus,
+      confirmedAt: newStatus === "CONFIRMED" ? (registration.confirmedAt ?? now) : null,
+    },
+  });
+  await tx.team.update({
+    where: { id: teamId },
+    data: {
+      registrationStatus: newStatus,
+      paymentStatus: newStatus === "CONFIRMED" ? "APPROVED" : "PENDING",
+      registeredAt: newStatus === "CONFIRMED" ? (team.registeredAt ?? now) : team.registeredAt,
+    },
+  });
+  await writeAudit(tx, {
+    tournamentId: team.tournamentId,
+    userId: ctx.userId,
+    action: "registration.requote.status",
+    entity: "Registration",
+    entityId: registration.id,
+    previousValue: { status: registration.status, paid },
+    newValue: { status: newStatus, paid, totalAmount: quote.totalAmount },
+    ip: ctx.ip ?? null,
+  });
+  await notifyAdmin(tx, {
+    title: `Cambió lo que debe ${team.name} al editar el plantel`,
+    lines: [
+      `Jugadores: ${registration.playerCountQuoted} → ${playerCount}`,
+      `Total: ${formatArs(registration.totalAmount)} → ${formatArs(quote.totalAmount)}`,
+      `Estado: ${registration.status} → ${newStatus}`,
+    ],
+    teamId,
+    teamName: team.name,
+    dedupeKey: `admin-alert:registration.requote.status:${crypto.randomUUID()}`,
+  });
 }
