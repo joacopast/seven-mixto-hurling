@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { getActiveTournament, getCapacity } from "@/lib/tournament/queries";
+import { getActiveTournament, getCapacity, OCCUPYING_STATUSES } from "@/lib/tournament/queries";
 import { formatArs } from "@/lib/tournament/pricing";
 import { REGISTRATION_STATUS_LABEL } from "@/lib/tournament/status";
 import { Card } from "@/components/ui";
@@ -11,7 +11,7 @@ export default async function AdminDashboard() {
   const tournament = await getActiveTournament();
   const capacity = await getCapacity();
 
-  const [byStatus, playerCount, revenue, drafts, depositsOwed, depositsPaid] = await Promise.all([
+  const [byStatus, playerCount, revenue, drafts, depositsOwed, depositsPaid, fullTotal] = await Promise.all([
     db.team.groupBy({
       by: ["registrationStatus"],
       where: { tournamentId: tournament.id },
@@ -38,6 +38,15 @@ export default async function AdminDashboard() {
     db.payment.aggregate({
       where: { registration: { tournamentId: tournament.id, status: "DEPOSIT_PAID" }, status: "APPROVED" },
       _sum: { amount: true },
+    }),
+    // Total si TODOS los equipos que hoy ocupan un cupo terminan pagando la
+    // totalidad de su inscripción (no solo los que ya pagaron o cotizaron
+    // como "pendiente") — mismo universo de equipos que la tile "Equipos
+    // inscriptos" (capacity.occupying): no incluye lista de espera ni
+    // equipos cancelados/rechazados.
+    db.registration.aggregate({
+      where: { tournamentId: tournament.id, status: { in: [...OCCUPYING_STATUSES] } },
+      _sum: { totalAmount: true },
     }),
   ]);
   const depositsOwedTotal = Math.max(0, (depositsOwed._sum.totalAmount ?? 0) - (depositsPaid._sum.amount ?? 0));
@@ -93,6 +102,12 @@ export default async function AdminDashboard() {
                 <dd className="font-mono font-semibold text-warn">{formatArs(depositsOwedTotal)}</dd>
               </div>
             )}
+            <div className="flex justify-between border-t border-line pt-2">
+              <dt className="font-semibold text-ink">Total si todos pagan la totalidad</dt>
+              <dd className="font-mono font-semibold text-ink">
+                {formatArs(fullTotal._sum.totalAmount ?? 0)}
+              </dd>
+            </div>
           </dl>
         </Card>
 

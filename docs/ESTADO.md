@@ -834,3 +834,19 @@ sumaba señas) mientras `/admin/pagos` mostraba $400.000 recaudado — después
 del fix ambos muestran $400.000. Typecheck limpio, build de producción OK,
 suite completa verde: 197 tests (sin tests nuevos — es un query de un campo
 de solo lectura en una página, sin lógica de negocio propia para cubrir).
+
+Total proyectado si todos pagan la totalidad, en el resumen (2026-11-05):
+Joaco pidió un total al pie de "Ingresos" en `/admin` con lo que se
+recaudaría si todos los equipos que hoy ocupan un cupo terminan pagando la
+totalidad de su inscripción. Se agregó una fila "Total si todos pagan la
+totalidad" (`app/(admin)/admin/page.tsx`) con la suma de
+`Registration.totalAmount` de los equipos en `OCCUPYING_STATUSES` (pendientes,
+con seña o confirmados — el mismo universo que la tile "Equipos inscriptos";
+no incluye lista de espera ni cancelados/rechazados). Antes de este cambio
+se corroboró con datos reales de dev que "Proyectado" y "Falta de señas por
+reclamar" ya eran correctos (coinciden con `/admin/pagos` equipo por
+equipo) — no hizo falta tocarlos. Probado en dev: con 3 equipos en "Seña
+pagada" ($275.000 + $275.000 + $302.500), el total nuevo dio $852.500,
+que además coincide con Recaudado ($400.000) + Falta de señas ($452.500).
+Sin cambios de schema. Typecheck limpio, build de producción OK, suite
+completa verde: 197 tests.
