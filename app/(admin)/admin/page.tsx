@@ -18,12 +18,14 @@ export default async function AdminDashboard() {
       _count: true,
     }),
     db.player.count({ where: { tournamentId: tournament.id } }),
-    db.registration.aggregate({
-      where: {
-        tournamentId: tournament.id,
-        status: { in: ["PAYMENT_APPROVED", "CONFIRMED"] },
-      },
-      _sum: { totalAmount: true },
+    // Suma de pagos realmente aprobados (no Registration.totalAmount): tiene
+    // que coincidir siempre con "Recaudado" de /admin/pagos, señas parciales
+    // incluidas — antes este tile sumaba el total cotizado de las
+    // inscripciones CONFIRMED/PAYMENT_APPROVED, que no es lo mismo que lo
+    // efectivamente cobrado (y excluía las señas de equipos DEPOSIT_PAID).
+    db.payment.aggregate({
+      where: { registration: { tournamentId: tournament.id }, status: "APPROVED" },
+      _sum: { amount: true },
     }),
     db.registration.aggregate({
       where: { tournamentId: tournament.id, status: "PENDING_PAYMENT" },
@@ -78,8 +80,8 @@ export default async function AdminDashboard() {
           <h2 className="font-display text-lg font-semibold text-ink">Ingresos</h2>
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between">
-              <dt className="text-ink-soft">Confirmado (pagos aprobados)</dt>
-              <dd className="font-mono font-semibold">{formatArs(revenue._sum.totalAmount ?? 0)}</dd>
+              <dt className="text-ink-soft">Recaudado (pagos aprobados)</dt>
+              <dd className="font-mono font-semibold">{formatArs(revenue._sum.amount ?? 0)}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-ink-soft">Proyectado (pendiente de pago)</dt>

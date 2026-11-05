@@ -809,3 +809,28 @@ $275.000: agregar un 11º → $302.500 total, "Falta $27.500", tarifa EARLY
 intacta, pasa a "Seña pagada"; sacarlo vuelve a $275.000 confirmado. Sin
 cambios de schema. Typecheck limpio, build de producción OK, suite completa
 verde: 197 tests.
+
+Fix: "Recaudado" del resumen no coincidía con "Recaudado" de /admin/pagos
+(2026-11-05): Joaco notó que el panel de Resumen (`/admin`) mostraba un
+monto distinto al de `/admin/pagos` para supuestamente la misma plata. La
+causa: el tile de Resumen sumaba `Registration.totalAmount` de las
+inscripciones en estado `CONFIRMED`/`PAYMENT_APPROVED` — es decir, lo que
+esos equipos *deben en total*, no lo que efectivamente pagaron — y de paso
+ignoraba por completo las señas parciales (`DEPOSIT_PAID`), que si cuentan
+como plata ya cobrada en `/admin/pagos`. `/admin/pagos` en cambio siempre
+sumó `Payment.amount` de los pagos con `status: APPROVED`, sin importar en
+qué estado quedó la inscripción — esa es la cuenta correcta de plata
+efectivamente recaudada. Se cambió el tile de Resumen
+(`app/(admin)/admin/page.tsx`) para usar la misma agregación
+(`db.payment.aggregate` sobre `Payment.amount` aprobado) y se renombró la
+etiqueta de "Confirmado (pagos aprobados)" a "Recaudado (pagos aprobados)"
+para que quede claro que incluye señas parciales, no solo equipos
+confirmados del todo — ahora los dos lugares siempre muestran el mismo
+número por construcción. Sin cambios de schema ni de otros cálculos
+("Proyectado" y "Falta de señas por reclamar" siguen igual, son conceptos
+distintos — plata todavía no cobrada). Probado en dev: con 3 equipos en
+`DEPOSIT_PAID` y ningún `CONFIRMED`, el tile viejo mostraba $0 (porque no
+sumaba señas) mientras `/admin/pagos` mostraba $400.000 recaudado — después
+del fix ambos muestran $400.000. Typecheck limpio, build de producción OK,
+suite completa verde: 197 tests (sin tests nuevos — es un query de un campo
+de solo lectura en una página, sin lógica de negocio propia para cubrir).
