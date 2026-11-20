@@ -5,7 +5,7 @@ import { SITE } from "@/lib/config";
 import { getActiveTournament, getCapacity } from "@/lib/tournament/queries";
 import { getConfirmedTeams } from "@/lib/tournament/team-view";
 import { calculatePrice, formatArs } from "@/lib/tournament/pricing";
-import { formatFecha } from "@/lib/datetime";
+import { formatFecha, formatFechaCorta } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +79,7 @@ export default async function HomePage() {
       : FAQ_FALLBACK;
 
   const priceChangeLabel = formatFecha(config.priceChangeAt);
+  const priceChangeShort = formatFechaCorta(config.priceChangeAt);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -126,18 +127,10 @@ export default async function HomePage() {
               Ver torneo
             </ButtonLink>
           </div>
-          <div className="mt-10 flex flex-wrap justify-center gap-x-8 gap-y-2 font-mono text-xs text-ink-faint">
-            <span>
-              <b className="text-ink-soft">{capacity.confirmed}</b> / {capacity.maxTeams} equipos confirmados
-            </span>
-            <span>
-              <b className="text-ink-soft">{capacity.available}</b> cupos disponibles
-            </span>
-            {capacity.waitlistCount > 0 && (
-              <span>
-                <b className="text-ink-soft">{capacity.waitlistCount}</b> en lista de espera
-              </span>
-            )}
+
+          <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-pop/40 bg-pop/10 px-4 py-2 font-display text-sm font-semibold uppercase tracking-wide text-pop-soft">
+            <span className="h-1.5 w-1.5 flex-none rounded-full bg-pop" />
+            ¡Últimos cupos! Anotate ya
           </div>
 
           {confirmedTeams.length > 0 && (
@@ -208,20 +201,20 @@ export default async function HomePage() {
               <div className="flex items-center justify-between">
                 <span className="eyebrow">Precio de referencia</span>
                 <Badge tone={exampleQuote.tier === "EARLY" ? "ok" : "warn"}>
-                  {exampleQuote.tier === "EARLY" ? "Hasta el 20/11" : "Post 20/11"}
+                  {exampleQuote.tier === "EARLY" ? `Hasta el ${priceChangeShort}` : `Post ${priceChangeShort}`}
                 </Badge>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl bg-pill p-4 text-center">
-                  <p className="text-[11px] uppercase tracking-wider text-ink-faint">Hasta 20/11</p>
+                  <p className="text-[11px] uppercase tracking-wider text-ink-faint">Hasta {priceChangeShort}</p>
                   <p className="mt-1 font-display text-2xl font-semibold text-paper">
                     {formatArs(config.earlyPrice)}
                   </p>
                   <p className="text-[11px] text-ink-faint">x equipo · 10 jugadores</p>
                 </div>
                 <div className="rounded-2xl bg-pill p-4 text-center">
-                  <p className="text-[11px] uppercase tracking-wider text-ink-faint">Post 20/11</p>
+                  <p className="text-[11px] uppercase tracking-wider text-ink-faint">Post {priceChangeShort}</p>
                   <p className="mt-1 font-display text-2xl font-semibold text-paper">
                     {formatArs(config.latePrice)}
                   </p>

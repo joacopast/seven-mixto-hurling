@@ -850,3 +850,33 @@ pagada" ($275.000 + $275.000 + $302.500), el total nuevo dio $852.500,
 que además coincide con Recaudado ($400.000) + Falta de señas ($452.500).
 Sin cambios de schema. Typecheck limpio, build de producción OK, suite
 completa verde: 197 tests.
+
+Fix: la fecha de cambio de precio en el home no se actualizaba + banner de
+últimos cupos (2026-11-20): Joaco cambió `priceChangeAt` desde
+`/admin/configuracion` y no vio el cambio reflejado en el home. Causa: en
+la tarjeta "Precio de referencia" (`app/(public)/page.tsx`), el badge
+("Hasta el 20/11"/"Post 20/11") y las dos etiquetas de las tarjetas de
+precio tenían la fecha **escrita a mano** como texto fijo, sin leer
+`config.priceChangeAt` — quedó así desde que se sincronizó el texto de
+15/11 a 20/11 a mano en una sesión anterior. Solo la letra chica de abajo
+("Después del [fecha] rige la tarifa general") era dinámica. Se agregó
+`formatFechaCorta(d)` en `lib/datetime.ts` (DD/MM sin año) y se
+reemplazaron los tres textos fijos por el valor real de
+`config.priceChangeAt`. De paso, al correr los tests se encontraron 8
+fallando por un problema no relacionado: varios tests de pagos/inscripción
+cotizan con `new Date()` real contra la fecha de corte fija del
+`seedTournament()` de los tests (15/11/2026 desde `tests/helpers/db.ts`) —
+al pasar el calendario esa fecha, empezaron a resolver tarifa tardía donde
+esperaban temprana. Se cambió el default de esa fecha de corte a
+"dentro de un año" relativo al reloj real en vez de una fecha fija, para
+que no se vuelva a romper solo por el paso del tiempo (los tests que
+necesitan tarifa tardía la overridean explícitamente, sin cambios). También
+se agregó, a pedido de Joaco, un banner "¡Últimos cupos! Anotate ya" en el
+hero del home, reemplazando el bloque de estadísticas de cupos que él mismo
+había comentado — píldora con el acento naranja de marca (`--pop`), sin
+depender de `capacity.available` (es un mensaje de urgencia, no un contador
+en vivo; `getCapacity()` se dejó sin usar en la página por si se quiere
+reactivar el contador real más adelante). Probado en dev con capturas de
+pantalla (cambié `priceChangeAt` a una fecha de prueba y confirmé que los
+tres lugares la reflejan). Typecheck limpio, build de producción OK, suite
+completa verde: 197 tests.

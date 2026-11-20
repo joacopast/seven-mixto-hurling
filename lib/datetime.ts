@@ -9,6 +9,11 @@ export function formatFecha(d: Date): string {
   return d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+/** DD/MM sin año — para textos cortos (ej. el corte de precio en el home). */
+export function formatFechaCorta(d: Date): string {
+  return d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
+}
+
 export function formatHora(d: Date): string {
   return d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
 }

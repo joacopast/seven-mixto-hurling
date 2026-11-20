@@ -59,7 +59,14 @@ export async function seedTournament(overrides: SeedOverrides = {}) {
           earlyPrice: 275_000_00,
           latePrice: 300_000_00,
           extraPlayerPrice: 27_500_00,
-          priceChangeAt: overrides.priceChangeAt ?? new Date("2026-11-15T00:00:00-03:00"),
+          // Default siempre en el futuro relativo al reloj real (no una fecha
+          // fija): varios tests cotizan con `new Date()` real sin pasar una
+          // fecha de referencia, así que una fecha de corte fija terminaba
+          // quedando en el pasado apenas el calendario la cruzaba, tirando
+          // tarifa LATE donde el test esperaba EARLY. Los tests que
+          // necesitan tarifa tardía pasan `overrides.priceChangeAt` en el
+          // pasado a propósito.
+          priceChangeAt: overrides.priceChangeAt ?? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
           paymentSurchargeBp: overrides.paymentSurchargeBp ?? 0,
           registrationClosesAt:
             overrides.registrationClosesAt === undefined
